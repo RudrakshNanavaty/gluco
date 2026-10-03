@@ -1,0 +1,10 @@
+{
+  "run_name": "Gluco 24-hour risk training",
+  "timeout_seconds": 1800,
+  "tasks": [{
+    "task_key": "train_rolling_risk",
+    "notebook_task": {
+      "notebook_path": "/Workspace/Shared/gluco/databricks/tiger/train_rolling_risk"
+    }
+  }]
+}
