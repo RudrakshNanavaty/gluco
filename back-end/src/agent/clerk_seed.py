@@ -11,7 +11,6 @@ the secret key) carries `{uuid, role, participant_id, display_name}`.
 
 import argparse
 import csv
-import os
 import sys
 import uuid
 from collections.abc import Callable, Iterable
@@ -206,23 +205,23 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--csv", type=Path, default=DEFAULT_CSV)
     args = parser.parse_args(argv)
 
-    secret = os.environ.get("CLERK_SECRET_KEY")
-    if not secret:
-        print("CLERK_SECRET_KEY is not set", file=sys.stderr)
+    settings = Settings()  # pyright: ignore[reportCallIssue]
+    secret = settings.clerk_secret_key
+    if secret is None:
+        print("CLERK_SECRET_KEY is not set (.env or environment)", file=sys.stderr)
         return 1
-    password = os.environ.get("CLERK_DEMO_PASSWORD")
-    if not password and not args.dry_run:
-        print("CLERK_DEMO_PASSWORD is not set", file=sys.stderr)
+    password = settings.clerk_demo_password
+    if password is None and not args.dry_run:
+        print("CLERK_DEMO_PASSWORD is not set (.env or environment)", file=sys.stderr)
         return 1
 
-    settings = Settings()  # pyright: ignore[reportCallIssue]
     participants = WindowStore(build_source(settings)).participants()
     print(f"{len(participants)} participants", file=sys.stderr)
 
     accounts = sync(
-        ClerkClient(secret),
+        ClerkClient(secret.get_secret_value()),
         lambda taken, known: plan_accounts(participants, args.doctors, taken, known),
-        password,
+        password.get_secret_value() if password else None,
         args.dry_run,
     )
     if args.dry_run:

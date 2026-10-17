@@ -56,6 +56,9 @@ class Settings(BaseSettings):
     clerk_jwks_url: str | None = None
     clerk_issuer: str | None = None
     clerk_audience: str | None = None
+    # Only the seed script (`just seed-clerk`) uses these; the API never does.
+    clerk_secret_key: SecretStr | None = None
+    clerk_demo_password: SecretStr | None = None
 
     # The replay clock walks through the published data so it looks live.
     replay_enabled: bool = True
