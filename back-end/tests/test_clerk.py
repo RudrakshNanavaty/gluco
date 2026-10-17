@@ -1,5 +1,6 @@
 """Clerk sign-in: session verification, metadata mapping, and the seed script."""
 
+import re
 import uuid
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
@@ -133,7 +134,7 @@ def test_plan_is_deterministic_and_collision_free():
     assert len({a.username for a in first}) == len(first) == 42
     assert len({a.uuid for a in first}) == 42
     assert [a.role for a in first[:3]] == ["clinician"] * 3
-    assert all(a.username.startswith("dr.") for a in first[:3])
+    assert all(a.username.startswith("dr-") for a in first[:3])
     assert first[3].uuid == str(uuid.uuid5(clerk_seed.NAMESPACE, f"patient:{ids[0]}"))
 
 
@@ -201,3 +202,17 @@ def test_sync_repairs_drifted_metadata_and_dry_run_writes_nothing():
     assert clerk.patched == []
     run_sync(clerk)
     assert clerk.patched == ["user_9"]
+
+
+def test_usernames_use_only_what_clerk_allows():
+    ids = [f"demo:big_ideas:{n:03d}" for n in range(1, 40)]
+    for account in clerk_seed.plan_accounts(ids, doctors=3):
+        assert re.fullmatch(r"[a-z0-9_-]+", account.username), account.username
+
+
+def test_full_roster_is_the_66_person_cohort():
+    roster = clerk_seed.full_roster()
+    assert len(roster) == len(set(roster)) == 66
+    assert roster[0] == "demo:big_ideas:001"
+    assert roster[-1] == "demo:imu50:49"
+    assert PID in roster

@@ -2,6 +2,7 @@
 
     just seed-clerk --dry-run     # show what would happen
     just seed-clerk               # create or update the accounts
+    just seed-clerk --full-roster # ... for all 66 people, even unpublished ones
 
 Idempotent: accounts are matched on the `uuid` in their public_metadata, which is
 derived from the participant id, so a rerun creates nothing twice and never resets
@@ -55,6 +56,18 @@ class Account:
         }
 
 
+def full_roster() -> list[str]:
+    """The 66-person `continuous-oct4-v1` cohort: 16 BIG IDEAs plus 50 IMU50.
+
+    Mirrors the frozen roster in databricks/tiger/register_overnight.py. Tiger may
+    publish only part of it (the 17-person smoke session), so this lets accounts
+    exist before every participant's data does.
+    """
+    return [f"demo:big_ideas:{n:03d}" for n in range(1, 17)] + [
+        f"demo:imu50:{n:02d}" for n in range(50)
+    ]
+
+
 def _name(key: str) -> tuple[str, str]:
     """A fake name that depends only on `key`, so it is stable across runs."""
     fake = Faker("en_US")
@@ -75,7 +88,8 @@ def plan_accounts(
     """Every account the demo should have, in a stable order.
 
     `known` maps uuid -> username of accounts that already exist; they keep their
-    username. New accounts get `firstname.lastname`, with a number on a clash.
+    username. New accounts get `firstname-lastname` (Clerk allows only letters, numbers,
+    `-` and `_`), with a number on a clash.
     """
     known = known or {}
     taken = {u.lower() for u in taken_usernames}
@@ -86,7 +100,7 @@ def plan_accounts(
         first, last = _name(key)
         username = known.get(ident)
         if username is None:
-            base = f"{prefix}{_slug(first)}.{_slug(last)}"
+            base = f"{prefix}{_slug(first)}-{_slug(last)}"
             username, n = base, 1
             while username in taken:
                 n += 1
@@ -95,7 +109,7 @@ def plan_accounts(
         accounts.append(Account(ident, role, pid, first, last, username))
 
     for index in range(1, doctors + 1):
-        build(f"clinician:{index}", "clinician", None, prefix="dr.")
+        build(f"clinician:{index}", "clinician", None, prefix="dr-")
     for pid in sorted(participants):
         build(f"patient:{pid}", "patient", pid)
     return accounts
@@ -202,6 +216,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--dry-run", action="store_true", help="change nothing")
     parser.add_argument("--doctors", type=int, default=3)
+    parser.add_argument(
+        "--full-roster",
+        action="store_true",
+        help="also seed the whole 66-person cohort, not just what Tiger has published",
+    )
     parser.add_argument("--csv", type=Path, default=DEFAULT_CSV)
     args = parser.parse_args(argv)
 
@@ -216,7 +235,10 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     participants = WindowStore(build_source(settings)).participants()
-    print(f"{len(participants)} participants", file=sys.stderr)
+    print(f"{len(participants)} participants in the data source", file=sys.stderr)
+    if args.full_roster:
+        participants = sorted({*participants, *full_roster()})
+        print(f"{len(participants)} with the full roster", file=sys.stderr)
 
     accounts = sync(
         ClerkClient(secret.get_secret_value()),
