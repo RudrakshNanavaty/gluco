@@ -11,7 +11,7 @@ from agents import Agent, FunctionTool
 from agent.api.chat_service import ChatService
 from agent.api.sessions import ChatSessions
 from agent.api.widget_store import WidgetStore
-from agent.auth import Principal, TokenSigner
+from agent.auth import ClerkTokenVerifier, Principal, TokenSigner
 from agent.clock import ReplayClock
 from agent.config import DEV_AUTH_SECRET, Settings
 from agent.data.factory import build_source
@@ -37,6 +37,7 @@ class Runtime:
     live: LiveStore
     clock: ReplayClock
     signer: TokenSigner
+    clerk: ClerkTokenVerifier | None
     sessions: ChatSessions
     widgets: WidgetStore
     chat: ChatService
@@ -73,6 +74,20 @@ def build_runtime(
         settings.auth_secret.get_secret_value(),
         timedelta(hours=settings.token_ttl_hours),
     )
+    clerk = (
+        ClerkTokenVerifier(
+            settings.clerk_jwks_url,
+            issuer=settings.clerk_issuer,
+            audience=settings.clerk_audience,
+            user_map=settings.clerk_patient_user_map,
+            username_map={
+                f"patient{index:03d}": participant_id
+                for index, participant_id in enumerate(store.participants(), 1)
+            },
+        )
+        if settings.clerk_jwks_url
+        else None
+    )
     guardrails = {
         role: build_input_guardrails(settings.effective_guardrail_model, role)
         for role in ("clinician", "patient")
@@ -102,6 +117,7 @@ def build_runtime(
         live=live,
         clock=clock,
         signer=signer,
+        clerk=clerk,
         sessions=sessions,
         widgets=WidgetStore(settings.session_db_path),
         chat=chat,

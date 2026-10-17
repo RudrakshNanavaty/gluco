@@ -1,6 +1,7 @@
 "use client"
 
 import { useQueryClient } from "@tanstack/react-query"
+import { useClerk, useAuth as useClerkAuth } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { useCallback, useSyncExternalStore } from "react"
 
@@ -30,6 +31,8 @@ export function useSession(): Session | null {
 export function useAuth() {
   const router = useRouter()
   const queryClient = useQueryClient()
+  const { isSignedIn } = useClerkAuth()
+  const { signOut } = useClerk()
 
   const login = useCallback(
     async (personaId: string) => {
@@ -51,8 +54,9 @@ export function useAuth() {
   const logout = useCallback(() => {
     sessionStore.set(null)
     queryClient.clear()
+    void signOut()
     router.replace("/")
-  }, [queryClient, router])
+  }, [queryClient, router, signOut])
 
-  return { login, logout }
+  return { login, logout, isSignedIn }
 }

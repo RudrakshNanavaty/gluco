@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes"
 import { useEffect, useState } from "react"
 
 import { Toaster } from "@/components/ui/sonner"
+import { ClerkAuthSync } from "@/components/clerk-auth-sync"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { ApiError } from "@/lib/api/client"
 import { sessionStore } from "@/lib/session"
@@ -50,6 +51,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     >
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
+          <ClerkAuthSync />
           {children}
           <Toaster />
         </TooltipProvider>
