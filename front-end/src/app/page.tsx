@@ -1,6 +1,12 @@
 "use client"
 
 import { ChevronRightIcon, StethoscopeIcon, UserIcon } from "lucide-react"
+import {
+  SignInButton,
+  SignUpButton,
+  useAuth as useClerkAuth,
+  useClerk,
+} from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
@@ -18,6 +24,7 @@ import {
 } from "@/components/ui/item"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
+import { Button } from "@/components/ui/button"
 import { friendlyError } from "@/lib/api/client"
 import { usePersonas } from "@/lib/api/queries"
 import { useAuth, useSession } from "@/lib/auth"
@@ -64,6 +71,8 @@ function PersonaItem({
 
 export default function PersonaPickerPage() {
   const router = useRouter()
+  const { isLoaded: isClerkLoaded, isSignedIn } = useClerkAuth()
+  const { signOut } = useClerk()
   const session = useSession()
   const personas = usePersonas()
   const { login } = useAuth()
@@ -86,8 +95,6 @@ export default function PersonaPickerPage() {
   }
 
   const clinicians = personas.data?.filter((p) => p.role === "clinician") ?? []
-  const patients = personas.data?.filter((p) => p.role === "patient") ?? []
-
   return (
     <main className="mx-auto grid w-full max-w-6xl flex-1 gap-12 px-4 py-10 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
       <header className="flex flex-col gap-8 lg:sticky lg:top-16 lg:self-start">
@@ -114,8 +121,8 @@ export default function PersonaPickerPage() {
             Who&apos;s looking today?
           </h2>
           <p className="text-sm text-muted-foreground">
-            This is a demo, so there&apos;s no sign-in. Choose who you&apos;d
-            like to explore Gluco as.
+            Patients use their Clerk username and password. Clinicians can
+            still open the demo clinician view.
           </p>
         </div>
 
@@ -161,26 +168,42 @@ export default function PersonaPickerPage() {
               Patients see only their own Gluco Score, readings and assistant.
             </p>
           </div>
-          {personas.isPending ? (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {Array.from({ length: 6 }, (_, i) => (
-                <Skeleton key={i} className="h-14 rounded-xl" />
-              ))}
-            </div>
-          ) : (
-            <ItemGroup className="grid gap-3 sm:grid-cols-2">
-              {patients.map((persona) => (
-                <PersonaItem
-                  key={persona.user_id}
-                  persona={persona}
-                  icon={UserIcon}
-                  pending={pending === persona.user_id}
-                  disabled={pending !== null}
-                  onSelect={() => choose(persona)}
-                />
-              ))}
-            </ItemGroup>
-          )}
+          <Item
+            variant="outline"
+            className="bg-card"
+          >
+            <ItemMedia variant="icon" className="bg-accent text-accent-foreground">
+              <UserIcon />
+            </ItemMedia>
+            <ItemContent>
+              <ItemTitle>Patient portal</ItemTitle>
+              <ItemDescription>
+                Sign in with your username and password to see only your own
+                readings, score, and assistant.
+              </ItemDescription>
+            </ItemContent>
+            <ItemActions className="gap-2">
+              {isClerkLoaded && !isSignedIn ? (
+                <>
+                <SignInButton mode="modal">
+                  <Button type="button" variant="outline">Log in</Button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <Button type="button">Create account</Button>
+                </SignUpButton>
+                </>
+              ) : null}
+              {isClerkLoaded && isSignedIn ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void signOut({ redirectUrl: "/" })}
+                >
+                  Sign out / switch patient
+                </Button>
+              ) : null}
+            </ItemActions>
+          </Item>
         </section>
       </div>
     </main>

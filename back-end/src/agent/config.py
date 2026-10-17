@@ -51,6 +51,13 @@ class Settings(BaseSettings):
     auth_secret: SecretStr = SecretStr(DEV_AUTH_SECRET)
     token_ttl_hours: float = 24.0
 
+    # Clerk verifies the user's password and session. The app only maps the
+    # verified Clerk identity to a patient in memory.
+    clerk_jwks_url: str | None = None
+    clerk_issuer: str | None = None
+    clerk_audience: str | None = None
+    clerk_patient_user_map: dict[str, str] = Field(default_factory=dict)
+
     # The replay clock walks through the published data so it looks live.
     replay_enabled: bool = True
     replay_start: datetime | None = None  # None: one day after the first window

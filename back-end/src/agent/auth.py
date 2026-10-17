@@ -8,9 +8,10 @@ is scoped from the token, never from the UI or the LLM.
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Literal
+from typing import Any, Literal
 
 import jwt
+from jwt import PyJWKClient
 
 from agent.analysis.ids import display_name
 from agent.domain.errors import PersonNotFoundError
@@ -100,3 +101,55 @@ class TokenSigner:
         if role == "patient" and claims.get("pid"):
             return patient(claims["pid"])
         raise InvalidTokenError("token names no valid role")
+
+
+class ClerkTokenVerifier:
+    """Verify Clerk sessions and bind them to the in-memory patient directory."""
+
+    def __init__(
+        self,
+        jwks_url: str,
+        issuer: str | None = None,
+        audience: str | None = None,
+        user_map: dict[str, str] | None = None,
+        username_map: dict[str, str] | None = None,
+    ) -> None:
+        self._keys = PyJWKClient(jwks_url)
+        self._issuer = issuer
+        self._audience = audience
+        self._user_map = user_map or {}
+        self._username_map = {key.lower(): value for key, value in (username_map or {}).items()}
+
+    def verify(
+        self,
+        token: str,
+        participant_ids: Iterable[str],
+        username_hint: str | None = None,
+    ) -> Principal:
+        try:
+            signing_key = self._keys.get_signing_key_from_jwt(token).key
+            options: dict[str, Any] = {"require": ["sub", "exp"]}
+            claims = jwt.decode(
+                token,
+                signing_key,
+                algorithms=["RS256"],
+                issuer=self._issuer,
+                audience=self._audience,
+                options=options,
+            )
+        except Exception as exc:
+            raise InvalidTokenError("invalid Clerk session") from exc
+
+        participant_ids = set(participant_ids)
+        user_id = str(claims["sub"])
+        participant_id = self._user_map.get(user_id)
+        username = (
+            claims.get("username")
+            or claims.get("preferred_username")
+            or username_hint
+        )
+        if participant_id is None and isinstance(username, str):
+            participant_id = self._username_map.get(username.lower())
+        if participant_id not in participant_ids:
+            raise InvalidTokenError("Clerk account is not linked to a patient")
+        return patient(participant_id)
