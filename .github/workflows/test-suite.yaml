@@ -1,0 +1,53 @@
+name: "test suite"
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  back-end:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install Back-End Dependancies
+        working-directory: back-end
+        run: uv sync
+
+      - name: Run Back-End Suite and Linting
+        working-directory: back-end
+        run: |
+          uv run pytest
+          uv run ruff check
+          uv run ruff format --check
+          uv run basedpyright
+
+  front-end:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.2"
+
+      - name: Install Front-End Dependancies
+        working-directory: front-end
+        run: bun install
+
+      - name: Run Front-End Suite and Linting
+        working-directory: front-end
+        run: |
+          bun run test
+          bun run typecheck
+          bun run lint
+          bun run build
