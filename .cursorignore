@@ -1,0 +1,24 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Dependencies and build output
+node_modules/
+.venv/
+.next/
+dist/
+out/
+__pycache__/
+
+# Lockfiles and local state
+uv.lock
+bun.lock
+back-end/var/
+
+# Local data
+databricks/local-data/
+databricks/tiger/pilot-data/
+pilot-data/
