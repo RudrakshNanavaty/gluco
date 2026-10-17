@@ -7,7 +7,7 @@ import { useEffect } from "react"
 import { Brand } from "@/components/brand"
 import { ChatLauncher } from "@/components/chat/chat-launcher"
 import { ChatProvider } from "@/components/chat/chat-provider"
-import { PersonaMenu } from "@/components/persona-menu"
+import { AccountMenu } from "@/components/account-menu"
 import { ReplayControls } from "@/components/replay-controls"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Badge } from "@/components/ui/badge"
@@ -34,7 +34,7 @@ function AppFrame({
         </Badge>
         <div className="ml-auto flex items-center gap-1">
           <ThemeToggle />
-          <PersonaMenu principal={principal} />
+          <AccountMenu principal={principal} />
         </div>
       </header>
 

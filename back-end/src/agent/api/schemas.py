@@ -30,10 +30,6 @@ class PrincipalOut(BaseModel):
         )
 
 
-class LoginRequest(BaseModel):
-    persona_id: str  # a `user_id` from GET /personas
-
-
 class LoginResponse(BaseModel):
     token: str
     token_type: Literal["bearer"] = "bearer"  # noqa: S105

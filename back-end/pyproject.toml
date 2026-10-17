@@ -28,6 +28,7 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "basedpyright>=1.40.1",
+    "faker>=40.0.0",
     "httpx>=0.28.1",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
@@ -66,6 +67,7 @@ ignore = [
 "**/tests/**" = ["S", "T20"]
 "**/__init__.py" = ["F401"]
 "**/main.py" = ["T20"]       # CLI entrypoints may print
+"**/clerk_seed.py" = ["T20"] # seed script prints its report
 "evals/**" = ["T20"]         # eval runner prints its report
 
 [tool.ruff.format]

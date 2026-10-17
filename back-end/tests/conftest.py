@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from support import PID
 
 from agent.api.app import create_app
-from agent.auth import CLINICIAN, patient
+from agent.auth import CLINICIAN, Principal, patient
 from agent.bootstrap import Runtime, build_runtime
 from agent.clock import ReplayClock
 from agent.config import Settings
@@ -101,16 +101,16 @@ def client(runtime: Runtime) -> TestClient:
     return TestClient(create_app(runtime))
 
 
-def auth(client: TestClient, persona_id: str) -> dict[str, str]:
-    token = client.post("/auth/login", json={"persona_id": persona_id}).json()["token"]
-    return {"Authorization": f"Bearer {token}"}
+def auth(runtime: Runtime, principal: Principal) -> dict[str, str]:
+    """Sign-in is Clerk-only, so tests issue the app token directly."""
+    return {"Authorization": f"Bearer {runtime.signer.issue(principal)}"}
 
 
 @pytest.fixture
-def as_clinician(client: TestClient) -> dict[str, str]:
-    return auth(client, CLINICIAN.user_id)
+def as_clinician(runtime: Runtime) -> dict[str, str]:
+    return auth(runtime, CLINICIAN)
 
 
 @pytest.fixture
-def as_patient(client: TestClient) -> dict[str, str]:
-    return auth(client, f"patient:{PID}")
+def as_patient(runtime: Runtime) -> dict[str, str]:
+    return auth(runtime, patient(PID))

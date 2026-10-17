@@ -143,7 +143,7 @@ cp .env.example .env.local
 bun dev
 ```
 
-Open `http://localhost:3000` and choose a clinician or patient demo persona.
+Open `http://localhost:3000` and sign in with a Clerk account (seed them with `just seed-clerk` in `back-end/`).
 
 ### Verify the project
 

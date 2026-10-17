@@ -1,49 +1,31 @@
-"""Persona picker and demo login. No passwords: the signed token is the identity."""
+"""Clerk sign-in: a verified Clerk session is exchanged for the app's own token."""
 
 from fastapi import APIRouter, HTTPException
 
-from agent.api.deps import ClerkCredentialsDep, CurrentPrincipal, RuntimeDep
-from agent.api.schemas import LoginRequest, LoginResponse, PrincipalOut
-from agent.auth import CLINICIAN, InvalidTokenError, persona
-from agent.domain.errors import PersonNotFoundError
+from agent.api.deps import Credentials, CurrentPrincipal, RuntimeDep
+from agent.api.schemas import LoginResponse, PrincipalOut
+from agent.auth import InvalidTokenError
 
 router = APIRouter(tags=["auth"])
 
 
 @router.post("/auth/clerk-login")
-def clerk_login(credentials: ClerkCredentialsDep, runtime: RuntimeDep) -> LoginResponse:
+def clerk_login(credentials: Credentials, runtime: RuntimeDep) -> LoginResponse:
     if runtime.clerk is None:
         raise HTTPException(503, "Clerk authentication is not configured.")
     if credentials is None:
-        raise HTTPException(401, "A Clerk session is required.")
+        raise HTTPException(
+            401, "A Clerk session is required.", headers={"WWW-Authenticate": "Bearer"}
+        )
     try:
         principal = runtime.clerk.verify(
-            credentials.credentials,
-            runtime.store.participants(),
-            username_hint=credentials.username_hint,
+            credentials.credentials, runtime.store.participants()
         )
     except InvalidTokenError as exc:
-        raise HTTPException(401, "This Clerk account is not linked to a patient.") from exc
-    return LoginResponse(
-        token=runtime.signer.issue(principal),
-        expires_in=int(runtime.settings.token_ttl_hours * 3600),
-        principal=PrincipalOut.of(principal),
-    )
-
-
-@router.get("/personas")
-def list_personas(runtime: RuntimeDep) -> list[PrincipalOut]:
-    # Never expose the patient directory before authentication.
-    return [PrincipalOut.of(CLINICIAN)]
-
-
-@router.post("/auth/login")
-def login(request: LoginRequest, runtime: RuntimeDep) -> LoginResponse:
-    try:
-        principal = persona(request.persona_id, runtime.store.participants())
-    except PersonNotFoundError as exc:
         raise HTTPException(
-            404, f"We couldn't find a profile called {request.persona_id!r}."
+            401,
+            "This account could not be signed in.",
+            headers={"WWW-Authenticate": "Bearer"},
         ) from exc
     return LoginResponse(
         token=runtime.signer.issue(principal),

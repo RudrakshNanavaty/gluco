@@ -45,10 +45,13 @@ Tiger gold.dashboard_windows -> data/postgres.py (or data/mock.py)   WindowSourc
                                                      -> agent per request -> POST /chat (SSE)
 ```
 
-- **Identity** (`auth.py`). There are no passwords. `GET /personas` lists
-  "Dr. Demo" plus one persona per participant. `POST /auth/login` returns a signed
-  JWT, sent afterwards as `Authorization: Bearer …`. The server decides what each
-  request may see from that token, never from the UI or the LLM.
+- **Identity** (`auth.py`). Sign-in is Clerk only. `POST /auth/clerk-login` verifies
+  the Clerk session and reads `{uuid, role, participant_id, display_name}` from the
+  user's `public_metadata` (carried in the session token's `metadata` claim; only
+  the backend can write it). It returns the app's own signed JWT, sent afterwards
+  as `Authorization: Bearer …`. The server decides what each request may see from
+  that token, never from the UI or the LLM. `just seed-clerk` creates one account
+  per participant plus three doctors (idempotent; `--dry-run` first).
 - **Scope** (`query.py`). Clinicians see everyone. Patients see only their own
   rows: no other participant, no cohort aggregates. Asking for anything else
   returns `403 not_permitted`.
@@ -66,11 +69,11 @@ Tiger gold.dashboard_windows -> data/postgres.py (or data/mock.py)   WindowSourc
 
 ## API
 
-All routes except `/personas`, `/auth/login` and `/health` need a token.
+All routes except `/auth/clerk-login` and `/health` need a token.
 
 | Endpoint | Returns |
 | --- | --- |
-| `GET /personas`, `POST /auth/login {persona_id}`, `GET /me` | persona picker, token, caller |
+| `POST /auth/clerk-login` (Clerk bearer), `GET /me` | app token, caller |
 | `GET /catalog` | metrics (label, unit, description, `higher_is_better`), visible participants, data range, supported buckets/aggs |
 | `POST /query` | the generic query behind most widgets (below) |
 | `GET /participants?sort_by=gluco_score&order=asc` | newest values per visible participant |
@@ -115,7 +118,7 @@ src/agent/
   config.py        Settings; the only reader of env vars
   bootstrap.py     Composition root (Runtime)
   llm.py           The only module that knows the provider (Gemini, OpenAI-compatible)
-  auth.py          Personas, tokens, Principal
+  auth.py          Clerk verification, tokens, Principal
   store.py         In-memory windows, incremental refresh
   clock.py         Replay clock
   query.py         QueryService: scope, clock, every derived number

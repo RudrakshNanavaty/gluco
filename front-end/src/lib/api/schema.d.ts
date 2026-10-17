@@ -4,24 +4,7 @@
  */
 
 export interface paths {
-    "/personas": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Personas */
-        get: operations["list_personas_personas_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/login": {
+    "/auth/clerk-login": {
         parameters: {
             query?: never;
             header?: never;
@@ -30,8 +13,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Login */
-        post: operations["login_auth_login_post"];
+        /** Clerk Login */
+        post: operations["clerk_login_auth_clerk_login_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -573,11 +556,6 @@ export interface components {
             participants: number;
             clock: components["schemas"]["ClockState"] | null;
         };
-        /** LoginRequest */
-        LoginRequest: {
-            /** Persona Id */
-            persona_id: string;
-        };
         /** LoginResponse */
         LoginResponse: {
             /** Token */
@@ -866,7 +844,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    list_personas_personas_get: {
+    clerk_login_auth_clerk_login_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -881,40 +859,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrincipalOut"][];
-                };
-            };
-        };
-    };
-    login_auth_login_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
                     "application/json": components["schemas"]["LoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

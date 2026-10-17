@@ -30,16 +30,20 @@ def test_health_needs_no_token(client):
     assert body["clock"]["now"] == "2026-10-04T07:00:00Z"
 
 
-def test_personas_and_login(client):
-    personas = client.get("/personas").json()
-    assert len(personas) == 18
-    assert personas[0]["role"] == "clinician"
-    login = client.post("/auth/login", json={"persona_id": f"patient:{PID}"}).json()
-    assert login["principal"]["participant_id"] == PID
-    headers = {"Authorization": f"Bearer {login['token']}"}
-    assert client.get("/me", headers=headers).json()["display_name"] == "Patient 013"
-    missing = client.post("/auth/login", json={"persona_id": "patient:nobody"})
-    assert missing.status_code == 404
+def test_me_reports_the_signed_in_principal(client, as_patient):
+    me = client.get("/me", headers=as_patient).json()
+    assert (me["participant_id"], me["display_name"]) == (PID, "Patient 013")
+
+
+def test_there_is_no_login_without_clerk(client):
+    # Patient data must never be reachable by naming a persona.
+    assert client.get("/personas").status_code == 404
+    body = {"persona_id": f"patient:{PID}"}
+    assert client.post("/auth/login", json=body).status_code == 404
+
+
+def test_clerk_login_needs_a_configured_verifier_and_a_session(client):
+    assert client.post("/auth/clerk-login").status_code == 503
 
 
 def test_data_routes_need_a_valid_token(client):

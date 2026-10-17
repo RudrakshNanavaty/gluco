@@ -1,100 +1,29 @@
-"use client"
+"use client";
 
-import { ChevronRightIcon, StethoscopeIcon, UserIcon } from "lucide-react"
-import {
-  SignInButton,
-  SignUpButton,
-  useAuth as useClerkAuth,
-  useClerk,
-} from "@clerk/nextjs"
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
-import { toast } from "sonner"
+import { SignIn, useAuth as useClerkAuth, useClerk } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-import { Brand } from "@/components/brand"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemMedia,
-  ItemTitle,
-} from "@/components/ui/item"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Spinner } from "@/components/ui/spinner"
-import { Button } from "@/components/ui/button"
-import { friendlyError } from "@/lib/api/client"
-import { usePersonas } from "@/lib/api/queries"
-import { useAuth, useSession } from "@/lib/auth"
-import { homeFor, type Principal } from "@/lib/session"
+import { Brand } from "@/components/brand";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { useHydrated, useSession } from "@/lib/auth";
+import { homeFor } from "@/lib/session";
 
-function PersonaItem({
-  persona,
-  description,
-  icon: Icon,
-  pending,
-  disabled,
-  onSelect,
-}: {
-  persona: Principal
-  description?: string
-  icon: React.ComponentType
-  pending: boolean
-  disabled: boolean
-  onSelect: () => void
-}) {
-  return (
-    <Item
-      variant="outline"
-      asChild
-      className="bg-card transition-colors hover:border-primary/40 hover:bg-accent/50"
-    >
-      <button type="button" onClick={onSelect} disabled={disabled}>
-        <ItemMedia variant="icon" className="bg-accent text-accent-foreground">
-          <Icon />
-        </ItemMedia>
-        <ItemContent>
-          <ItemTitle>{persona.display_name}</ItemTitle>
-          {description ? (
-            <ItemDescription>{description}</ItemDescription>
-          ) : null}
-        </ItemContent>
-        <ItemActions>
-          {pending ? <Spinner /> : <ChevronRightIcon />}
-        </ItemActions>
-      </button>
-    </Item>
-  )
-}
-
-export default function PersonaPickerPage() {
-  const router = useRouter()
-  const { isLoaded: isClerkLoaded, isSignedIn } = useClerkAuth()
-  const { signOut } = useClerk()
-  const session = useSession()
-  const personas = usePersonas()
-  const { login } = useAuth()
-  const [pending, setPending] = useState<string | null>(null)
+export default function SignInPage() {
+  const router = useRouter();
+  const hydrated = useHydrated();
+  const { isLoaded, isSignedIn } = useClerkAuth();
+  const { signOut } = useClerk();
+  const session = useSession();
 
   useEffect(() => {
-    if (session) router.replace(homeFor(session.principal))
-  }, [session, router])
+    if (session) router.replace(homeFor(session.principal));
+  }, [session, router]);
 
-  async function choose(persona: Principal) {
-    setPending(persona.user_id)
-    try {
-      await login(persona.user_id)
-    } catch (error) {
-      setPending(null)
-      toast.error(`Couldn't sign you in as ${persona.display_name}.`, {
-        description: friendlyError(error),
-      })
-    }
-  }
+  // Signed in with Clerk: the app token is being exchanged (see ClerkAuthSync).
+  const signingIn = !hydrated || !isLoaded || isSignedIn || session !== null;
 
-  const clinicians = personas.data?.filter((p) => p.role === "clinician") ?? []
   return (
     <main className="mx-auto grid w-full max-w-6xl flex-1 gap-12 px-4 py-10 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
       <header className="flex flex-col gap-8 lg:sticky lg:top-16 lg:self-start">
@@ -115,97 +44,31 @@ export default function PersonaPickerPage() {
         </p>
       </header>
 
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col items-start gap-6">
         <div className="flex flex-col gap-1">
-          <h2 className="text-xl font-semibold tracking-tight">
-            Who&apos;s looking today?
-          </h2>
+          <h2 className="text-xl font-semibold tracking-tight">Sign in</h2>
           <p className="text-sm text-muted-foreground">
-            Patients use their Clerk username and password. Clinicians can
-            still open the demo clinician view.
+            Use the username and password you were given. Patients see only
+            their own data; clinicians see their whole panel.
           </p>
         </div>
-
-        {personas.isError ? (
-          <Alert variant="destructive">
-            <AlertTitle>Can&apos;t load profiles</AlertTitle>
-            <AlertDescription>
-              We couldn&apos;t reach Gluco just now. Please try again in a
-              moment.
-            </AlertDescription>
-          </Alert>
-        ) : null}
-
-        <section className="flex flex-col gap-3">
-          <h3 className="text-sm font-medium text-muted-foreground">
-            Clinician
-          </h3>
-          {personas.isPending ? (
-            <Skeleton className="h-18 w-full rounded-xl" />
-          ) : (
-            <ItemGroup className="gap-3">
-              {clinicians.map((persona) => (
-                <PersonaItem
-                  key={persona.user_id}
-                  persona={persona}
-                  icon={StethoscopeIcon}
-                  description="See every patient, trends across your panel, and a clinical view of the Gluco Score."
-                  pending={pending === persona.user_id}
-                  disabled={pending !== null}
-                  onSelect={() => choose(persona)}
-                />
-              ))}
-            </ItemGroup>
-          )}
-        </section>
-
-        <section className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1">
-            <h3 className="text-sm font-medium text-muted-foreground">
-              Patients
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Patients see only their own Gluco Score, readings and assistant.
-            </p>
+        {signingIn ? (
+          <div className="flex items-center gap-3">
+            <Spinner aria-label="Signing you in" />
+            {isSignedIn ? (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => void signOut({ redirectUrl: "/" })}
+              >
+                Use a different account
+              </Button>
+            ) : null}
           </div>
-          <Item
-            variant="outline"
-            className="bg-card"
-          >
-            <ItemMedia variant="icon" className="bg-accent text-accent-foreground">
-              <UserIcon />
-            </ItemMedia>
-            <ItemContent>
-              <ItemTitle>Patient portal</ItemTitle>
-              <ItemDescription>
-                Sign in with your username and password to see only your own
-                readings, score, and assistant.
-              </ItemDescription>
-            </ItemContent>
-            <ItemActions className="gap-2">
-              {isClerkLoaded && !isSignedIn ? (
-                <>
-                <SignInButton mode="modal">
-                  <Button type="button" variant="outline">Log in</Button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <Button type="button">Create account</Button>
-                </SignUpButton>
-                </>
-              ) : null}
-              {isClerkLoaded && isSignedIn ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => void signOut({ redirectUrl: "/" })}
-                >
-                  Sign out / switch patient
-                </Button>
-              ) : null}
-            </ItemActions>
-          </Item>
-        </section>
+        ) : (
+          <SignIn routing="hash" />
+        )}
       </div>
     </main>
-  )
+  );
 }

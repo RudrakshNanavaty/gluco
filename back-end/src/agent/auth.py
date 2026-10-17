@@ -1,25 +1,30 @@
-"""Who is asking: demo personas, signed tokens, and what each role may see.
+"""Who is asking: signed tokens, and what each role may see.
 
-There are no passwords. A persona picker logs in as the clinician or as any
-participant, and the server signs a token naming that persona. Every data read
-is scoped from the token, never from the UI or the LLM.
+Sign-in happens only through Clerk. The server verifies the Clerk session,
+reads the role and participant from its server-written metadata, and signs its
+own token naming that principal. Every data read is scoped from that token,
+never from the UI or the LLM.
 """
 
+import logging
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
+from uuid import UUID
 
 import jwt
-from jwt import PyJWKClient
+from jwt import PyJWKClient, PyJWKClientError
 
 from agent.analysis.ids import display_name
-from agent.domain.errors import PersonNotFoundError
+
+log = logging.getLogger(__name__)
 
 Role = Literal["clinician", "patient"]
 ALGORITHM = "HS256"
 CLINICIAN_ID = "clinician:demo"
 PATIENT_PREFIX = "patient:"
+METADATA_CLAIM = "metadata"
 
 
 @dataclass(frozen=True)
@@ -40,20 +45,6 @@ def patient(person_id: str) -> Principal:
     return Principal(
         f"{PATIENT_PREFIX}{person_id}", "patient", display_name(person_id), person_id
     )
-
-
-def personas(participant_ids: Iterable[str]) -> list[Principal]:
-    return [CLINICIAN, *(patient(pid) for pid in participant_ids)]
-
-
-def persona(user_id: str, participant_ids: Iterable[str]) -> Principal:
-    """The persona a login names; raises PersonNotFoundError if there is none."""
-    if user_id == CLINICIAN_ID:
-        return CLINICIAN
-    person_id = user_id.removeprefix(PATIENT_PREFIX)
-    if user_id.startswith(PATIENT_PREFIX) and person_id in set(participant_ids):
-        return patient(person_id)
-    raise PersonNotFoundError(user_id)
 
 
 class InvalidTokenError(Exception):
@@ -99,57 +90,68 @@ class TokenSigner:
                 claims["sub"], "clinician", claims.get("name", "Clinician")
             )
         if role == "patient" and claims.get("pid"):
-            return patient(claims["pid"])
+            return Principal(
+                claims["sub"],
+                "patient",
+                claims.get("name") or display_name(claims["pid"]),
+                claims["pid"],
+            )
         raise InvalidTokenError("token names no valid role")
 
 
 class ClerkTokenVerifier:
-    """Verify Clerk sessions and bind them to the in-memory patient directory."""
+    """Verify a Clerk session and read who it is from its server-written metadata.
+
+    The seed script stores `{uuid, role, participant_id, display_name}` in each
+    Clerk user's `public_metadata`, which only the backend API can write. The
+    Clerk dashboard's session token must carry it as the `metadata` claim.
+    """
 
     def __init__(
         self,
         jwks_url: str,
-        issuer: str | None = None,
+        issuer: str,
         audience: str | None = None,
-        user_map: dict[str, str] | None = None,
-        username_map: dict[str, str] | None = None,
+        timeout: float = 5.0,
     ) -> None:
-        self._keys = PyJWKClient(jwks_url)
+        self._keys = PyJWKClient(jwks_url, timeout=timeout)
         self._issuer = issuer
         self._audience = audience
-        self._user_map = user_map or {}
-        self._username_map = {key.lower(): value for key, value in (username_map or {}).items()}
 
-    def verify(
-        self,
-        token: str,
-        participant_ids: Iterable[str],
-        username_hint: str | None = None,
-    ) -> Principal:
+    def verify(self, token: str, participant_ids: Iterable[str]) -> Principal:
+        claims = self._claims(token)
+        meta = claims.get(METADATA_CLAIM)
+        if not isinstance(meta, dict):
+            raise InvalidTokenError("Clerk session carries no metadata")
         try:
-            signing_key = self._keys.get_signing_key_from_jwt(token).key
-            options: dict[str, Any] = {"require": ["sub", "exp"]}
-            claims = jwt.decode(
+            user_id = str(UUID(str(meta["uuid"])))
+        except (KeyError, ValueError) as exc:
+            raise InvalidTokenError("Clerk account has no valid uuid") from exc
+        name = meta.get("display_name")
+        name = name if isinstance(name, str) and name else None
+        role = meta.get("role")
+        if role == "clinician":
+            return Principal(user_id, "clinician", name or "Clinician")
+        participant_id = meta.get("participant_id")
+        if role == "patient" and participant_id in set(participant_ids):
+            return Principal(
+                user_id, "patient", name or display_name(participant_id), participant_id
+            )
+        raise InvalidTokenError("Clerk account is not linked to a patient")
+
+    def _claims(self, token: str) -> dict[str, Any]:
+        try:
+            key = self._keys.get_signing_key_from_jwt(token).key
+            return jwt.decode(
                 token,
-                signing_key,
+                key,
                 algorithms=["RS256"],
                 issuer=self._issuer,
                 audience=self._audience,
-                options=options,
+                options={"require": ["sub", "exp", "iss"]},
             )
-        except Exception as exc:
-            raise InvalidTokenError("invalid Clerk session") from exc
-
-        participant_ids = set(participant_ids)
-        user_id = str(claims["sub"])
-        participant_id = self._user_map.get(user_id)
-        username = (
-            claims.get("username")
-            or claims.get("preferred_username")
-            or username_hint
-        )
-        if participant_id is None and isinstance(username, str):
-            participant_id = self._username_map.get(username.lower())
-        if participant_id not in participant_ids:
-            raise InvalidTokenError("Clerk account is not linked to a patient")
-        return patient(participant_id)
+        except PyJWKClientError as exc:
+            log.warning("Clerk signing keys unavailable or unknown: %s", exc)
+            raise InvalidTokenError("Clerk signing key unavailable") from exc
+        except jwt.PyJWTError as exc:
+            raise InvalidTokenError(f"invalid Clerk session: {exc}") from exc

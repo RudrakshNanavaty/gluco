@@ -57,13 +57,15 @@ export function authHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
-/** An expired or rejected token signs the user out; the app shell sends them to the picker. */
+/** An expired or rejected token signs the user out; the app shell sends them to sign in. */
 export function handleUnauthorized(status: number) {
   if (status === 401 && sessionStore.get()) sessionStore.set(null)
 }
 
 const auth: Middleware = {
   onRequest({ request }) {
+    // The Clerk exchange carries its own bearer; never replace it with an app token.
+    if (request.headers.has("Authorization")) return request
     for (const [name, value] of Object.entries(authHeader())) {
       request.headers.set(name, value)
     }
