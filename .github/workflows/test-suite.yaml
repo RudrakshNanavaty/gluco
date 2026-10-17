@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  back-end:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,13 +19,26 @@ jobs:
         with:
           enable-cache: true
 
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: "1.4.2"
-
       - name: Install Back-End Dependancies
         working-directory: back-end
         run: uv sync
+
+      - name: Run Back-End Suite and Linting
+        working-directory: back-end
+        run: |
+          uv run pytest
+          uv run ruff check
+          uv run ruff format --check
+          uv run basedpyright
+
+  front-end:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.2"
 
       - name: Install Front-End Dependancies
         working-directory: front-end
@@ -38,11 +51,3 @@ jobs:
           bun run typecheck
           bun run lint
           bun run build
-
-      - name: Run Back-End Suite and Linting
-        working-directory: back-end
-        run: |
-          uv run pytest
-          uv run ruff check
-          uv run ruff format --check
-          uv run basedpyright
