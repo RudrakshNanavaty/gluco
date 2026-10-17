@@ -37,10 +37,12 @@ jobs:
           bun run test
           bun run typecheck
           bun run lint
+          bun run build
 
       - name: Run Back-End Suite and Linting
         working-directory: back-end
         run: |
           uv run pytest
           uv run ruff check
+          uv run ruff format --check
           uv run basedpyright
