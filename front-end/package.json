@@ -44,6 +44,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.1.2",
+    "clerk": "^4.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
     "happy-dom": "^21.0.3",
