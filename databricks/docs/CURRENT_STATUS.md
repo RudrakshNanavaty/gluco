@@ -162,3 +162,18 @@ all parsed timestamps are valid. Bronze ACC is also absent inside these gaps.
 Large ACC source CSVs were not rescanned. See `SOURCE_GAP_FINDINGS.md` for scope,
 limits and the reproducible read-only SQL query. No ETL repair is indicated by
 these three checks; underlying acquisition/source provenance remains unknown.
+
+
+## Configurable replay implementation
+
+The feature-branch controller now accepts explicit session/schedule/model/fixture
+configuration through `replay_config.py`, isolates per-session runtime files,
+validates immutable saved configuration, propagates connection metadata to all
+phases, and supports a bounded `--through-offset`. Fast sensor scheduling shares
+that configuration and validates the bank fixture. Legacy unversioned state is
+not silently resumed. Local suite: 50 passing tests; targeted lint passed.
+
+Read-only preflight confirmed the intended 66-person fixture and model are ready
+for a five-minute new-session run. The live smoke test is blocked by lack of
+READ access to secret scope `se-project-2`; no session was created or published.
+See `CONFIGURABLE_REPLAY.md` for exact setup, bounded commands and limitations.

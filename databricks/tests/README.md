@@ -19,3 +19,9 @@ The experimental-feature tests additionally check unchanged baseline features,
 elapsed-time slopes across irregular missing minutes, zero spread/slope for
 constant signals, exclusion of future values, baseline rejection gates, and
 invariance to absolute timestamp offsets.
+
+Replay tests cover explicit configuration, timezone/range checks, per-session
+state paths, immutable resume settings, task dependency/connection propagation,
+batch bounds, a bounded dry-run, failure/stop cursor retention, successful
+refresh advancement, and stable session-scoped event identities. They do not
+replace the remote event-retry and publication smoke test.

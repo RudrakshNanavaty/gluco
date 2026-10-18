@@ -19,7 +19,7 @@ import time
 
 import pg8000.native
 from demo_replay_payload import event_for_minute
-from continuous_demo import ANCHOR, CLI, ROOT, SESSION, STOP_AT
+from continuous_demo import ANCHOR, CLI, CONFIG, PREP_AT, ROOT, SESSION, STOP_AT
 
 BANK = ROOT / "live_bank.jsonl"
 STATE = ROOT / "sensor_state.json"
@@ -102,10 +102,15 @@ def run():
     session = json.loads((ROOT/"state.json").read_text())
     if not session["ready"] or session["session_id"] != SESSION or session["anchor"] != ANCHOR:
         raise ValueError("Require the existing prepared continuous session")
+    CONFIG.validate_state(session)
+    if not PREP_AT <= time.time() < STOP_AT:
+        raise ValueError("Outside configured sensor execution window")
     bank = {}
     with BANK.open() as source:
         for line in source:
             row = json.loads(line)
+            if row.get("fixture_id") != session["fixture_id"]:
+                raise ValueError("Sensor bank fixture does not match the saved session")
             bank.setdefault(row["source_participant_key"], {})[row["minute_offset"]] = row
     if len(bank) != 66 or any(set(rows) != set(range(11519, 12960)) for rows in bank.values()):
         raise ValueError("Incomplete frozen sensor bank")
@@ -183,7 +188,7 @@ if __name__ == "__main__":
     parser.add_argument("--background", action="store_true")
     args = parser.parse_args()
     if args.background:
-        if not time.time() < STOP_AT or not BANK.exists() or (ROOT/"STOP").exists():
+        if not PREP_AT <= time.time() < STOP_AT or not BANK.exists() or (ROOT/"STOP").exists():
             raise SystemExit("Require downloaded bank, active demo window, and no STOP marker")
         with (ROOT/"sensor.lock").open("a") as probe:
             try:
