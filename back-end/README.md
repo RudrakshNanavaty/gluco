@@ -158,11 +158,15 @@ To add a tool, put it in `tools/clinician.py` or `tools/patient.py`. Tools call 
   instructions, and every tool returns it as `as_of`, so the agent never guesses
   dates.
 - **OpenRouter routing.** Models are `<vendor>/<model>`; add `:floor` for the
-  cheapest host. Every call also sends `provider.require_parameters` (only hosts
-  that support tools and structured output) and `provider.data_collection=deny`
-  (no hosts that keep or train on prompts); see `LLM_REQUIRE_PARAMETERS` and
-  `LLM_DATA_COLLECTION`. SDK tracing stays off, so no OpenAI key is needed.
-  Gemini works too via `LLM_BASE_URL` and `LLM_API_KEY`.
+  cheapest host. Every call also sends `provider.require_parameters` (when true,
+  only hosts that support every parameter sent) and
+  `provider.data_collection=deny` (no hosts that keep or train on prompts); see
+  `LLM_REQUIRE_PARAMETERS` and `LLM_DATA_COLLECTION`. `.env.example` sets
+  `LLM_REQUIRE_PARAMETERS=false` because the default agent model, Ling 3.0 Flash,
+  has no host that accepts every parameter (strict routing returns 404 for it),
+  while the code default stays `true`. The guardrail model must support
+  structured output. SDK tracing stays off, so no OpenAI key is needed. Gemini
+  works too via `LLM_BASE_URL` and `LLM_API_KEY`.
 - **Gemini quirk.** Gemini's OpenAI-compatible stream (also behind OpenRouter)
   gives parallel tool calls the same index. `llm.py` re-indexes them; otherwise
   the SDK merges the calls and Gemini rejects the next request.
