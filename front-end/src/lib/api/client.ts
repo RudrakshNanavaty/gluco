@@ -1,7 +1,6 @@
-import createClient, { type Middleware } from "openapi-fetch"
+import createClient from "openapi-fetch"
 
 import type { components, paths } from "@/lib/api/schema"
-import { sessionStore } from "@/lib/session"
 
 export type Schemas = components["schemas"]
 
@@ -52,31 +51,6 @@ export function friendlyError(error: unknown): string {
   return error.status >= 500 ? GENERIC_MESSAGE : error.message
 }
 
-export function authHeader(): Record<string, string> {
-  const token = sessionStore.get()?.token
-  return token ? { Authorization: `Bearer ${token}` } : {}
-}
-
-/** An expired or rejected token signs the user out; the app shell sends them to sign in. */
-export function handleUnauthorized(status: number) {
-  if (status === 401 && sessionStore.get()) sessionStore.set(null)
-}
-
-const auth: Middleware = {
-  onRequest({ request }) {
-    // The Clerk exchange carries its own bearer; never replace it with an app token.
-    if (request.headers.has("Authorization")) return request
-    for (const [name, value] of Object.entries(authHeader())) {
-      request.headers.set(name, value)
-    }
-    return request
-  },
-  onResponse({ response }) {
-    handleUnauthorized(response.status)
-    return response
-  },
-}
-
 /** How requests reach the network: `fetch` in the app, a fake in tests. */
 export type Transport = typeof fetch
 
@@ -89,11 +63,56 @@ export function setTransport(next: Transport): Transport {
   return previous
 }
 
-/** Send one request through the current transport. */
-export const send: Transport = (input, init) => transport(input, init)
+/** Where requests get their bearer token. The app session registers Clerk's. */
+export type TokenSource = {
+  /** The current token; `fresh` skips any cached one. */
+  token(fresh: boolean): Promise<string | null>
+  /** The back-end refused even a fresh token. */
+  rejected(): void
+}
+
+let tokens: TokenSource | null = null
+
+export function setTokenSource(next: TokenSource | null) {
+  tokens = next
+}
+
+function authorized(
+  input: RequestInfo | URL,
+  init: RequestInit | undefined,
+  token: string | null
+): [RequestInfo | URL, RequestInit | undefined] {
+  if (!token) return [input, init]
+  const value = `Bearer ${token}`
+  if (input instanceof Request) {
+    // A copy, so the original (and its body) can be sent again on a retry.
+    const request = input.clone()
+    request.headers.set("Authorization", value)
+    return [request, init]
+  }
+  const headers = new Headers(init?.headers)
+  headers.set("Authorization", value)
+  return [input, { ...init, headers }]
+}
+
+/**
+ * Send one request through the current transport, carrying the session token.
+ * A 401 is retried once with a fresh token, since a cached one may have just
+ * expired; a second 401 means the session is over.
+ */
+export const send: Transport = async (input, init) => {
+  const source = tokens
+  if (!source) return transport(input, init)
+  const attempt = async (fresh: boolean) =>
+    transport(...authorized(input, init, await source.token(fresh)))
+  const response = await attempt(false)
+  if (response.status !== 401) return response
+  const retried = await attempt(true)
+  if (retried.status === 401) source.rejected()
+  return retried
+}
 
 export const api = createClient<paths>({ baseUrl: API_BASE_URL, fetch: send })
-api.use(auth)
 
 type Result<T> = { data?: T; error?: unknown; response: Response }
 

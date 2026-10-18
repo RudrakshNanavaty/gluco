@@ -13,7 +13,6 @@ import { useState } from "react"
 import { ChatMessage } from "@/components/chat/chat-message"
 import { useChat } from "@/components/chat/chat-provider"
 import { GlucoDot } from "@/components/chat/gluco-dot"
-import type { Audience } from "@/components/estimate-note"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -48,8 +47,9 @@ import {
 } from "@/components/ui/message-scroller"
 import { Spinner } from "@/components/ui/spinner"
 import { useThreads } from "@/lib/api/queries"
+import { useAudience, type Role } from "@/lib/app-session"
 
-const SUGGESTIONS: Record<Audience, string[]> = {
+const SUGGESTIONS: Record<Role, string[]> = {
   clinician: [
     "Which patients need follow-up?",
     "Build a widget ranking the 5 lowest Gluco Scores",
@@ -102,7 +102,8 @@ function ThreadMenu() {
   )
 }
 
-function Composer({ audience }: { audience: Audience }) {
+function Composer() {
+  const audience = useAudience()
   const { send, stop, streaming } = useChat()
   const [draft, setDraft] = useState("")
 
@@ -177,12 +178,11 @@ function Composer({ audience }: { audience: Audience }) {
 }
 
 export function ChatPanel({
-  audience,
   onClose,
 }: {
-  audience: Audience
   onClose?: () => void
 }) {
+  const audience = useAudience()
   const { messages, newChat, send, loadingThread, chartsMissing, streaming } =
     useChat()
 
@@ -286,7 +286,7 @@ export function ChatPanel({
                       messageId={message.id}
                       scrollAnchor={message.role === "user"}
                     >
-                      <ChatMessage message={message} audience={audience} />
+                      <ChatMessage message={message} />
                     </MessageScrollerItem>
                   ))}
                 </>
@@ -297,7 +297,7 @@ export function ChatPanel({
         </MessageScroller>
       </MessageScrollerProvider>
 
-      <Composer audience={audience} />
+      <Composer />
     </div>
   )
 }

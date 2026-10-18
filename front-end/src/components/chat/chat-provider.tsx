@@ -16,7 +16,7 @@ import type { ChatEvent, ChatWidget, QueryResult } from "@/lib/api/events"
 import { keys } from "@/lib/api/queries"
 import { streamSSE } from "@/lib/api/sse"
 import { readCharts, saveChart } from "@/lib/chart-cache"
-import type { Principal } from "@/lib/session"
+import type { Principal } from "@/lib/app-session"
 
 export type ChatPart =
   | { kind: "text"; text: string }

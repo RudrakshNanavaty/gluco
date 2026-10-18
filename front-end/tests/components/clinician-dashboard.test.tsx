@@ -52,7 +52,7 @@ describe("Clinician Dashboard Components", () => {
     it("renders skeletons while cohort query is pending", () => {
       fakeApi({ "GET /catalog": catalog, "GET /cohort": PENDING })
 
-      const { container } = renderWithProviders(<CohortOverview />)
+      const { container } = renderWithProviders(<CohortOverview />, { role: "clinician" })
 
       const skeletons = container.querySelectorAll("[data-slot=skeleton], .animate-pulse")
       expect(skeletons.length).toBeGreaterThan(0)
@@ -62,7 +62,7 @@ describe("Clinician Dashboard Components", () => {
     it("renders destructive alert when cohort query fails", async () => {
       fakeApi({ "GET /catalog": catalog, "GET /cohort": serverError })
 
-      renderWithProviders(<CohortOverview />)
+      renderWithProviders(<CohortOverview />, { role: "clinician" })
 
       expect(await screen.findByText("Couldn't load your patient panel")).toBeInTheDocument()
       expect(screen.getByText("Something went wrong. Please try again.")).toBeInTheDocument()
@@ -72,7 +72,7 @@ describe("Clinician Dashboard Components", () => {
     it("renders panel statistics and ranked patient lists on success", async () => {
       fakeApi({ "GET /catalog": catalog, "GET /cohort": sampleCohortData })
 
-      renderWithProviders(<CohortOverview />)
+      renderWithProviders(<CohortOverview />, { role: "clinician" })
 
       expect(await screen.findByText("Patients")).toBeInTheDocument()
       expect(screen.getByText("18")).toBeInTheDocument()
@@ -98,7 +98,7 @@ describe("Clinician Dashboard Components", () => {
         },
       })
 
-      renderWithProviders(<CohortOverview />)
+      renderWithProviders(<CohortOverview />, { role: "clinician" })
 
       const emptyPlaceholders = await screen.findAllByText("No patients to show yet.")
       expect(emptyPlaceholders.length).toBe(3)
@@ -112,7 +112,7 @@ describe("Clinician Dashboard Components", () => {
         "POST /query": serverError,
       })
 
-      renderWithProviders(<CohortOverview />)
+      renderWithProviders(<CohortOverview />, { role: "clinician" })
 
       expect(await screen.findByText("Something went wrong. Please try again.")).toBeInTheDocument()
     })
@@ -137,7 +137,7 @@ describe("Clinician Dashboard Components", () => {
     it("renders skeleton rows when participants query is pending", () => {
       fakeApi({ "GET /catalog": catalog, "GET /participants": PENDING })
 
-      const { container } = renderWithProviders(<ParticipantTable />)
+      const { container } = renderWithProviders(<ParticipantTable />, { role: "clinician" })
 
       const skeletons = container.querySelectorAll("[data-slot=skeleton], .animate-pulse")
       expect(skeletons.length).toBeGreaterThan(0)
@@ -147,7 +147,7 @@ describe("Clinician Dashboard Components", () => {
     it("renders destructive alert when participants query fails", async () => {
       fakeApi({ "GET /catalog": catalog, "GET /participants": serverError })
 
-      renderWithProviders(<ParticipantTable />)
+      renderWithProviders(<ParticipantTable />, { role: "clinician" })
 
       expect(await screen.findByText("Something went wrong. Please try again.")).toBeInTheDocument()
     })
@@ -156,7 +156,7 @@ describe("Clinician Dashboard Components", () => {
     it("renders table columns, participant rows, and formatted values", async () => {
       fakeApi({ "GET /catalog": catalog, "GET /participants": sampleParticipants })
 
-      renderWithProviders(<ParticipantTable />)
+      renderWithProviders(<ParticipantTable />, { role: "clinician" })
 
       expect(await screen.findByText("John Miller")).toBeInTheDocument()
       expect(screen.getByText("87")).toBeInTheDocument()
@@ -175,7 +175,7 @@ describe("Clinician Dashboard Components", () => {
         ]),
       } as unknown as ReturnType<typeof useLiveReadings>)
 
-      renderWithProviders(<ParticipantTable />)
+      renderWithProviders(<ParticipantTable />, { role: "clinician" })
 
       expect(await screen.findByText("95.0")).toBeInTheDocument()
     })
@@ -184,7 +184,7 @@ describe("Clinician Dashboard Components", () => {
     it("toggles sorting order and asks the server for the new order", async () => {
       const api = fakeApi({ "GET /catalog": catalog, "GET /participants": sampleParticipants })
 
-      renderWithProviders(<ParticipantTable />)
+      renderWithProviders(<ParticipantTable />, { role: "clinician" })
 
       const glucoScoreBtn = await screen.findByRole("button", { name: /gluco score/i })
       const tableHead = glucoScoreBtn.closest("th")
@@ -208,7 +208,7 @@ describe("Clinician Dashboard Components", () => {
     it("navigates to participant detail route when clicking a row", async () => {
       fakeApi({ "GET /catalog": catalog, "GET /participants": sampleParticipants })
 
-      renderWithProviders(<ParticipantTable />)
+      renderWithProviders(<ParticipantTable />, { role: "clinician" })
 
       const row = (await screen.findByText("John Miller")).closest("tr")
       expect(row).toBeInTheDocument()
@@ -236,7 +236,7 @@ describe("Clinician Dashboard Components", () => {
     it("renders loading skeletons while participant query is pending", () => {
       fakeApi({ "GET /catalog": catalog, "GET /participants/{person_id}": PENDING })
 
-      const { container } = renderWithProviders(<ParticipantDetail id="pat-200" />)
+      const { container } = renderWithProviders(<ParticipantDetail id="pat-200" />, { role: "clinician" })
 
       const skeletons = container.querySelectorAll("[data-slot=skeleton], .animate-pulse")
       expect(skeletons.length).toBeGreaterThan(0)
@@ -252,7 +252,7 @@ describe("Clinician Dashboard Components", () => {
         }),
       })
 
-      renderWithProviders(<ParticipantDetail id="pat-200" />)
+      renderWithProviders(<ParticipantDetail id="pat-200" />, { role: "clinician" })
 
       expect(await screen.findByText("Patient not found")).toBeInTheDocument()
       expect(screen.getByRole("link", { name: /back to patient panel/i })).toHaveAttribute("href", "/clinician")
@@ -266,7 +266,7 @@ describe("Clinician Dashboard Components", () => {
           params.person_id === "pat-200" ? sampleParticipant : new Reply(404, {}),
       })
 
-      renderWithProviders(<ParticipantDetail id="pat-200" />)
+      renderWithProviders(<ParticipantDetail id="pat-200" />, { role: "clinician" })
 
       expect(await screen.findByText("Sarah Connor")).toBeInTheDocument()
       expect(screen.getByText(/latest 24 h window ends/i)).toBeInTheDocument()
@@ -286,7 +286,7 @@ describe("Clinician Dashboard Components", () => {
         values: { heart_rate: 76 },
       } as unknown as ReturnType<typeof useLiveReading>)
 
-      renderWithProviders(<ParticipantDetail id="pat-200" />)
+      renderWithProviders(<ParticipantDetail id="pat-200" />, { role: "clinician" })
 
       expect(await screen.findByText("Live sensors")).toBeInTheDocument()
       expect(screen.getByText(/updated every second/i)).toBeInTheDocument()
@@ -300,7 +300,7 @@ describe("Clinician Dashboard Components", () => {
           params.person_id === "pat-200" ? sampleParticipant : new Reply(404, {}),
       })
 
-      renderWithProviders(<ParticipantDetail id="pat-200" />)
+      renderWithProviders(<ParticipantDetail id="pat-200" />, { role: "clinician" })
 
       const timeRangeGroup = await screen.findByRole("radiogroup", { name: "Time range" })
       const toggle24h = within(timeRangeGroup).getByRole("radio", { name: "24 h" })

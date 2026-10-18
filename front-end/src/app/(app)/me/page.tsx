@@ -3,14 +3,16 @@
 import { PageContainer } from "@/components/page-container"
 import { PatientDashboard } from "@/components/patient/patient-dashboard"
 import { RoleGate } from "@/components/role-gate"
-import { useSession } from "@/lib/auth"
+import { useAppSession } from "@/lib/app-session"
 
 export default function PatientPage() {
-  const session = useSession()
+  const session = useAppSession()
   return (
     <RoleGate role="patient">
       <PageContainer>
-        {session ? <PatientDashboard principal={session.principal} /> : null}
+        {session.status === "signed-in" ? (
+          <PatientDashboard principal={session.principal} />
+        ) : null}
       </PageContainer>
     </RoleGate>
   )

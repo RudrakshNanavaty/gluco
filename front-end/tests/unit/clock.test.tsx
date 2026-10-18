@@ -33,11 +33,11 @@ const MOCK_TICK: TickEvent = {
   live: [],
 }
 
-function createWrapper(queryClient: QueryClient, token = "test-token") {
+function createWrapper(queryClient: QueryClient) {
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
-        <ClockProvider token={token}>{children}</ClockProvider>
+        <ClockProvider>{children}</ClockProvider>
       </QueryClientProvider>
     )
   }

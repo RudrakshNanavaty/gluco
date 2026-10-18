@@ -8,6 +8,7 @@ export type FakeRequest = {
   path: string
   params: Record<string, string>
   query: URLSearchParams
+  headers: Headers
   body: unknown
 }
 
@@ -72,6 +73,7 @@ export function fakeApi(routes: Record<string, Route>) {
           route.names.map((name, i) => [name, decodeURIComponent(match[i + 1])])
         ),
         query: url.searchParams,
+        headers: request.headers,
         body: text ? JSON.parse(text) : undefined,
       }
       calls.push(fake)

@@ -4,6 +4,13 @@ import type { ReactElement, ReactNode } from "react"
 import { vi } from "vitest"
 
 import { TooltipProvider } from "@/components/ui/tooltip"
+import {
+  AppSessionContext,
+  homeFor,
+  type AppSession,
+  type Principal,
+  type Role,
+} from "@/lib/app-session"
 
 export function createTestQueryClient() {
   return new QueryClient({
@@ -20,33 +27,48 @@ export function createTestQueryClient() {
   })
 }
 
-export function createMockRouter() {
+export { createMockRouter, mockRouter } from "./mock-router"
+
+/** A signed-in app session for `role`, without Clerk. */
+export function sessionAs(
+  role: Role,
+  overrides: Partial<Principal> = {}
+): AppSession {
+  const principal: Principal = {
+    user_id: `${role}-1`,
+    role,
+    display_name: role === "clinician" ? "Dr. Test" : "Test Patient",
+    participant_id: role === "patient" ? "pat-1" : null,
+    ...overrides,
+  }
   return {
-    push: vi.fn(),
-    replace: vi.fn(),
-    back: vi.fn(),
-    forward: vi.fn(),
-    refresh: vi.fn(),
-    prefetch: vi.fn(),
+    status: "signed-in",
+    principal,
+    home: homeFor(principal),
+    signOut: vi.fn(),
   }
 }
-
-/** The router every test sees: vitest.setup.ts mocks `useRouter` to return it. */
-export const mockRouter = createMockRouter()
 
 export function renderWithProviders(
   ui: ReactElement,
   options?: {
     queryClient?: QueryClient
     renderOptions?: Omit<RenderOptions, "wrapper">
+    /** Sign in as this role, or pass a whole `session`. */
+    role?: Role
+    session?: AppSession
   }
 ) {
   const testQueryClient = options?.queryClient ?? createTestQueryClient()
+  const session =
+    options?.session ?? (options?.role ? sessionAs(options.role) : null)
 
   function Wrapper({ children }: { children: ReactNode }) {
     return (
       <QueryClientProvider client={testQueryClient}>
-        <TooltipProvider>{children}</TooltipProvider>
+        <AppSessionContext.Provider value={session}>
+          <TooltipProvider>{children}</TooltipProvider>
+        </AppSessionContext.Provider>
       </QueryClientProvider>
     )
   }

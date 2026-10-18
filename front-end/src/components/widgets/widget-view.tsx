@@ -2,7 +2,6 @@
 
 import { ArrowDownRightIcon, ArrowUpRightIcon, MinusIcon } from "lucide-react"
 
-import type { Audience } from "@/components/estimate-note"
 import { ScoreRing } from "@/components/gluco-score"
 import { QueryChart } from "@/components/query-chart"
 import {
@@ -268,12 +267,10 @@ function Empty() {
 export function WidgetView({
   kind,
   result,
-  audience,
   height = 160,
 }: {
   kind: Kind
   result: QueryResult
-  audience: Audience
   height?: number
 }) {
   switch (kind) {
@@ -291,7 +288,6 @@ export function WidgetView({
           hideNote
           showTitles={result.metrics.length > 1}
           height={height}
-          audience={audience}
         />
       )
   }

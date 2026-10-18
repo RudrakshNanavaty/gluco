@@ -17,7 +17,7 @@ export default function ClinicianPage() {
             time shown.
           </p>
         </header>
-        <PinnedWidgets audience="clinician" />
+        <PinnedWidgets />
         <CohortOverview />
         <ParticipantTable />
       </PageContainer>
