@@ -5,7 +5,9 @@
 Which sensor groups contribute predictive signal in the existing rolling
 classifier? This is a descriptive ablation study, not a search for a guaranteed
 70% result or an independent validation of the 62.11% development candidate.
-This document is a plan; the comparison has not been run.
+This document records the plan predeclared before execution. The completed
+comparison is recorded in PR #116 and its `SENSOR_GROUP_RESULTS.md` report;
+this plan is preserved rather than retuned to the observed outcomes.
 
 ## Fixed inputs and evaluation
 

@@ -257,9 +257,16 @@ question in #88 without explaining the physical recording pauses or changing
 any processing/model policy. See `INCOMPLETE_MINUTE_FINDINGS.md` for exact keys,
 counts, query identifiers and limitations.
 
-## Next planned model investigation
+## Sensor-group investigation — executed October 18, 2026
 
-`FEATURE_GROUP_COMPARISON_PLAN.md` predeclares movement-only, temperature-only
-and original combined-feature comparisons under the same nested participant
-folds. The comparison has not been executed; it will be separate development
-work with baseline reproduction and no automatic promotion.
+The predeclared `FEATURE_GROUP_COMPARISON_PLAN.md` study completed successfully
+in Databricks run `603498498602491`; implementation/results are in PR #116,
+tracked by issue #115. Combined reproduced 62.11%, temperature-only achieved
+65.33%, and movement-only 26.04% participant-weighted held-out window accuracy.
+The original baseline/prior predictions and Combined metrics/fold selections
+were reproduced. Temperature-only improves four people, worsens two and leaves
+nine unchanged relative to Combined. The development branch has 70 passing
+Databricks tests. This is reused-cohort descriptive evidence; no model/group
+was selected for deployment or promoted. Full results, limitations and paired
+outcomes are in #116's `SENSOR_GROUP_RESULTS.md`. New independently labeled
+participants remain necessary for stronger validation.
