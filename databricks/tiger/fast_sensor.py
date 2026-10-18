@@ -4,6 +4,7 @@
 Credentials are read into memory from the existing Databricks secret scope.
 Interpolated snapshots are explicitly synthetic, never measured 1 Hz samples.
 """
+
 import argparse
 import base64
 from datetime import datetime, timezone
@@ -19,7 +20,7 @@ import time
 
 import pg8000.native
 from demo_replay_payload import event_for_minute
-from continuous_demo import ANCHOR, CLI, ROOT, SESSION, STOP_AT
+from continuous_demo import ANCHOR, CLI, CONFIG, PREP_AT, ROOT, SESSION, STOP_AT
 
 BANK = ROOT / "live_bank.jsonl"
 STATE = ROOT / "sensor_state.json"
@@ -36,16 +37,37 @@ def connect():
     secret_scope = os.environ.get("DATABRICKS_SECRET_SCOPE", "se-project-2")
 
     def secret(key):
-        result = subprocess.run([CLI, "secrets", "get-secret", secret_scope, key,
-                                 "--profile", profile, "--output", "json"],
-                                check=True, capture_output=True, text=True, timeout=30)
+        result = subprocess.run(
+            [
+                CLI,
+                "secrets",
+                "get-secret",
+                secret_scope,
+                key,
+                "--profile",
+                profile,
+                "--output",
+                "json",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
         return base64.b64decode(json.loads(result.stdout)["value"]).decode()
+
     tiger_ssl = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     tiger_ssl.check_hostname = False
     tiger_ssl.verify_mode = ssl.CERT_NONE
-    return pg8000.native.Connection(host=host,
-        port=port, database=database, user=secret("tiger-user"), password=secret("tiger-password"),
-        ssl_context=tiger_ssl, timeout=15)
+    return pg8000.native.Connection(
+        host=host,
+        port=port,
+        database=database,
+        user=secret("tiger-user"),
+        password=secret("tiger-password"),
+        ssl_context=tiger_ssl,
+        timeout=15,
+    )
 
 
 def bootstrap(connection):
@@ -66,22 +88,31 @@ def bootstrap(connection):
           AND privilege_type='SELECT' AND grantee<>current_user AND grantee<>'PUBLIC'""")
     for (role,) in roles:
         quoted = '"' + role.replace('"', '""') + '"'
-        connection.run(f"GRANT SELECT ON gold.sensor_latest, gold.dashboard_live TO {quoted}")
+        connection.run(
+            f"GRANT SELECT ON gold.sensor_latest, gold.dashboard_live TO {quoted}"
+        )
     return [r[0] for r in roles]
 
 
 def sensor_payload(previous, current, fraction, timestamp):
     def interpolate(column):
         a, b = previous.get(column), current.get(column)
-        return None if a is None or b is None else float(a) + (float(b)-float(a))*fraction
-    return {"latest_sensor_time": timestamp.isoformat(),
+        return (
+            None
+            if a is None or b is None
+            else float(a) + (float(b) - float(a)) * fraction
+        )
+
+    return {
+        "latest_sensor_time": timestamp.isoformat(),
         "latest_motion_g": interpolate("enmo_mean_g"),
         "latest_skin_temperature_c": interpolate("temperature_mean_c"),
         "latest_hr_bpm": interpolate("hr_mean_bpm"),
         "latest_sensor_is_synthetic": True,
         "latest_sensor_generation_policy": "linear_interpolation_of_demo_minute_summaries",
         "latest_sensor_source_resolution_seconds": 60,
-        "latest_sensor_update_interval_seconds": 1}
+        "latest_sensor_update_interval_seconds": 1,
+    }
 
 
 def write_state(value):
@@ -90,77 +121,148 @@ def write_state(value):
     os.replace(temporary, STATE)
 
 
-def run():
+def run(max_ticks=None, snapshots_only=False, skip_bootstrap=False):
+    if max_ticks is not None and max_ticks < 1:
+        raise ValueError("max-ticks must be positive")
     global stop_requested
-    lock = (ROOT/"sensor.lock").open("a")
+    lock = (ROOT / "sensor.lock").open("a")
     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
     def stop(*_):
         global stop_requested
         stop_requested = True
+
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
-    session = json.loads((ROOT/"state.json").read_text())
-    if not session["ready"] or session["session_id"] != SESSION or session["anchor"] != ANCHOR:
+    session = json.loads((ROOT / "state.json").read_text())
+    if (
+        not session["ready"]
+        or session["session_id"] != SESSION
+        or session["anchor"] != ANCHOR
+    ):
         raise ValueError("Require the existing prepared continuous session")
+    CONFIG.validate_state(session)
+    if not PREP_AT <= time.time() < STOP_AT:
+        raise ValueError("Outside configured sensor execution window")
     bank = {}
     with BANK.open() as source:
         for line in source:
             row = json.loads(line)
-            bank.setdefault(row["source_participant_key"], {})[row["minute_offset"]] = row
-    if len(bank) != 66 or any(set(rows) != set(range(11519, 12960)) for rows in bank.values()):
+            if row.get("fixture_id") != session["fixture_id"]:
+                raise ValueError("Sensor bank fixture does not match the saved session")
+            bank.setdefault(row["source_participant_key"], {})[row["minute_offset"]] = (
+                row
+            )
+    if len(bank) != 66 or any(
+        set(rows) != set(range(11519, 12960)) for rows in bank.values()
+    ):
         raise ValueError("Incomplete frozen sensor bank")
     anchor = datetime.fromisoformat(ANCHOR)
     previous_state = json.loads(STATE.read_text()) if STATE.exists() else {}
-    last_minute = previous_state.get("last_minute", 11520 + int((time.time()-anchor.timestamp())//60)-2)
+    last_minute = previous_state.get(
+        "last_minute", 11520 + int((time.time() - anchor.timestamp()) // 60) - 2
+    )
     connection = None
     ticks = previous_state.get("ticks", 0)
+    initial_ticks = ticks
     errors = 0
     try:
-        while time.time() < STOP_AT and not stop_requested and not (ROOT/"STOP").exists():
+        while (
+            time.time() < STOP_AT
+            and not stop_requested
+            and not (ROOT / "STOP").exists()
+            and (max_ticks is None or ticks - initial_ticks < max_ticks)
+        ):
             started = time.monotonic()
             try:
                 if connection is None:
                     connection = connect()
-                    print(json.dumps({"started": True, "read_only_roles": bootstrap(connection)}), flush=True)
+                    if skip_bootstrap:
+                        connection.run("SELECT 1 FROM gold.dashboard_live LIMIT 0")
+                        roles = []
+                    else:
+                        roles = bootstrap(connection)
+                    print(
+                        json.dumps({"started": True, "read_only_roles": roles}),
+                        flush=True,
+                    )
                 now = datetime.now(timezone.utc).replace(microsecond=0)
                 elapsed = now.timestamp() - anchor.timestamp()
-                offset = 11520 + int(elapsed//60)
+                offset = 11520 + int(elapsed // 60)
                 if not 11520 <= offset < 12960:
                     raise ValueError("Outside reserved replay day")
                 snapshots = []
                 events = []
                 for key, rows in bank.items():
-                    snapshots.append({"session_id": SESSION, "participant_key": f"demo:{key}",
-                        "observed_at": now.isoformat(),
-                        "payload": sensor_payload(rows[offset-1], rows[offset], (elapsed % 60)/60, now)})
-                    for minute in range(max(11520, last_minute+1), offset):
+                    snapshots.append(
+                        {
+                            "session_id": SESSION,
+                            "participant_key": f"demo:{key}",
+                            "observed_at": now.isoformat(),
+                            "payload": sensor_payload(
+                                rows[offset - 1], rows[offset], (elapsed % 60) / 60, now
+                            ),
+                        }
+                    )
+                    for minute in (
+                        []
+                        if snapshots_only
+                        else range(max(11520, last_minute + 1), offset)
+                    ):
                         events.append(event_for_minute(rows[minute], SESSION, anchor))
                 connection.run("START TRANSACTION")
-                connection.run("""INSERT INTO gold.sensor_latest(session_id, participant_key, observed_at, payload)
+                connection.run(
+                    """INSERT INTO gold.sensor_latest(session_id, participant_key, observed_at, payload)
                     SELECT x->>'session_id', x->>'participant_key', (x->>'observed_at')::timestamptz, x->'payload'
                     FROM jsonb_array_elements(CAST(:data AS jsonb)) x
                     ON CONFLICT(session_id, participant_key) DO UPDATE SET observed_at=EXCLUDED.observed_at,
                         payload=EXCLUDED.payload, published_at=now()
-                    WHERE gold.sensor_latest.observed_at < EXCLUDED.observed_at""", data=json.dumps(snapshots, allow_nan=False))
+                    WHERE gold.sensor_latest.observed_at < EXCLUDED.observed_at""",
+                    data=json.dumps(snapshots, allow_nan=False),
+                )
                 if events:
-                    connection.run("""INSERT INTO raw.sensor_events
+                    connection.run(
+                        """INSERT INTO raw.sensor_events
                         (observed_at,sensor_id,event_id,sequence_number,schema_version,raw_payload)
                         SELECT (x->>'observed_at')::timestamptz,x->>'sensor_id',(x->>'event_id')::uuid,
                             (x->>'sequence_number')::bigint,(x->>'schema_version')::integer,x
                         FROM jsonb_array_elements(CAST(:data AS jsonb)) x
-                        ON CONFLICT(sensor_id,observed_at,event_id) DO NOTHING""", data=json.dumps(events, allow_nan=False))
+                        ON CONFLICT(sensor_id,observed_at,event_id) DO NOTHING""",
+                        data=json.dumps(events, allow_nan=False),
+                    )
                 connection.run("COMMIT")
-                last_minute = offset-1
+                if not snapshots_only:
+                    last_minute = offset - 1
                 ticks += 1
                 errors = 0
-                write_state({"pid": os.getpid(), "session_id": SESSION, "participants": 66,
-                    "status": "running", "ticks": ticks, "last_minute": last_minute,
-                    "latest_sensor_time": now.isoformat(), "last_write_seconds": time.monotonic()-started})
+                write_state(
+                    {
+                        "pid": os.getpid(),
+                        "session_id": SESSION,
+                        "participants": 66,
+                        "status": "running",
+                        "ticks": ticks,
+                        "last_minute": last_minute,
+                        "latest_sensor_time": now.isoformat(),
+                        "last_write_seconds": time.monotonic() - started,
+                    }
+                )
                 if ticks % 60 == 0:
-                    print(json.dumps({"ticks": ticks, "sensor_time": now.isoformat()}), flush=True)
+                    print(
+                        json.dumps({"ticks": ticks, "sensor_time": now.isoformat()}),
+                        flush=True,
+                    )
             except Exception as error:
                 errors += 1
-                print(json.dumps({"error_type": type(error).__name__, "consecutive_errors": errors}), flush=True)
+                print(
+                    json.dumps(
+                        {
+                            "error_type": type(error).__name__,
+                            "consecutive_errors": errors,
+                        }
+                    ),
+                    flush=True,
+                )
                 if connection:
                     try:
                         connection.close()
@@ -168,33 +270,86 @@ def run():
                         pass
                 connection = None
                 if errors >= 5:
-                    write_state({"status": "needs_attention", "pid": os.getpid(), "ticks": ticks,
-                        "last_minute": last_minute, "error_type": type(error).__name__})
+                    write_state(
+                        {
+                            "status": "needs_attention",
+                            "pid": os.getpid(),
+                            "ticks": ticks,
+                            "last_minute": last_minute,
+                            "error_type": type(error).__name__,
+                        }
+                    )
                     return
-            time.sleep(max(0.01, (min(15, 2**errors) if errors else 1) - (time.monotonic()-started)))
+            time.sleep(
+                max(
+                    0.01,
+                    (min(15, 2**errors) if errors else 1)
+                    - (time.monotonic() - started),
+                )
+            )
     finally:
         if connection:
             connection.close()
-    write_state({"status": "stopped", "pid": os.getpid(), "ticks": ticks, "last_minute": last_minute})
+    write_state(
+        {
+            "status": "stopped",
+            "pid": os.getpid(),
+            "ticks": ticks,
+            "last_minute": last_minute,
+        }
+    )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--background", action="store_true")
+    parser.add_argument(
+        "--max-ticks", type=int, help="Stop after this many successful writes"
+    )
+    parser.add_argument(
+        "--snapshots-only",
+        action="store_true",
+        help="Do not emit canonical minute events",
+    )
+    parser.add_argument(
+        "--skip-bootstrap",
+        action="store_true",
+        help="Use pre-provisioned tables/views without DDL or grants",
+    )
     args = parser.parse_args()
+    if args.max_ticks is not None and args.max_ticks < 1:
+        parser.error("max-ticks must be positive")
     if args.background:
-        if not time.time() < STOP_AT or not BANK.exists() or (ROOT/"STOP").exists():
-            raise SystemExit("Require downloaded bank, active demo window, and no STOP marker")
-        with (ROOT/"sensor.lock").open("a") as probe:
+        if (
+            not PREP_AT <= time.time() < STOP_AT
+            or not BANK.exists()
+            or (ROOT / "STOP").exists()
+        ):
+            raise SystemExit(
+                "Require downloaded bank, active demo window, and no STOP marker"
+            )
+        with (ROOT / "sensor.lock").open("a") as probe:
             try:
                 fcntl.flock(probe, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError:
                 raise SystemExit("Sensor sender already running")
-        with (ROOT/"sensor.log").open("a") as log:
-            process = subprocess.Popen([sys.executable, "-u", str(Path(__file__).resolve())],
-                stdout=log, stderr=log, start_new_session=True)
-            subprocess.Popen(["/usr/bin/caffeinate", "-i", "-s", "-w", str(process.pid)],
-                stdout=log, stderr=log, start_new_session=True)
+        with (ROOT / "sensor.log").open("a") as log:
+            command = [sys.executable, "-u", str(Path(__file__).resolve())]
+            if args.max_ticks is not None:
+                command.extend(["--max-ticks", str(args.max_ticks)])
+            if args.snapshots_only:
+                command.append("--snapshots-only")
+            if args.skip_bootstrap:
+                command.append("--skip-bootstrap")
+            process = subprocess.Popen(
+                command, stdout=log, stderr=log, start_new_session=True
+            )
+            subprocess.Popen(
+                ["/usr/bin/caffeinate", "-i", "-s", "-w", str(process.pid)],
+                stdout=log,
+                stderr=log,
+                start_new_session=True,
+            )
         print(json.dumps({"sensor_pid": process.pid}))
     else:
-        run()
+        run(args.max_ticks, args.snapshots_only, args.skip_bootstrap)
