@@ -18,6 +18,7 @@ import {
   formatValue,
   formatWithUnit,
   GLUCO_SCORE,
+  numberAt,
   shortUnit,
   useMetrics,
 } from "@/lib/catalog"
@@ -25,11 +26,6 @@ import { cn } from "@/lib/utils"
 
 type Series = QueryResult["series"][number]
 type Kind = WidgetSpec["kind"]
-
-function numberAt(point: Record<string, unknown>, metric: string) {
-  const value = point[metric]
-  return typeof value === "number" && Number.isFinite(value) ? value : null
-}
 
 /** A series' values for one metric, oldest first, skipping gaps. */
 function valuesOf(series: Series, metric: string) {

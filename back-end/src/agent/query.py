@@ -292,7 +292,7 @@ class QueryService:
     def _latest(self, person_id: str) -> Window | None:
         """The newest window up to now, with the live readings when there are any."""
         windows = self._history(person_id)
-        return self._with_live(windows[-1]) if windows else None
+        return self._live_view(windows[-1]) if windows else None
 
     # --- live readings --------------------------------------------------------
 
@@ -313,11 +313,21 @@ class QueryService:
             return None
         return self._live.reading(window.person_id)
 
-    def _with_live(self, window: Window) -> Window:
+    def _live_view(self, window: Window) -> Window:
+        """`window` with its live readings applied, when they belong with it.
+
+        The one place readings meet windows: rows, queries and the stream all
+        read windows through here.
+        """
         reading = self._live_for(window)
         if reading is None:
             return window
-        return window.model_copy(update={"values": {**window.values, **reading.values}})
+        return window.model_copy(
+            update={
+                "values": {**window.values, **reading.values},
+                "live_at": reading.sensor_time,
+            }
+        )
 
     def live_readings(self) -> list[LiveReading]:
         """Everyone visible's live readings (for the live stream)."""
@@ -331,15 +341,14 @@ class QueryService:
         return window
 
     def _row(self, window: Window) -> ParticipantRow:
-        reading = self._live_for(window)
-        values = {**window.values, **reading.values} if reading else window.values
+        """A row for a window already in the live view."""
         return ParticipantRow(
             person_id=window.person_id,
             display_name=display_name(window.person_id),
             source_dataset=window.source_dataset,
             window_end=window.window_end,
-            values={k: _round(v) for k, v in values.items()},
-            live_at=reading.sensor_time if reading else None,
+            values={k: _round(v) for k, v in window.values.items()},
+            live_at=window.live_at,
         )
 
     # --- generic query ------------------------------------------------------
@@ -373,15 +382,15 @@ class QueryService:
             metrics also gets a point at the live reading's time."""
             windows = self._history(pid, start, end)
             if live_metrics and end is not None and end == as_of and windows:
-                reading = self._live_for(windows[-1])
-                if reading is not None:
+                newest = self._live_view(windows[-1])
+                if newest.live_at is not None:
                     windows.append(
                         Window(
                             person_id=pid,
-                            source_dataset=windows[-1].source_dataset,
-                            window_start=reading.sensor_time,
-                            window_end=reading.sensor_time,
-                            values={m: reading.values.get(m) for m in live_metrics},
+                            source_dataset=newest.source_dataset,
+                            window_start=newest.live_at,
+                            window_end=newest.live_at,
+                            values={m: newest.values.get(m) for m in live_metrics},
                         )
                     )
             return windows
@@ -637,7 +646,7 @@ class QueryService:
     def windows_between(self, after: datetime, until: datetime) -> list[ParticipantRow]:
         """Visible windows with after < window_end <= until (for the live stream)."""
         return [
-            self._row(w)
+            self._row(self._live_view(w))
             for pid in self.visible()
             for w in self._store.history(pid, after, until)
         ]

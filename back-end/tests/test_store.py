@@ -54,9 +54,8 @@ def test_reads_are_ordered_and_ranges_are_start_exclusive():
     assert [x.window_end.hour for x in store.history("a")] == [0, 1, 2]
     after_first = store.history("a", start=T0, end=T0 + timedelta(hours=2))
     assert [x.window_end.hour for x in after_first] == [1, 2]
-    latest = store.latest("a", as_of=T0 + timedelta(hours=1, minutes=30))
-    assert latest is not None
-    assert latest.window_end.hour == 1
+    upto = store.history("a", end=T0 + timedelta(hours=1, minutes=30))
+    assert upto[-1].window_end.hour == 1
     assert store.data_range() == (T0, T0 + timedelta(hours=2))
 
 

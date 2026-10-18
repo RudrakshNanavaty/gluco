@@ -47,7 +47,6 @@ import {
   type MetricInfo,
 } from "@/lib/catalog"
 import { formatReplayTime } from "@/lib/format"
-import { useLiveReadings } from "@/lib/live"
 import { cn } from "@/lib/utils"
 
 type Sort = { by: string; order: SortOrder }
@@ -111,7 +110,6 @@ export function ParticipantTable() {
   const metrics = useMetrics()
   const [sort, setSort] = useState<Sort>({ by: GLUCO_SCORE, order: "asc" })
   const participants = useParticipants(sort.by, sort.order)
-  const live = useLiveReadings()
   // Score first, then the live readings, then the 24 h summaries.
   const columns = [
     ...metrics.list.filter((m) => !m.live && !metrics.sensors.includes(m)),
@@ -184,28 +182,20 @@ export function ParticipantTable() {
                       {row.display_name}
                     </Link>
                   </TableCell>
-                  {columns.map((metric) => {
-                    const reading = metric.live
-                      ? live.byPerson.get(row.person_id)
-                      : undefined
-                    const value = reading
-                      ? reading.values[metric.name]
-                      : row.values[metric.name]
-                    return (
-                      <TableCell
-                        key={metric.name}
-                        className={cn(
-                          "text-right tabular-nums",
-                          metric.name === GLUCO_SCORE && "font-semibold",
-                          sort.by === metric.name && "bg-muted/50"
-                        )}
-                      >
-                        {formatValue(metric.name, value, {
-                          signed: metric.name === GLUCO_CHANGE,
-                        })}
-                      </TableCell>
-                    )
-                  })}
+                  {columns.map((metric) => (
+                    <TableCell
+                      key={metric.name}
+                      className={cn(
+                        "text-right tabular-nums",
+                        metric.name === GLUCO_SCORE && "font-semibold",
+                        sort.by === metric.name && "bg-muted/50"
+                      )}
+                    >
+                      {formatValue(metric.name, row.values[metric.name], {
+                        signed: metric.name === GLUCO_CHANGE,
+                      })}
+                    </TableCell>
+                  ))}
                   <TableCell className="text-right text-muted-foreground tabular-nums">
                     {formatReplayTime(row.window_end)}
                   </TableCell>
