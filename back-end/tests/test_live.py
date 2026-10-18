@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from support import PID, FakeTime
+from support import PID, SEED, FakeTime
 
 from agent.auth import CLINICIAN, patient
 from agent.clock import ReplayClock
@@ -14,7 +14,7 @@ from agent.store import WindowStore
 
 class CountingSource(MockSource):
     def __init__(self, time: FakeTime) -> None:
-        super().__init__(seed=7, time_source=time)
+        super().__init__(seed=SEED, time_source=time)
         self.live_calls = 0
         self.fail = False
         self.analytics_ahead = False
@@ -34,7 +34,7 @@ class CountingSource(MockSource):
         return readings
 
 
-def setup(time: FakeTime) -> tuple[CountingSource, WindowStore, LiveStore]:
+def make_live_stores(time: FakeTime) -> tuple[CountingSource, WindowStore, LiveStore]:
     source = CountingSource(time)
     windows = WindowStore(source, refresh_s=1e9, time_source=time)
     return source, windows, LiveStore(source, windows, 1.0, time_source=time)
@@ -42,7 +42,7 @@ def setup(time: FakeTime) -> tuple[CountingSource, WindowStore, LiveStore]:
 
 def test_readings_refresh_at_most_once_per_period():
     time = FakeTime()
-    source, _, live = setup(time)
+    source, _, live = make_live_stores(time)
     first = live.reading(PID)
     assert first is not None
     live.readings()
@@ -56,7 +56,7 @@ def test_readings_refresh_at_most_once_per_period():
 
 def test_a_failed_refresh_keeps_the_previous_readings():
     time = FakeTime()
-    source, _, live = setup(time)
+    source, _, live = make_live_stores(time)
     before = live.reading(PID)
     source.fail = True
     time.now += 2
@@ -67,19 +67,19 @@ def test_a_failed_refresh_keeps_the_previous_readings():
 
 def test_newer_analytics_make_the_window_store_refresh():
     time = FakeTime()
-    source, windows, live = setup(time)
+    source, windows, live = make_live_stores(time)
     windows.participants()
     live.readings()
-    assert windows._refreshed_at is not None  # pyright: ignore[reportPrivateUsage]
+    assert windows._refreshed_at is not None
     source.analytics_ahead = True
     time.now += 2
     live.readings()
-    assert windows._refreshed_at is None  # pyright: ignore[reportPrivateUsage]
+    assert windows._refreshed_at is None
 
 
 def test_rows_and_queries_carry_the_live_readings():
     time = FakeTime()
-    _, windows, live = setup(time)
+    _, windows, live = make_live_stores(time)
     clock = ReplayClock(windows.data_range, enabled=False)
     svc = QueryService(windows, clock, CLINICIAN, live)
     time.now += 3
@@ -111,7 +111,7 @@ def test_rows_and_queries_carry_the_live_readings():
 
 def test_no_live_readings_while_the_replay_is_behind():
     time = FakeTime()
-    _, windows, live = setup(time)
+    _, windows, live = make_live_stores(time)
     clock = ReplayClock(windows.data_range, seconds_per_hour=10, time_source=time)
     svc = QueryService(windows, clock, CLINICIAN, live)
     row = svc.participant(PID)

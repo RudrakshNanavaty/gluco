@@ -1,5 +1,6 @@
 """Clerk sign-in: session verification, metadata mapping, and the seed script."""
 
+import logging
 import re
 import uuid
 from dataclasses import replace
@@ -108,6 +109,23 @@ def test_username_headers_cannot_pick_a_patient(runtime: Runtime, verifier):
         },
     )
     assert response.status_code == 401
+
+
+def test_a_rejected_sign_in_logs_why_but_does_not_tell_the_client(
+    runtime: Runtime, verifier, caplog
+):
+    client = TestClient(create_app(replace(runtime, clerk=verifier)))
+    session = clerk_token(patient_meta(), iss="https://evil")
+    with caplog.at_level(logging.WARNING, logger="agent.api.login"):
+        response = client.post(
+            "/auth/clerk-login", headers={"Authorization": f"Bearer {session}"}
+        )
+    assert response.status_code == 401
+    assert response.json()["detail"] == "This account could not be signed in."
+    [record] = caplog.records
+    reason = record.getMessage().removeprefix("Clerk sign-in rejected: ")
+    assert reason
+    assert reason not in response.text
 
 
 def test_clerk_login_issues_an_app_token(runtime: Runtime, verifier):

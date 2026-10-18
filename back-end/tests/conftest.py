@@ -7,13 +7,12 @@ import pytest
 from agents import FunctionTool
 from agents.tool_context import ToolContext
 from fastapi.testclient import TestClient
-from support import PID
+from support import PID, SEED, make_settings
 
 from agent.api.app import create_app
 from agent.auth import CLINICIAN, Principal, patient
 from agent.bootstrap import Runtime, build_runtime
 from agent.clock import ReplayClock
-from agent.config import Settings
 from agent.data.mock import MockSource
 from agent.query import QueryService
 from agent.store import WindowStore
@@ -22,7 +21,7 @@ from agent.tools.registry import build_tools
 
 @pytest.fixture(scope="session")
 def source() -> MockSource:
-    return MockSource(seed=7)
+    return MockSource(seed=SEED)
 
 
 @pytest.fixture(scope="session")
@@ -77,19 +76,6 @@ def invoke_clinician(clinician_tools) -> Callable[..., Any]:
 @pytest.fixture
 def invoke_patient(patient_tools) -> Callable[..., Any]:
     return lambda name, **args: _invoke(patient_tools, name, **args)
-
-
-def make_settings(tmp: Path, **overrides: Any) -> Settings:
-    values: dict[str, Any] = {
-        "agent_model": "test-model",
-        "data_backend": "mock",
-        "allow_dev_auth_secret": True,
-        "replay_enabled": False,
-        "session_db_path": tmp / "sessions.sqlite",
-        "trace_path": tmp / "trace.jsonl",
-        **overrides,
-    }
-    return Settings(_env_file=None, **values)  # pyright: ignore[reportCallIssue]
 
 
 @pytest.fixture
