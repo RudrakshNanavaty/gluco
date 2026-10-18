@@ -76,16 +76,12 @@ def cohort(svc: Queries) -> CohortOverview:
     return svc.cohort_overview()
 
 
-@router.get("/clock")
-def clock_state(runtime: RuntimeDep, _: CurrentPrincipal) -> ClockState:
-    return runtime.clock.state()
-
-
 @router.post("/clock")
 def control_clock(
-    command: ClockCommand, runtime: RuntimeDep, _: CurrentPrincipal
+    command: ClockCommand, runtime: RuntimeDep, principal: CurrentPrincipal
 ) -> ClockState:
-    clock = runtime.clock
+    """Move the shared replay clock; clinicians only (ADR 0002)."""
+    clock = runtime.for_principal(principal).clock()
     if command.action == "play":
         clock.play()
     elif command.action == "pause":

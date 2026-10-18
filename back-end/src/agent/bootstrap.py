@@ -4,16 +4,18 @@ import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from functools import cached_property
 
-from agents import Agent, FunctionTool
+from agents import Agent, FunctionTool, InputGuardrail
 
 from agent.api.chat_service import ChatService
 from agent.api.sessions import ChatSessions
 from agent.api.widget_store import WidgetStore
-from agent.auth import Principal
+from agent.auth import Principal, Role
 from agent.clock import ReplayClock
 from agent.config import Settings
 from agent.data.factory import build_source
+from agent.domain.errors import ForbiddenError
 from agent.domain.ports import WindowSource
 from agent.factory import build_agent
 from agent.guardrails import build_input_guardrails
@@ -22,7 +24,7 @@ from agent.llm import LlmConnection
 from agent.observability.trace import JsonlTracer
 from agent.query import QueryService
 from agent.store import WindowStore
-from agent.tools.registry import build_tools
+from agent.tools import TOOLS
 
 log = logging.getLogger(__name__)
 
@@ -35,15 +37,48 @@ class Runtime:
     store: WindowStore
     live: LiveStore
     clock: ReplayClock
+    guardrails: dict[Role, list[InputGuardrail]]
     sessions: ChatSessions
     widgets: WidgetStore
     chat: ChatService
 
-    def queries(self, principal: Principal) -> QueryService:
-        return QueryService(self.store, self.clock, principal, self.live)
+    def for_principal(self, principal: Principal) -> "Scope":
+        return Scope(self, principal)
 
-    def tools_for(self, principal: Principal) -> list[FunctionTool]:
-        return build_tools(self.queries(principal))
+
+class Scope:
+    """Everything one Principal's requests get, bound to their scope.
+
+    The one place per-user wiring happens, so the REST API, the tools and chat
+    always read through the same store and clock.
+    """
+
+    def __init__(self, runtime: Runtime, principal: Principal) -> None:
+        self._runtime = runtime
+        self.principal = principal
+        self.queries = QueryService(
+            runtime.store, runtime.clock, principal, runtime.live
+        )
+
+    @cached_property
+    def tools(self) -> list[FunctionTool]:
+        return TOOLS[self.principal.role](self.queries)
+
+    def agent(self) -> Agent:
+        runtime = self._runtime
+        return build_agent(
+            principal=self.principal,
+            now=runtime.clock.now(),
+            model=runtime.settings.agent_model,
+            tools=self.tools,
+            input_guardrails=runtime.guardrails[self.principal.role],
+        )
+
+    def clock(self) -> ReplayClock:
+        """The shared replay clock, to move it. Clinicians only (ADR 0002)."""
+        if self.principal.role != "clinician":
+            raise ForbiddenError("Only clinicians can change the demo time.")
+        return self._runtime.clock
 
 
 def build_runtime(
@@ -64,23 +99,12 @@ def build_runtime(
         enabled=settings.replay_enabled,
         time_source=time_source,
     )
-    guardrails = {
+    guardrails: dict[Role, list[InputGuardrail]] = {
         role: build_input_guardrails(settings.effective_guardrail_model, role)
         for role in ("clinician", "patient")
     }
     sessions = ChatSessions(settings.session_db_path)
-
-    def agent_for(principal: Principal) -> Agent:
-        return build_agent(
-            principal=principal,
-            now=clock.now(),
-            model=settings.agent_model,
-            tools=build_tools(QueryService(store, clock, principal, live)),
-            input_guardrails=guardrails[principal.role],
-        )
-
     chat = ChatService(
-        agents=agent_for,
         sessions=sessions,
         tracer=JsonlTracer(settings.trace_path),
         max_turns=settings.max_turns,
@@ -92,6 +116,7 @@ def build_runtime(
         store=store,
         live=live,
         clock=clock,
+        guardrails=guardrails,
         sessions=sessions,
         widgets=WidgetStore(settings.session_db_path),
         chat=chat,

@@ -16,7 +16,7 @@ from agent.clock import ReplayClock
 from agent.data.mock import MockSource
 from agent.query import QueryService
 from agent.store import WindowStore
-from agent.tools.registry import build_tools
+from agent.tools import TOOLS
 
 
 @pytest.fixture(scope="session")
@@ -46,7 +46,7 @@ def me(store: WindowStore, clock: ReplayClock) -> QueryService:
 
 
 def _tools(svc: QueryService) -> dict[str, FunctionTool]:
-    return {tool.name: tool for tool in build_tools(svc)}
+    return {tool.name: tool for tool in TOOLS[svc.principal.role](svc)}
 
 
 async def _invoke(tools: dict[str, FunctionTool], name: str, **args: Any) -> Any:
