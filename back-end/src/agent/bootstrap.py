@@ -69,7 +69,7 @@ class Scope:
         return build_agent(
             principal=self.principal,
             now=runtime.clock.now(),
-            model=runtime.settings.agent_model,
+            model=runtime.llm.model(runtime.settings.agent_model),
             model_settings=runtime.llm.model_settings(),
             tools=self.tools,
             input_guardrails=runtime.guardrails[self.principal.role],
@@ -102,7 +102,7 @@ def build_runtime(
     )
     guardrails: dict[Role, list[InputGuardrail]] = {
         role: build_input_guardrails(
-            settings.effective_guardrail_model, role, llm.model_settings()
+            llm.model(settings.effective_guardrail_model), role, llm.model_settings()
         )
         for role in ("clinician", "patient")
     }

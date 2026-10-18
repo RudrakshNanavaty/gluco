@@ -12,7 +12,9 @@ from functools import cached_property
 from typing import Any, Literal
 
 from agents import (
+    Model,
     ModelSettings,
+    OpenAIChatCompletionsModel,
     set_default_openai_api,
     set_default_openai_client,
     set_tracing_disabled,
@@ -95,6 +97,7 @@ class LlmConnection:
         self._base_url = base_url
         self._require_parameters = require_parameters
         self._data_collection = data_collection
+        self._client: ChatCompletionsClient | None = None
 
     @classmethod
     def from_settings(cls, settings: Settings) -> "LlmConnection":
@@ -104,6 +107,18 @@ class LlmConnection:
             settings.llm_require_parameters,
             settings.llm_data_collection,
         )
+
+    def model(self, name: str) -> Model | str:
+        """The SDK model for a slug such as `z-ai/glm-4.7-flash:floor`.
+
+        A plain string would make the SDK read `z-ai/` as a provider prefix and
+        refuse it, so the slug is wrapped around this connection's client. Before
+        `configure()` (or with no key) the bare name comes back; nothing can run
+        without a client anyway.
+        """
+        if self._client is None:
+            return name
+        return OpenAIChatCompletionsModel(model=name, openai_client=self._client)
 
     def model_settings(self) -> ModelSettings:
         """Per-call provider routing, shared by the agent and the guardrails."""
@@ -124,7 +139,7 @@ class LlmConnection:
         # The OpenAI-compat layer speaks Chat Completions, not Responses.
         set_default_openai_api("chat_completions")
         if self._api_key is not None:
-            client = ChatCompletionsClient(
+            self._client = ChatCompletionsClient(
                 api_key=self._api_key.get_secret_value(), base_url=self._base_url
             )
-            set_default_openai_client(client, use_for_tracing=False)
+            set_default_openai_client(self._client, use_for_tracing=False)

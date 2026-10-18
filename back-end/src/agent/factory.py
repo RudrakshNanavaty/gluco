@@ -3,7 +3,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from agents import Agent, FunctionTool, InputGuardrail, ModelSettings
+from agents import Agent, FunctionTool, InputGuardrail, Model, ModelSettings
 
 from agent.auth import Principal
 from agent.domain.metrics import METRICS
@@ -31,7 +31,7 @@ def build_agent(
     *,
     principal: Principal,
     now: datetime | None,
-    model: str,
+    model: Model | str,
     model_settings: ModelSettings,
     tools: list[FunctionTool],
     input_guardrails: list[InputGuardrail],

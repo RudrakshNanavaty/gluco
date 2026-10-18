@@ -1,4 +1,5 @@
 import pytest
+from agents import OpenAIChatCompletionsModel
 from agents.models import _openai_shared
 from pydantic import SecretStr
 
@@ -61,3 +62,12 @@ def test_settings_read_the_llm_variables(monkeypatch):
     settings = Settings(_env_file=None)  # pyright: ignore[reportCallIssue]
     assert LlmConnection.from_settings(settings).is_ready() is True
     assert settings.llm_data_collection == "allow"
+
+
+def test_model_wraps_a_vendor_slug_around_the_providers_client():
+    connection = LlmConnection(SecretStr("k"), BASE)
+    assert connection.model("z-ai/glm-4.7-flash:floor") == "z-ai/glm-4.7-flash:floor"
+    connection.configure()
+    model = connection.model("z-ai/glm-4.7-flash:floor")
+    assert isinstance(model, OpenAIChatCompletionsModel)
+    assert model.model == "z-ai/glm-4.7-flash:floor"
