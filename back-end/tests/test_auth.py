@@ -72,3 +72,11 @@ def test_the_public_default_secret_is_refused_unless_opted_in(tmp_path, source):
     assert build_runtime(own, source=source).signer is not None
     opted_in = make_settings(tmp_path, auth_secret=DEV_AUTH_SECRET)
     assert build_runtime(opted_in, source=source).signer is not None
+
+
+def test_a_clerk_jwks_url_needs_an_issuer(tmp_path, source):
+    settings = make_settings(
+        tmp_path, clerk_jwks_url="https://clerk.example.test/jwks.json"
+    )
+    with pytest.raises(ValueError, match="CLERK_ISSUER"):
+        build_runtime(settings, source=source)
