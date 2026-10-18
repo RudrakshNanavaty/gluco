@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
  * The Gluco mark: a three-quarter ring, the same shape as the Gluco Score
  * gauge, so the logo, the assistant and the score read as one thing.
  */
-export function GlucoMark({ className }: { className?: string }) {
+function GlucoMark({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"

@@ -117,8 +117,8 @@ class WindowStore:
         hi = len(windows) if end is None else bisect.bisect_right(ends, end)
         return list(windows[lo:hi])
 
-    def latest(self, person_id: str, as_of: datetime | None = None) -> Window | None:
-        windows = self.history(person_id, end=as_of)
+    def latest(self, person_id: str) -> Window | None:
+        windows = self.history(person_id)
         return windows[-1] if windows else None
 
     def size(self) -> int:

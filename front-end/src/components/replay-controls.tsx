@@ -21,7 +21,7 @@ const HOUR_MS = 3_600_000
 // Real seconds per simulated hour.
 const SPEEDS = [1, 2, 5, 15]
 
-export function AsOf() {
+function AsOf() {
   const { clock } = useClock()
   if (!clock?.now) return <Skeleton className="h-4 w-44" />
   return (

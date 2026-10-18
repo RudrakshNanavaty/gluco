@@ -114,7 +114,7 @@ const TONE_FILL: Record<Tone, string> = {
   unknown: "bg-muted-foreground",
 }
 
-export function StatusChip({
+function StatusChip({
   status,
   className,
 }: {
@@ -140,7 +140,7 @@ export function StatusChip({
  * Where today sits against this person's usual range: the middle band is
  * within one standard deviation of their own week, the ends are two or more.
  */
-export function UsualGauge({
+function UsualGauge({
   z,
   status,
 }: {

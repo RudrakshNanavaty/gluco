@@ -13,7 +13,6 @@ dependencies = [
     "pydantic>=2.13.5",
     "pydantic-settings>=2.15.0",
     "pyjwt>=2.10",
-    "pyyaml>=6.0.3",
     "sse-starlette>=3.5.0",
     "uvicorn>=0.54.0",
 ]
@@ -32,6 +31,7 @@ dev = [
     "httpx>=0.28.1",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
+    "pyyaml>=6.0.3",
     "ruff>=0.16.10",
 ]
 
