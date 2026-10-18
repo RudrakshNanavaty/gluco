@@ -256,3 +256,10 @@ the training prefilter rejects all three. This resolves the specific data-path
 question in #88 without explaining the physical recording pauses or changing
 any processing/model policy. See `INCOMPLETE_MINUTE_FINDINGS.md` for exact keys,
 counts, query identifiers and limitations.
+
+## Next planned model investigation
+
+`FEATURE_GROUP_COMPARISON_PLAN.md` predeclares movement-only, temperature-only
+and original combined-feature comparisons under the same nested participant
+folds. The comparison has not been executed; it will be separate development
+work with baseline reproduction and no automatic promotion.
