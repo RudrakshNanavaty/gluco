@@ -70,11 +70,11 @@ def test_newer_analytics_make_the_window_store_refresh():
     source, windows, live = setup(time)
     windows.participants()
     live.readings()
-    assert windows._refreshed_at is not None  # pyright: ignore[reportPrivateUsage]
+    assert windows._refreshed_at is not None
     source.analytics_ahead = True
     time.now += 2
     live.readings()
-    assert windows._refreshed_at is None  # pyright: ignore[reportPrivateUsage]
+    assert windows._refreshed_at is None
 
 
 def test_rows_and_queries_carry_the_live_readings():

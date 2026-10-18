@@ -77,7 +77,7 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [tool.basedpyright]
-include = ["src"]
+include = ["src", "tests"]
 exclude = ["**/__pycache__", ".venv"]
 pythonVersion = "3.12"
 pythonPlatform = "Linux"
