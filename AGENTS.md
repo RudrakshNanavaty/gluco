@@ -13,6 +13,13 @@ Research prototype (not a medical device): wearable signals → metabolic-patter
 Back-end (from `back-end/`): `just mock` (run on mock data), `just test`, `just lint` (ruff + basedpyright).
 Front-end (from `front-end/`): `bun dev`, `bun run test`, `bun run lint`, `bun run typecheck`, `bun run gen:api` (needs API on :8000).
 
+## Secrets
+
+Env files live in Google Secret Manager (`gluco-backend-env`, `gluco-frontend-env`), one blob per file. Needs `gcloud auth login` and a default project (or `GLUCO_GCP_PROJECT`).
+Back-end (from `back-end/`): `just secrets-diff`, `just secrets-pull` (overwrites `.env`, keeps `.env.bak`), `just secrets-push`.
+Front-end (from `front-end/`): `bun run secrets:diff`, `secrets:pull`, `secrets:push`.
+Both wrap `scripts/secrets.sh`. Push and pull replace the whole file, so run `diff` first.
+
 ## Rules
 
 - Never commit `.env*` (except `.env.example`) or data files.
