@@ -1,5 +1,5 @@
-# Run `just` to list targets. All commands assume the project .venv is active
-# (source .venv/bin/activate) and go through uv.
+# Run `just` to list targets. Every recipe goes through `uv run`, so no venv
+# needs to be activated.
 
 default:
     @just --list
