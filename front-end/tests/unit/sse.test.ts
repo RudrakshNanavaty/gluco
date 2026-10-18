@@ -1,8 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { ApiError, OFFLINE_MESSAGE } from "@/lib/api/client"
+import { ApiError, OFFLINE_MESSAGE, setTokenSource } from "@/lib/api/client"
 import { streamSSE } from "@/lib/api/sse"
-import { sessionStore } from "@/lib/session"
 
 function createSSEStream(chunks: string[]): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder()
@@ -19,21 +18,15 @@ function createSSEStream(chunks: string[]): ReadableStream<Uint8Array> {
 describe("streamSSE", () => {
   beforeEach(() => {
     vi.restoreAllMocks()
-    sessionStore.set(null)
+  })
+
+  afterEach(() => {
+    setTokenSource(null)
   })
 
   // Verifies successful connection, header injection, and event decoding
   it("connects with stream headers and dispatches parsed JSON events", async () => {
-    sessionStore.set({
-      token: "sse-token-123",
-      principal: {
-        user_id: "patient:1",
-        display_name: "Patient 1",
-        role: "patient",
-        participant_id: "1",
-      },
-      expiresAt: Date.now() + 3_600_000,
-    })
+    setTokenSource({ token: async () => "sse-token-123", rejected: vi.fn() })
 
     const stream = createSSEStream([
       'event: tick\ndata: {"type":"tick","count":1}\n\n',
@@ -55,9 +48,9 @@ describe("streamSSE", () => {
     })
 
     expect(fetchSpy).toHaveBeenCalledTimes(1)
-    const requestHeaders = fetchSpy.mock.calls[0][1]?.headers as Record<string, string>
-    expect(requestHeaders.Accept).toBe("text/event-stream")
-    expect(requestHeaders.Authorization).toBe("Bearer sse-token-123")
+    const requestHeaders = new Headers(fetchSpy.mock.calls[0][1]?.headers)
+    expect(requestHeaders.get("Accept")).toBe("text/event-stream")
+    expect(requestHeaders.get("Authorization")).toBe("Bearer sse-token-123")
 
     expect(events).toEqual([
       { data: { type: "tick", count: 1 }, event: "tick" },
@@ -142,18 +135,10 @@ describe("streamSSE", () => {
     await expect(call).rejects.toThrow("The operation was aborted")
   })
 
-  // Verifies HTTP error status codes trigger handleUnauthorized and throw ApiError
-  it("handles 401 responses by clearing session and throwing ApiError", async () => {
-    sessionStore.set({
-      token: "expired-token",
-      principal: {
-        user_id: "patient:1",
-        display_name: "Patient 1",
-        role: "patient",
-        participant_id: "1",
-      },
-      expiresAt: Date.now() + 3_600_000,
-    })
+  // Verifies a refused session ends after one retry and the stream throws ApiError
+  it("handles 401 responses by ending the session and throwing ApiError", async () => {
+    const rejected = vi.fn()
+    setTokenSource({ token: async () => "expired-token", rejected })
 
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ detail: "Token invalid", code: "not_permitted" }), {
@@ -172,7 +157,7 @@ describe("streamSSE", () => {
       code: "not_permitted",
       message: "Token invalid",
     })
-    expect(sessionStore.get()).toBeNull()
+    expect(rejected).toHaveBeenCalledTimes(1)
   })
 
   // Verifies rejection when response body is null

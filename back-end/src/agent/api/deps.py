@@ -1,12 +1,13 @@
 """Request dependencies: the runtime, who is calling, and shared error handling."""
 
+import logging
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from agent.auth import InvalidTokenError, Principal
+from agent.auth import Authenticator, InvalidTokenError, Principal
 from agent.bootstrap import Runtime
 from agent.domain.errors import (
     AmbiguousPersonError,
@@ -15,6 +16,8 @@ from agent.domain.errors import (
     QueryError,
 )
 from agent.query import QueryService
+
+log = logging.getLogger(__name__)
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -28,7 +31,14 @@ RuntimeDep = Annotated[Runtime, Depends(get_runtime)]
 Credentials = Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)]
 
 
-def current_principal(runtime: RuntimeDep, credentials: Credentials) -> Principal:
+def get_authenticator(request: Request) -> Authenticator:
+    return request.app.state.authenticator
+
+
+def current_principal(
+    authenticator: Annotated[Authenticator, Depends(get_authenticator)],
+    credentials: Credentials,
+) -> Principal:
     if credentials is None:
         raise HTTPException(
             401,
@@ -36,8 +46,10 @@ def current_principal(runtime: RuntimeDep, credentials: Credentials) -> Principa
             headers={"WWW-Authenticate": "Bearer"},
         )
     try:
-        return runtime.signer.verify(credentials.credentials)
+        return authenticator.authenticate(credentials.credentials)
     except InvalidTokenError as exc:
+        # The client only learns that the session ended; the cause stays here.
+        log.warning("Clerk session rejected: %s", exc)
         raise HTTPException(
             401,
             "Your session has ended. Please sign in again.",

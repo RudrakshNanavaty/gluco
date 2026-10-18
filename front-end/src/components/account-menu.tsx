@@ -13,8 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/lib/auth";
-import type { Principal } from "@/lib/session";
+import { useAppSession } from "@/lib/app-session";
 
 function initials(name: string) {
   const words = name
@@ -30,8 +29,10 @@ function initials(name: string) {
         .slice(0, 2);
 }
 
-export function AccountMenu({ principal }: { principal: Principal }) {
-  const { logout } = useAuth();
+export function AccountMenu() {
+  const session = useAppSession();
+  if (session.status !== "signed-in") return null;
+  const { principal, signOut } = session;
 
   return (
     <>
@@ -59,7 +60,7 @@ export function AccountMenu({ principal }: { principal: Principal }) {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <DropdownMenuItem onSelect={logout}>
+            <DropdownMenuItem onSelect={signOut}>
               <LogOutIcon />
               Sign out
             </DropdownMenuItem>

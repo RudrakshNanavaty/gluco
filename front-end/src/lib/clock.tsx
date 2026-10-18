@@ -48,18 +48,13 @@ function wait(ms: number, signal: AbortSignal) {
 
 /**
  * The shared replay clock. Holds one GET /stream connection for the signed-in
- * persona and refreshes clock-dependent queries when the clock moves: all of
- * them after a backwards seek, the active ones when new windows land, and the
- * ones marked `LIVE` when the live readings change. Each tick's live readings
- * also go to the live store (`@/lib/live`).
+ * user (key it on the user, so a new sign-in reconnects) and refreshes
+ * clock-dependent queries when the clock moves: all of them after a backwards
+ * seek, the active ones when new windows land, and the ones marked `LIVE` when
+ * the live readings change. Each tick's live readings also go to the live store
+ * (`@/lib/live`).
  */
-export function ClockProvider({
-  token,
-  children,
-}: {
-  token: string
-  children: React.ReactNode
-}) {
+export function ClockProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient()
   const [clock, setClock] = useState<ClockState | null>(null)
   const [connected, setConnected] = useState(false)
@@ -114,7 +109,7 @@ export function ClockProvider({
       controller.abort()
       publishLive(null, [])
     }
-  }, [token, queryClient])
+  }, [queryClient])
 
   const control = useCallback(async (command: ClockCommand) => {
     try {

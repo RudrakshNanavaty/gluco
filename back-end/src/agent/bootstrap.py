@@ -1,19 +1,18 @@
-"""Composition root: wires settings, data, clock, auth, agents and chat."""
+"""Composition root: wires settings, data, clock, agents and chat."""
 
 import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import timedelta
 
 from agents import Agent, FunctionTool
 
 from agent.api.chat_service import ChatService
 from agent.api.sessions import ChatSessions
 from agent.api.widget_store import WidgetStore
-from agent.auth import ClerkTokenVerifier, Principal, TokenSigner
+from agent.auth import Principal
 from agent.clock import ReplayClock
-from agent.config import DEV_AUTH_SECRET, Settings
+from agent.config import Settings
 from agent.data.factory import build_source
 from agent.domain.ports import WindowSource
 from agent.factory import build_agent
@@ -36,8 +35,6 @@ class Runtime:
     store: WindowStore
     live: LiveStore
     clock: ReplayClock
-    signer: TokenSigner
-    clerk: ClerkTokenVerifier | None
     sessions: ChatSessions
     widgets: WidgetStore
     chat: ChatService
@@ -57,16 +54,6 @@ def build_runtime(
     settings = settings or Settings()  # pyright: ignore[reportCallIssue]
     llm = LlmConnection.from_settings(settings)
     llm.configure()
-    if settings.auth_secret.get_secret_value() == DEV_AUTH_SECRET:
-        if not settings.allow_dev_auth_secret:
-            raise ValueError(
-                "AUTH_SECRET is the public development default, so anyone could "
-                "forge a session token. Set AUTH_SECRET to a long random value "
-                "(python -c 'import secrets; print(secrets.token_urlsafe(48))'), "
-                "or set ALLOW_DEV_AUTH_SECRET=true for local development only."
-            )
-        log.warning("AUTH_SECRET is the development default; local development only")
-
     source = source or build_source(settings)
     store = WindowStore(source, settings.store_refresh_s, time_source)
     live = LiveStore(source, store, settings.live_refresh_s, time_source)
@@ -77,19 +64,6 @@ def build_runtime(
         enabled=settings.replay_enabled,
         time_source=time_source,
     )
-    signer = TokenSigner(
-        settings.auth_secret.get_secret_value(),
-        timedelta(hours=settings.token_ttl_hours),
-    )
-    clerk = None
-    if settings.clerk_jwks_url:
-        if not settings.clerk_issuer:
-            raise ValueError("CLERK_ISSUER is required when CLERK_JWKS_URL is set")
-        clerk = ClerkTokenVerifier(
-            settings.clerk_jwks_url,
-            issuer=settings.clerk_issuer,
-            audience=settings.clerk_audience,
-        )
     guardrails = {
         role: build_input_guardrails(settings.effective_guardrail_model, role)
         for role in ("clinician", "patient")
@@ -118,8 +92,6 @@ def build_runtime(
         store=store,
         live=live,
         clock=clock,
-        signer=signer,
-        clerk=clerk,
         sessions=sessions,
         widgets=WidgetStore(settings.session_db_path),
         chat=chat,

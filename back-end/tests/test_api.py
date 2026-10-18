@@ -2,9 +2,10 @@ import json
 from dataclasses import replace
 
 from fastapi.testclient import TestClient
-from support import OTHER, PID
+from support import OTHER, PID, authenticator_for, clerk_user_id
 
 from agent.api.app import create_app
+from agent.auth import patient
 from agent.domain.events import SseEvent
 from agent.domain.metrics import GLUCO_SCORE
 
@@ -40,10 +41,8 @@ def test_there_is_no_login_without_clerk(client):
     assert client.get("/personas").status_code == 404
     body = {"persona_id": f"patient:{PID}"}
     assert client.post("/auth/login", json=body).status_code == 404
-
-
-def test_clerk_login_needs_a_configured_verifier_and_a_session(client):
-    assert client.post("/auth/clerk-login").status_code == 503
+    # Nor by trading a Clerk session for a longer-lived app token (ADR 0001).
+    assert client.post("/auth/clerk-login").status_code == 404
 
 
 def test_data_routes_need_a_valid_token(client):
@@ -152,7 +151,12 @@ class FakeChat:
 
 def test_chat_streams_as_the_signed_in_user(runtime, as_patient):
     fake = FakeChat()
-    client = TestClient(create_app(replace(runtime, chat=fake)))  # type: ignore[arg-type]
+    client = TestClient(
+        create_app(
+            replace(runtime, chat=fake),  # type: ignore[arg-type]
+            authenticator_for(runtime.store.participants),
+        )
+    )
     with client.stream(
         "POST",
         "/chat",
@@ -164,7 +168,7 @@ def test_chat_streams_as_the_signed_in_user(runtime, as_patient):
         text = "".join(r.iter_text())
     parsed = frames(text)
     assert [name for name, _ in parsed] == ["tool_start", "data", "token", "done"]
-    assert fake.calls == [(f"patient:{PID}", "abc-123", "hi")]
+    assert fake.calls == [(clerk_user_id(patient(PID)), "abc-123", "hi")]
 
 
 def test_chat_validates_and_needs_a_token(client, as_patient):
@@ -179,7 +183,7 @@ def test_chat_validates_and_needs_a_token(client, as_patient):
 
 
 def test_chat_threads_belong_to_their_user(runtime, client, as_patient, as_clinician):
-    runtime.sessions.touch(f"patient:{PID}", "t1", "Why did my score drop?")
+    runtime.sessions.touch(clerk_user_id(patient(PID)), "t1", "Why did my score drop?")
     mine = client.get("/chat/sessions", headers=as_patient).json()
     assert [(t["session_id"], t["title"]) for t in mine] == [
         ("t1", "Why did my score drop?")

@@ -4,23 +4,6 @@
  */
 
 export interface paths {
-    "/auth/clerk-login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Clerk Login */
-        post: operations["clerk_login_auth_clerk_login_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/me": {
         parameters: {
             query?: never;
@@ -556,20 +539,6 @@ export interface components {
             participants: number;
             clock: components["schemas"]["ClockState"] | null;
         };
-        /** LoginResponse */
-        LoginResponse: {
-            /** Token */
-            token: string;
-            /**
-             * Token Type
-             * @default bearer
-             * @constant
-             */
-            token_type?: "bearer";
-            /** Expires In */
-            expires_in: number;
-            principal: components["schemas"]["PrincipalOut"];
-        };
         /** MetricChange */
         MetricChange: {
             /** Metric */
@@ -844,26 +813,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    clerk_login_auth_clerk_login_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LoginResponse"];
-                };
-            };
-        };
-    };
     me_me_get: {
         parameters: {
             query?: never;

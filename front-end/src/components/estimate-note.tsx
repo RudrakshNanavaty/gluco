@@ -9,17 +9,16 @@ import {
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { GLUCO_SCORE, useMetrics } from "@/lib/catalog"
+import { useAudience } from "@/lib/app-session"
 
-export type Audience = "clinician" | "patient"
 
 /** Shown wherever a Gluco Score is: it is an estimate, never a diagnosis. */
 export function EstimateNote({
-  audience = "clinician",
   className,
 }: {
-  audience?: Audience
   className?: string
 }) {
+  const audience = useAudience()
   const metrics = useMetrics()
   const description = metrics.get(GLUCO_SCORE)?.description
   return (

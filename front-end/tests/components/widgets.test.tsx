@@ -95,11 +95,14 @@ describe("Score Visualizations and Widgets", () => {
     // Verifies that GlucoScore adapts formatting according to the patient or clinician audience.
     it("renders appropriate score summary layout based on audience prop", () => {
       serve()
-      const { rerender } = renderWithProviders(<GlucoScore value={82} change={2.1} audience="patient" />)
+      const { unmount } = renderWithProviders(<GlucoScore value={82} change={2.1} />, { role: "patient" })
       expect(screen.getByText("Up 2 points since this time yesterday.")).toBeInTheDocument()
       expect(screen.getByText("Higher is healthier.")).toBeInTheDocument()
 
-      rerender(<GlucoScore value={82} change={2.1} audience="clinician" />)
+      unmount()
+
+
+      renderWithProviders(<GlucoScore value={82} change={2.1} />, { role: "clinician" })
       expect(screen.getByText("+2.1 pts vs 24 h prior")).toBeInTheDocument()
     })
   })
@@ -119,7 +122,7 @@ describe("Score Visualizations and Widgets", () => {
     it("returns null when pin collection is empty or undefined", async () => {
       const api = serve()
 
-      const { container } = renderWithProviders(<PinnedWidgets audience="patient" />)
+      const { container } = renderWithProviders(<PinnedWidgets />, { role: "patient" })
       await waitFor(() => expect(api.calls).toHaveLength(1))
       expect(container).toBeEmptyDOMElement()
     })
@@ -128,7 +131,7 @@ describe("Score Visualizations and Widgets", () => {
     it("renders pinned widget cards and kind descriptions when pins exist", async () => {
       serve({ "GET /widgets": samplePins })
 
-      renderWithProviders(<PinnedWidgets audience="patient" />)
+      renderWithProviders(<PinnedWidgets />, { role: "patient" })
 
       expect(await screen.findByRole("heading", { name: "Pinned widgets" })).toBeInTheDocument()
       expect(screen.getByText("Daily Heart Rate")).toBeInTheDocument()
@@ -139,7 +142,7 @@ describe("Score Visualizations and Widgets", () => {
     it("unpins the widget and refreshes the pin list when unpin is clicked", async () => {
       const api = serve({ "GET /widgets": samplePins })
 
-      renderWithProviders(<PinnedWidgets audience="patient" />)
+      renderWithProviders(<PinnedWidgets />, { role: "patient" })
 
       const unpinBtn = await screen.findByRole("button", { name: "Unpin Daily Heart Rate" })
       fireEvent.click(unpinBtn)
@@ -161,7 +164,7 @@ describe("Score Visualizations and Widgets", () => {
         "DELETE /widgets/{widget_id}": new Reply(500, { detail: "Failed to unpin" }),
       })
 
-      renderWithProviders(<PinnedWidgets audience="patient" />)
+      renderWithProviders(<PinnedWidgets />, { role: "patient" })
 
       const unpinBtn = await screen.findByRole("button", { name: "Unpin Daily Heart Rate" })
       fireEvent.click(unpinBtn)
@@ -189,7 +192,7 @@ describe("Score Visualizations and Widgets", () => {
         },
       })
 
-      renderWithProviders(<PinnedWidgets audience="patient" />)
+      renderWithProviders(<PinnedWidgets />, { role: "patient" })
 
       expect(
         await screen.findByText("Checked against clinical protocol parameters")
@@ -216,7 +219,7 @@ describe("Score Visualizations and Widgets", () => {
     // Verifies that stat widget kind renders metric value and label.
     it("renders stat widget kind with primary value and metric label", async () => {
       serve()
-      renderWithProviders(<WidgetView kind="stat" result={sampleResult} audience="patient" />)
+      renderWithProviders(<WidgetView kind="stat" result={sampleResult} />, { role: "patient" })
 
       expect(await screen.findByText("76.0")).toBeInTheDocument()
       expect(await screen.findByText(/Heart Rate/)).toBeInTheDocument()
@@ -225,7 +228,7 @@ describe("Score Visualizations and Widgets", () => {
     // Verifies that table widget kind renders series names and metric column headers.
     it("renders table widget kind with series rows and metric columns", async () => {
       serve()
-      renderWithProviders(<WidgetView kind="table" result={sampleResult} audience="patient" />)
+      renderWithProviders(<WidgetView kind="table" result={sampleResult} />, { role: "patient" })
 
       expect(await screen.findByText("Patient A")).toBeInTheDocument()
       expect(await screen.findByText("Heart Rate")).toBeInTheDocument()
@@ -234,7 +237,7 @@ describe("Score Visualizations and Widgets", () => {
     // Verifies that heatmap widget kind renders day labels and metric guidance note.
     it("renders heatmap widget kind with day timestamps and legend note", async () => {
       serve()
-      renderWithProviders(<WidgetView kind="heatmap" result={sampleResult} audience="patient" />)
+      renderWithProviders(<WidgetView kind="heatmap" result={sampleResult} />, { role: "patient" })
 
       expect(await screen.findByText(/Heart Rate by day \(UTC\) · darker is higher/i)).toBeInTheDocument()
     })

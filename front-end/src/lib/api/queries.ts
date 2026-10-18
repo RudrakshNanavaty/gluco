@@ -22,6 +22,8 @@ export const LIVE = { live: true } as const
  */
 export const keys = {
   data: ["data"] as const,
+  // Who a Clerk user is; per user, so a new sign-in never reads the last one.
+  me: (userId: string | null | undefined) => ["me", userId ?? ""] as const,
   catalog: ["catalog"] as const,
   cohort: ["data", "cohort"] as const,
   participants: (sortBy: string, order: SortOrder) =>
