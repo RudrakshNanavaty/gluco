@@ -2,9 +2,12 @@ from datetime import UTC, datetime, timedelta
 
 import jwt
 import pytest
+from conftest import make_settings
 from support import PID
 
 from agent.auth import CLINICIAN, InvalidTokenError, Principal, TokenSigner, patient
+from agent.bootstrap import build_runtime
+from agent.config import DEV_AUTH_SECRET
 
 SECRET = "test-secret-that-is-at-least-32-bytes"
 OTHER_SECRET = "another-secret-that-is-at-least-32-b"
@@ -56,3 +59,16 @@ def test_patient_token_without_participant_is_rejected():
     )
     with pytest.raises(InvalidTokenError):
         TokenSigner(SECRET).verify(token)
+
+
+def test_the_public_default_secret_is_refused_unless_opted_in(tmp_path, source):
+    unsafe = make_settings(
+        tmp_path, allow_dev_auth_secret=False, auth_secret=DEV_AUTH_SECRET
+    )
+    with pytest.raises(ValueError, match="AUTH_SECRET"):
+        build_runtime(unsafe, source=source)
+
+    own = make_settings(tmp_path, allow_dev_auth_secret=False, auth_secret="x" * 48)
+    assert build_runtime(own, source=source).signer is not None
+    opted_in = make_settings(tmp_path, auth_secret=DEV_AUTH_SECRET)
+    assert build_runtime(opted_in, source=source).signer is not None
