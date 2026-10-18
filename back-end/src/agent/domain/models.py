@@ -22,6 +22,8 @@ class Window(_Frozen):
     window_start: datetime
     window_end: datetime
     values: dict[str, float | None]
+    # When live readings were applied to `values` (the live view); None otherwise.
+    live_at: datetime | None = None
 
     def value(self, metric: str) -> float | None:
         return self.values.get(metric)

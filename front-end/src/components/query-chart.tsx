@@ -28,7 +28,13 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import type { QueryResult } from "@/lib/api/events"
-import { formatValue, GLUCO_SCORE, roundValue, useMetrics } from "@/lib/catalog"
+import {
+  formatValue,
+  GLUCO_SCORE,
+  numberAt,
+  roundValue,
+  useMetrics,
+} from "@/lib/catalog"
 import { formatReplayTime, formatTick } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -48,10 +54,8 @@ function valueOf(
   point: Record<string, unknown>,
   metric: string
 ): number | null {
-  const value = point[metric]
-  return typeof value === "number" && Number.isFinite(value)
-    ? roundValue(metric, value)
-    : null
+  const value = numberAt(point, metric)
+  return value === null ? null : roundValue(metric, value)
 }
 
 function hasValues(series: Series, metric: string) {

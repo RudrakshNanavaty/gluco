@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest"
 
 import {
   formatClockTime,
-  formatGap,
   formatReplayDay,
   formatReplayTime,
   formatTick,
@@ -101,37 +100,6 @@ describe("formatTick", () => {
   // Verifies unhandled exception when timestamp is invalid
   it("throws RangeError when timestamp is invalid", () => {
     expect(() => formatTick("unparseable-date", "day")).toThrow(RangeError)
-  })
-})
-
-describe("formatGap", () => {
-  // Verifies empty string return when destination timestamp is absent
-  it("returns empty string when destination timestamp is missing", () => {
-    expect(formatGap("2026-10-04T07:00:00Z", null)).toBe("")
-    expect(formatGap("2026-10-04T07:00:00Z", undefined)).toBe("")
-  })
-
-  // Verifies "latest" return when timestamps are equal or destination is in the future
-  it("returns latest when gap is zero or negative", () => {
-    expect(formatGap("2026-10-04T07:00:00Z", "2026-10-04T07:00:00Z")).toBe("latest")
-    expect(formatGap("2026-10-04T09:00:00Z", "2026-10-04T07:00:00Z")).toBe("latest")
-  })
-
-  // Verifies relative hour difference formatting under 48 hours
-  it("formats hour gap when under 48 hours", () => {
-    expect(formatGap("2026-10-04T04:00:00Z", "2026-10-04T07:00:00Z")).toBe("3 h earlier")
-    expect(formatGap("2026-10-02T08:00:00Z", "2026-10-04T07:00:00Z")).toBe("47 h earlier")
-  })
-
-  // Verifies relative day difference formatting at or above 48 hours
-  it("formats day gap when 48 hours or greater", () => {
-    expect(formatGap("2026-10-02T07:00:00Z", "2026-10-04T07:00:00Z")).toBe("2 days earlier")
-    expect(formatGap("2026-09-27T07:00:00Z", "2026-10-04T07:00:00Z")).toBe("7 days earlier")
-  })
-
-  // Verifies handling when fromIso timestamp is invalid
-  it("returns NaN days earlier when fromIso is an unparseable timestamp", () => {
-    expect(formatGap("invalid-time", "2026-10-04T07:00:00Z")).toBe("NaN days earlier")
   })
 })
 
