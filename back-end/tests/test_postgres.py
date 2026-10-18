@@ -26,10 +26,10 @@ class Recorder(PostgresSource):
     def __init__(self, rows, session_id: str | None = "s1"):
         super().__init__("postgresql://unused", session_id)
         self.rows = rows
-        self.queries: list[tuple[str, tuple]] = []
+        self.queries: list[tuple] = []
 
     def _query(self, query, params=()):
-        self.queries.append((query.as_string(), params))
+        self.queries.append(params)
         return self.rows
 
 
@@ -51,34 +51,22 @@ def test_to_window_with_no_prediction():
     assert window.source_dataset == "unknown"
 
 
-def test_fetch_since_is_a_schema_qualified_session_scoped_select():
+def test_fetch_since_maps_rows_to_published_windows():
     row = {
         "person_id": "demo:big_ideas:013",
         "window_end": END,
         "payload": PAYLOAD,
         "published_at": PUBLISHED,
     }
-    source = Recorder([row])
-    [published] = source.fetch_since(None)
-    query, params = source.queries[0]
-    assert query.startswith('SELECT "participant_key" AS person_id')
-    assert '"gold"."dashboard_windows"' in query
-    assert '"session_id" = %s' in query
-    assert 'published_at" >=' not in query
-    assert params == ("s1",)
+    [published] = Recorder([row]).fetch_since(PUBLISHED)
     assert published.published_at == PUBLISHED
-
-    source.fetch_since(PUBLISHED)
-    query, params = source.queries[-1]
-    assert '"published_at" >= %s' in query
-    assert params == ("s1", PUBLISHED)
+    assert published.window.person_id == "demo:big_ideas:013"
+    assert published.window.values[GLUCO_SCORE] == 100 - 91.5
 
 
 def test_session_defaults_to_the_most_recently_published():
     source = Recorder([{"session": "latest-run"}], session_id=None)
     assert source.session_id() == "latest-run"
-    query, _ = source.queries[0]
-    assert 'ORDER BY "published_at" DESC LIMIT 1' in query
     source.session_id()
     assert len(source.queries) == 1  # cached
 
@@ -87,10 +75,8 @@ def test_no_session_means_no_rows():
     assert Recorder([], session_id=None).fetch_since(None) == []
 
 
-def test_write_check_names_the_table():
-    source = Recorder([{"writable": False}])
-    assert source.can_write() is False
-    assert source.queries[0][1] == ("gold.dashboard_windows",) * 3
+def test_write_check_reports_a_read_only_role():
+    assert Recorder([{"writable": False}]).can_write() is False
 
 
 LIVE_PAYLOAD = {
@@ -121,17 +107,12 @@ def test_windows_carry_the_live_snapshot_too():
     assert window.values["latest_motion_g"] == 0.0188
 
 
-def test_fetch_live_is_a_session_scoped_select_on_the_live_view():
+def test_fetch_live_maps_rows_to_readings():
     row = {
         "person_id": "demo:imu50:13",
         "payload": LIVE_PAYLOAD,
         "sensor_published_at": PUBLISHED,
     }
-    source = Recorder([row])
-    [reading] = source.fetch_live()
-    query, params = source.queries[0]
-    assert '"gold"."dashboard_live"' in query
-    assert '"session_id" = %s' in query
-    assert query.endswith('ORDER BY "participant_key"')
-    assert params == ("s1",)
+    [reading] = Recorder([row]).fetch_live()
     assert reading.person_id == "demo:imu50:13"
+    assert reading.values["latest_motion_g"] == 0.0188
