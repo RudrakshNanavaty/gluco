@@ -25,7 +25,8 @@ from agent.domain.errors import (
     PersonNotFoundError,
     QueryError,
 )
-from agent.query import QueryResult
+from agent.domain.metrics import GLUCO_SCORE, metric_label
+from agent.query import QueryResult, QueryService, QuerySpec
 
 log = logging.getLogger(__name__)
 
@@ -165,3 +166,72 @@ def week_summary(result: QueryResult, metric: str) -> dict[str, Any] | None:
         "mean": round(sum(values) / len(values), 4),
         "points": len(values),
     }
+
+
+# --- answers shared by the patient and clinician tools ------------------------
+
+
+def _who(svc: QueryService, name: str) -> str:
+    """A clinician's summaries name the patient; a patient's are about themselves."""
+    return f"{name}: " if svc.is_clinician else ""
+
+
+def status(svc: QueryService, ref: str) -> dict[str, Any]:
+    """Newest values and the Gluco Score over the last 7 days."""
+    latest = svc.participant(ref)
+    week = svc.query(
+        QuerySpec(metrics=[GLUCO_SCORE], participants=[ref], hours=168, bucket="hour")
+    )
+    return result(
+        summary=(
+            f"{_who(svc, latest.display_name)}"
+            f"Gluco Score {latest.values.get(GLUCO_SCORE)}"
+        ),
+        rows=1,
+        as_of=svc.as_of(),
+        latest=dump(latest),
+        gluco_week=week_summary(week, GLUCO_SCORE),
+        chart=chart(week),
+    )
+
+
+def explain(svc: QueryService, ref: str, hours: float) -> dict[str, Any]:
+    """What changed with the Gluco Score, the trend of the biggest shift, and,
+    for clinicians, where the person sits in the cohort."""
+    explanation = svc.explain(ref, hours)
+    report = explanation.change
+    trend = svc.query(
+        QuerySpec(
+            metrics=[GLUCO_SCORE, *report.largest_shifts[:1]],
+            participants=[ref],
+            hours=max(hours * 2, 48),
+            bucket="hour",
+        )
+    )
+    gluco = next(c for c in report.changes if c.metric == GLUCO_SCORE)
+    cohort = explanation.cohort_position
+    return result(
+        summary=(
+            f"{_who(svc, report.display_name)}"
+            f"Gluco Score {gluco.then} -> {gluco.now} over {hours:g} h"
+        ),
+        rows=len(report.changes),
+        as_of=svc.as_of(),
+        change=dump(report),
+        chart=chart(trend),
+        **({} if cohort is None else {"cohort_position": [dump(d) for d in cohort]}),
+    )
+
+
+def answer(svc: QueryService, spec: QuerySpec) -> dict[str, Any]:
+    """Any structured query, as a chart the LLM can read."""
+    found = require_points(svc.query(spec))
+    return result(
+        summary=(
+            f"{', '.join(metric_label(m) for m in spec.metrics)} "
+            f"({grouping_phrase(spec.bucket, spec.agg)})"
+        ),
+        rows=sum(len(s.points) for s in found.series),
+        as_of=svc.as_of(),
+        chart=chart(found),
+    )

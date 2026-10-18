@@ -17,6 +17,7 @@ import {
   formatValue,
   formatWithUnit,
   GLUCO_SCORE,
+  numberAt,
   shortUnit,
   useMetrics,
 } from "@/lib/catalog"
@@ -24,11 +25,6 @@ import { cn } from "@/lib/utils"
 
 type Series = QueryResult["series"][number]
 type Kind = WidgetSpec["kind"]
-
-function numberAt(point: Record<string, unknown>, metric: string) {
-  const value = point[metric]
-  return typeof value === "number" && Number.isFinite(value) ? value : null
-}
 
 /** A series' values for one metric, oldest first, skipping gaps. */
 function valuesOf(series: Series, metric: string) {
@@ -159,7 +155,7 @@ function TableWidget({ result }: { result: QueryResult }) {
       </TableHeader>
       <TableBody>
         {result.series.map((series) => (
-          <TableRow key={series.participant_id ?? series.display_name}>
+          <TableRow key={series.display_name}>
             <TableCell className="font-medium">{series.display_name}</TableCell>
             {result.metrics.map((metric) => (
               <TableCell key={metric} className="text-right tabular-nums">
@@ -219,7 +215,7 @@ function HeatmapWidget({ result }: { result: QueryResult }) {
           )
           return (
             <div
-              key={series.participant_id ?? series.display_name}
+              key={series.display_name}
               className="contents"
             >
               <span className="truncate pr-1 text-xs">

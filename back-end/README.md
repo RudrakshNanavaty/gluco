@@ -103,10 +103,14 @@ All routes except `/health` need a Clerk session token.
 }
 ```
 
-The response is `{as_of, start, end, metrics, units, series: [{participant_id,
-display_name, points: [{t, n, <metric>: value}]}], total_series, truncated}`. A
-chat `data` event carries this same shape under `chart`, so one chart component
-can serve both the dashboard and the chat.
+The response is `{as_of, start, end, metrics, units, series: [{display_name,
+points: [{t, n, <metric>: value}]}], total_series, truncated, audit}`. A chat
+`data` event carries this same shape under `chart`, so one chart component can
+serve both the dashboard and the chat.
+
+Every result passes the disclosure rule first (`analysis/compliance.py`): series
+carry display names, never internal participant keys, and pooled cohort points
+built from fewer than 3 people are hidden. `audit` lists what was applied.
 
 Errors come back as `{detail, code, …}`, where `code` is one of `not_found`,
 `ambiguous`, `not_permitted` or `bad_query` (the last includes `suggestions` for
@@ -122,7 +126,7 @@ src/agent/
   auth.py          Authenticator (Clerk session -> Principal), ClerkMetadata
   store.py         In-memory windows, incremental refresh
   clock.py         Replay clock
-  query.py         QueryService: scope, clock, every derived number
+  query.py         QueryService: scope, clock, disclosure, every derived number
   domain/          Window, metric catalog, WindowSource port, errors, Contract B events
   data/            postgres.py and mock.py implement WindowSource; factory.py picks one
   analysis/        Pure logic: aggregation, deviations, stats, id resolution, grounding

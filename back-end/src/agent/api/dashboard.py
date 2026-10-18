@@ -17,13 +17,14 @@ from sse_starlette.sse import EventSourceResponse
 
 from agent.analysis.query import Order
 from agent.api.deps import CurrentPrincipal, Queries, RuntimeDep
-from agent.api.schemas import ClockCommand, ExplainResponse
+from agent.api.schemas import ClockCommand
 from agent.clock import ClockState
 from agent.domain.metrics import GLUCO_SCORE
 from agent.query import (
     Catalog,
     CohortComparison,
     CohortOverview,
+    Explanation,
     ParticipantRow,
     QueryResult,
     QuerySpec,
@@ -53,7 +54,7 @@ def participants(
 
 @router.get("/participants/{person_id}")
 def participant(person_id: str, svc: Queries) -> ParticipantRow:
-    return svc.participant(svc.resolve(person_id))
+    return svc.participant(person_id)
 
 
 @router.get("/participants/{person_id}/explain")
@@ -61,17 +62,13 @@ def explain(
     person_id: str,
     svc: Queries,
     hours: Annotated[float, Query(gt=0, le=168)] = 24,
-) -> ExplainResponse:
-    pid = svc.resolve(person_id)
-    return ExplainResponse(
-        change=svc.explain_change(pid, hours),
-        cohort_position=svc.cohort_position(pid) if svc.is_clinician else None,
-    )
+) -> Explanation:
+    return svc.explain(person_id, hours)
 
 
 @router.get("/participants/{person_id}/compare")
 def compare(person_id: str, metric: str, svc: Queries) -> CohortComparison:
-    return svc.compare_to_cohort(svc.resolve(person_id), metric)
+    return svc.compare_to_cohort(person_id, metric)
 
 
 @router.get("/cohort")

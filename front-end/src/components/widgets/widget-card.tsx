@@ -29,7 +29,7 @@ const STAGES: Record<
 }
 
 /** The pipeline that built a widget, one line per stage. */
-export function WidgetSteps({ steps }: { steps: WidgetStep[] }) {
+function WidgetSteps({ steps }: { steps: WidgetStep[] }) {
   return (
     <ol
       className="flex flex-col gap-1.5"

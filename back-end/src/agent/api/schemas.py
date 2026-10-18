@@ -5,10 +5,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, StringConstraints
 
-from agent.analysis.deviation import FeatureDeviation
 from agent.auth import Principal, Role
 from agent.clock import ClockState
-from agent.query import ChangeReport
 
 SessionId = Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9_-]{1,128}$")]
 Message = Annotated[str, StringConstraints(min_length=1, max_length=4000)]
@@ -34,12 +32,6 @@ class ClockCommand(BaseModel):
     action: Literal["play", "pause", "speed", "seek"]
     seconds_per_hour: float | None = Field(default=None, gt=0)  # for "speed"
     to: datetime | None = None  # for "seek"
-
-
-class ExplainResponse(BaseModel):
-    change: ChangeReport
-    # Where the person sits against everyone's newest windows; clinicians only.
-    cohort_position: list[FeatureDeviation] | None
 
 
 class ChatRequest(BaseModel):

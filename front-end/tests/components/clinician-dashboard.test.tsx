@@ -166,7 +166,8 @@ describe("Clinician Dashboard Components", () => {
     })
 
     // Verifies that live sensor readings override the 24h summary values for live metric columns.
-    it("displays live sensor readings from useLiveReadings in the live metric cell", async () => {
+    // The server applies live readings to each row; the table shows the row as sent.
+    it("shows each row's values as the server sent them", async () => {
       fakeApi({ "GET /catalog": catalog, "GET /participants": sampleParticipants })
       vi.mocked(useLiveReadings).mockReturnValue({
         timestamp: "2026-10-16T12:00:01Z",
@@ -177,7 +178,8 @@ describe("Clinician Dashboard Components", () => {
 
       renderWithProviders(<ParticipantTable />, { role: "clinician" })
 
-      expect(await screen.findByText("95.0")).toBeInTheDocument()
+      expect(await screen.findByText("68.0")).toBeInTheDocument()
+      expect(screen.queryByText("95.0")).not.toBeInTheDocument()
     })
 
     // Verifies that clicking a column header toggles the sort order and updates aria-sort attribute.

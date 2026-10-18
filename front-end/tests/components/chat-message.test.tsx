@@ -183,7 +183,7 @@ describe("ChatMessage", () => {
   it("renders embedded query chart when chart part is received", () => {
     const sampleChart: QueryResult = {
       metrics: ["gluco_score"],
-      series: [{ participant_id: "p1", display_name: "Self", points: [] }],
+      series: [{ display_name: "Self", points: [] }],
       start: "2026-10-09T00:00:00Z",
       end: "2026-10-16T00:00:00Z",
       as_of: null,
