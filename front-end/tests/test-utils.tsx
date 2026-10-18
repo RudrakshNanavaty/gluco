@@ -31,6 +31,9 @@ export function createMockRouter() {
   }
 }
 
+/** The router every test sees: vitest.setup.ts mocks `useRouter` to return it. */
+export const mockRouter = createMockRouter()
+
 export function renderWithProviders(
   ui: ReactElement,
   options?: {

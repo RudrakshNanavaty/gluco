@@ -148,13 +148,14 @@ Open `http://localhost:3000` and sign in with a Clerk account (seed them with `j
 ### Verify the project
 
 ```bash
-# Back end
+# Back end (tests, then ruff lint/format and basedpyright)
 cd back-end
-uv run pytest
-uv run ruff check .
+just test
+just lint
 
 # Front end
 cd ../front-end
+bun run test
 bun run typecheck
 bun run lint
 bun run build
@@ -166,6 +167,7 @@ bun run build
 | `cd back-end && just test`      | Run the back-end test suite            |
 | `cd back-end && just lint`      | Run formatting, lint, and type checks  |
 | `cd front-end && bun dev`       | Start the Next.js development server   |
+| `cd front-end && bun run test`  | Run the front-end test suite           |
 | `cd front-end && bun run build` | Create the production front-end bundle |
 
 The application is runnable without cloud database credentials. Chat requires a

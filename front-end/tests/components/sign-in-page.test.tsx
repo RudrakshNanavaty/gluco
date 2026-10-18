@@ -4,17 +4,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import SignInPage from "@/app/page"
 import { useHydrated, useSession } from "@/lib/auth"
 import type { Session } from "@/lib/session"
-import { createMockRouter } from "../test-utils"
+import { mockRouter } from "../test-utils"
 
-const mockRouter = createMockRouter()
 const clerk = vi.hoisted(() => ({
   isLoaded: true,
   isSignedIn: false,
   signOut: vi.fn(),
-}))
-
-vi.mock("next/navigation", () => ({
-  useRouter: () => mockRouter,
 }))
 
 vi.mock("@clerk/nextjs", () => ({

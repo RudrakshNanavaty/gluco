@@ -1,5 +1,6 @@
 import json
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 from agents import (
@@ -13,24 +14,29 @@ from agents import (
 
 from agent.api.chat_service import MAX_TURNS_REPLY, ChatService
 from agent.api.sse import StreamTranslator
-from agent.auth import CLINICIAN, patient
+from agent.auth import CLINICIAN, Role, patient
 from agent.guardrails import POLICIES, GuardrailVerdict, build_input_guardrails
 from agent.observability.trace import JsonlTracer, NullTracer
 
 
+def fake(**fields: object) -> Any:
+    """A stand-in for an SDK event payload; only the fields the translator reads."""
+    return SimpleNamespace(**fields)
+
+
 def delta(text: str) -> RawResponsesStreamEvent:
     return RawResponsesStreamEvent(
-        data=SimpleNamespace(type="response.output_text.delta", delta=text)
+        data=fake(type="response.output_text.delta", delta=text)
     )
 
 
 def called(name: str, args: dict, call_id: str = "c1") -> RunItemStreamEvent:
     raw = {"name": name, "arguments": json.dumps(args), "call_id": call_id}
-    return RunItemStreamEvent(name="tool_called", item=SimpleNamespace(raw_item=raw))
+    return RunItemStreamEvent(name="tool_called", item=fake(raw_item=raw))
 
 
 def returned(output, call_id: str = "c1") -> RunItemStreamEvent:
-    item = SimpleNamespace(raw_item={"call_id": call_id}, output=output)
+    item = fake(raw_item={"call_id": call_id}, output=output)
     return RunItemStreamEvent(name="tool_output", item=item)
 
 
@@ -63,7 +69,7 @@ def test_translator_handles_error_payloads_and_noise():
     assert end.data["summary"] == "not found"
     assert end.data["rows"] == 0
     assert t.translate(returned("raw text", call_id="zzz"))[0].data["tool"] == "unknown"
-    other = RawResponsesStreamEvent(data=SimpleNamespace(type="response.created"))
+    other = RawResponsesStreamEvent(data=fake(type="response.created"))
     assert t.translate(other) == []
 
 
@@ -115,7 +121,7 @@ async def test_stream_happy_path_ends_with_done():
     assert events[-1].data == {"session_id": "s1"}
 
 
-def trip(category: str, role="clinician") -> InputGuardrailTripwireTriggered:
+def trip(category: str, role: Role = "clinician") -> InputGuardrailTripwireTriggered:
     guardrail = build_input_guardrails("m", role)[0]
     out = GuardrailFunctionOutput(
         output_info=GuardrailVerdict(category=category),  # type: ignore[arg-type]
@@ -267,16 +273,14 @@ def test_missing_call_id_is_generated_and_paired_oldest_first():
     start = t.translate(
         RunItemStreamEvent(
             name="tool_called",
-            item=SimpleNamespace(
-                raw_item={"name": "explain_change", "arguments": "{}"}
-            ),
+            item=fake(raw_item={"name": "explain_change", "arguments": "{}"}),
         )
     )[0]
     assert start.data["call_id"] == "call-1"
     end = t.translate(
         RunItemStreamEvent(
             name="tool_output",
-            item=SimpleNamespace(raw_item={}, output={"summary": "s", "rows": 1}),
+            item=fake(raw_item={}, output={"summary": "s", "rows": 1}),
         )
     )[0]
     assert (end.data["call_id"], end.data["tool"]) == ("call-1", "explain_change")

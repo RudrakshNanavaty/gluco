@@ -12,17 +12,19 @@ from agent.data.postgres import PostgresSource
 from agent.domain.metrics import GLUCO_SCORE, LIVE_METRICS
 from agent.store import WindowStore
 
-settings = Settings(agent_model="unused")  # pyright: ignore[reportCallIssue]
 pytestmark = pytest.mark.skipif(
-    not os.environ.get("LIVE_DB") or settings.database_conninfo is None,
+    not os.environ.get("LIVE_DB"),
     reason="live database tests run with LIVE_DB=1 and a configured database",
 )
 
 
 @pytest.fixture(scope="module")
 def source() -> PostgresSource:
+    # Built here, not at import, so the normal run never reads .env.
+    settings = Settings(agent_model="unused")  # pyright: ignore[reportCallIssue]
     conninfo = settings.database_conninfo
-    assert conninfo is not None
+    if conninfo is None:
+        pytest.skip("no database configured in .env")
     return PostgresSource(conninfo, settings.dashboard_session_id)
 
 

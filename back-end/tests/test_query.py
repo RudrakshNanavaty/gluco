@@ -48,7 +48,9 @@ def test_query_defaults_to_the_last_week_hourly(clinician):
 def test_query_rejects_bad_specs_with_help(clinician):
     with pytest.raises(QueryError) as exc:
         clinician.query(QuerySpec(metrics=["glucose"]))
-    assert "gluco_score" in exc.value.details["suggestions"]
+    suggestions = exc.value.details["suggestions"]
+    assert isinstance(suggestions, list)
+    assert "gluco_score" in suggestions
     with pytest.raises(QueryError):
         clinician.query(QuerySpec(sort_by="hr_mean_bpm_24h"))
     with pytest.raises(QueryError):
@@ -119,12 +121,16 @@ def test_everything_stops_at_the_replay_clock(store):
     svc = QueryService(store, clock, CLINICIAN)
     start = clock.now()
     assert start is not None
-    assert svc.latest(PID).window_end == start
+    latest = svc.latest(PID)
+    assert latest is not None
+    assert latest.window_end == start
     result = svc.query(QuerySpec(participants=[PID], hours=1000, bucket="raw"))
     assert result.series[0].points[-1]["t"] == start
 
     time.now += 30  # three simulated hours
-    fresh = svc.windows_between(start, clock.now())
+    now = clock.now()
+    assert now is not None
+    fresh = svc.windows_between(start, now)
     assert len(fresh) == 3 * 17
     patient_view = QueryService(store, clock, patient(PID))
-    assert len(patient_view.windows_between(start, clock.now())) == 3
+    assert len(patient_view.windows_between(start, now)) == 3

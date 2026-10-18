@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 from support import FakeTime
 
-from agent.domain.models import Window
+from agent.domain.models import LiveReading, Window
 from agent.domain.ports import PublishedWindow
 from agent.store import WindowStore
 
@@ -29,7 +29,7 @@ class ScriptedSource:
     def publish(self, window: Window, minute: int) -> None:
         self.rows.append(PublishedWindow(window, T0 + timedelta(minutes=minute)))
 
-    def fetch_since(self, published_after):
+    def fetch_since(self, published_after: datetime | None) -> list[PublishedWindow]:
         self.calls.append(published_after)
         if self.fail:
             raise RuntimeError("db down")
@@ -38,6 +38,9 @@ class ScriptedSource:
             for r in self.rows
             if published_after is None or r.published_at >= published_after
         ]
+
+    def fetch_live(self) -> list[LiveReading]:
+        return []
 
     def ping(self) -> bool:
         return True
@@ -51,10 +54,9 @@ def test_reads_are_ordered_and_ranges_are_start_exclusive():
     assert [x.window_end.hour for x in store.history("a")] == [0, 1, 2]
     after_first = store.history("a", start=T0, end=T0 + timedelta(hours=2))
     assert [x.window_end.hour for x in after_first] == [1, 2]
-    assert (
-        store.latest("a", as_of=T0 + timedelta(hours=1, minutes=30)).window_end.hour
-        == 1
-    )
+    latest = store.latest("a", as_of=T0 + timedelta(hours=1, minutes=30))
+    assert latest is not None
+    assert latest.window_end.hour == 1
     assert store.data_range() == (T0, T0 + timedelta(hours=2))
 
 
@@ -70,7 +72,9 @@ def test_refresh_is_incremental_and_republished_rows_overwrite():
     assert store.size() == 1  # not stale yet
     time.now += 10
     assert store.participants() == ["a", "b"]
-    assert store.latest("a").value("gluco_score") == 99.0
+    latest = store.latest("a")
+    assert latest is not None
+    assert latest.value("gluco_score") == 99.0
     assert source.calls[-1] == T0  # asked only for rows since the last publish
 
 

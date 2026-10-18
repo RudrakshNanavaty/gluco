@@ -4,13 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { RoleGate } from "@/components/role-gate"
 import { sessionStore } from "@/lib/session"
-import { createMockRouter } from "../test-utils"
+import { mockRouter } from "../test-utils"
 
-const mockRouter = createMockRouter()
-
-vi.mock("next/navigation", () => ({
-  useRouter: () => mockRouter,
-}))
 
 describe("RoleGate", () => {
   beforeEach(() => {

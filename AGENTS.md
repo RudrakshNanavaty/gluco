@@ -11,7 +11,7 @@ Research prototype (not a medical device): wearable signals → metabolic-patter
 ## Commands
 
 Back-end (from `back-end/`): `just mock` (run on mock data), `just test`, `just lint` (ruff + basedpyright).
-Front-end (from `front-end/`): `bun dev`, `bun run lint`, `bun run typecheck`, `bun run gen:api` (needs API on :8000).
+Front-end (from `front-end/`): `bun dev`, `bun run test`, `bun run lint`, `bun run typecheck`, `bun run gen:api` (needs API on :8000).
 
 ## Rules
 
