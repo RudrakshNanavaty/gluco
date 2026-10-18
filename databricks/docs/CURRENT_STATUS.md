@@ -144,3 +144,11 @@ first feature/model comparison. Filter loosening does not address most lost
 minute positions and changes the evaluated sample. Prioritize a controlled
 feature comparison plus source-provenance follow-up, preserving participant
 weighting and nested participant splits. See `MODEL_EXPERIMENT_PLAN.md`.
+
+## Controlled robust-feature experiment completed
+
+The separate development evaluator reproduced the original 660 keys and baseline
+predictions, then compared the predeclared extension. Accuracy was 54.37% for
+extended features and 59.31% for joint family/model selection, below 60.42% for
+the reference. Probability losses also worsened. No promotion occurred. See
+`ROBUST_FEATURE_RESULTS.md` for run references, all metrics and limitations.
