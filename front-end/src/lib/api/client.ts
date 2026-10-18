@@ -77,7 +77,22 @@ const auth: Middleware = {
   },
 }
 
-export const api = createClient<paths>({ baseUrl: API_BASE_URL })
+/** How requests reach the network: `fetch` in the app, a fake in tests. */
+export type Transport = typeof fetch
+
+let transport: Transport = (input, init) => fetch(input, init)
+
+/** Send every API request, the SSE streams included, through `next`; returns the previous transport. */
+export function setTransport(next: Transport): Transport {
+  const previous = transport
+  transport = next
+  return previous
+}
+
+/** Send one request through the current transport. */
+export const send: Transport = (input, init) => transport(input, init)
+
+export const api = createClient<paths>({ baseUrl: API_BASE_URL, fetch: send })
 api.use(auth)
 
 type Result<T> = { data?: T; error?: unknown; response: Response }

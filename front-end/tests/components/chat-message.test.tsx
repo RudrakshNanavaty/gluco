@@ -4,35 +4,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { ChatMessage } from "@/components/chat/chat-message"
 import type { ChatMessage as ChatMessageType } from "@/components/chat/chat-provider"
 import type { QueryResult } from "@/lib/api/events"
-import { useCatalog, usePinWidget, useWidgetPreview } from "@/lib/api/queries"
+import { fakeApi, PENDING } from "../fake-api"
 import { renderWithProviders } from "../test-utils"
-
-vi.mock("@/lib/api/queries", () => ({
-  keys: {
-    pins: ["pins"],
-    widgetPreview: (spec: unknown) => ["data", "widget-preview", spec],
-  },
-  usePinWidget: vi.fn(),
-  useWidgetPreview: vi.fn(),
-  useCatalog: vi.fn(),
-}))
 
 describe("ChatMessage", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(usePinWidget).mockReturnValue({
-      mutate: vi.fn(),
-      isPending: false,
-    } as unknown as ReturnType<typeof usePinWidget>)
-    vi.mocked(useWidgetPreview).mockReturnValue({
-      data: undefined,
-    } as unknown as ReturnType<typeof useWidgetPreview>)
-    vi.mocked(useCatalog).mockReturnValue({
-      data: { metrics: [] },
-      isSuccess: true,
-      isPending: false,
-      isError: false,
-    } as unknown as ReturnType<typeof useCatalog>)
+    fakeApi({
+      "GET /catalog": { metrics: [] },
+      "POST /widgets/preview": PENDING,
+      "POST /widgets": PENDING,
+    })
   })
 
   // Verifies that a user message renders prompt text in an end-aligned message bubble.

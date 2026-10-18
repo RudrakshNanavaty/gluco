@@ -6,6 +6,7 @@ import {
   OFFLINE_MESSAGE,
   authHeader,
   handleUnauthorized,
+  send,
 } from "@/lib/api/client"
 
 /**
@@ -20,7 +21,7 @@ export async function streamSSE(
 ): Promise<void> {
   let response: Response
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await send(`${API_BASE_URL}${path}`, {
       ...init,
       headers: {
         Accept: "text/event-stream",
