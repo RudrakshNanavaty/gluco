@@ -162,3 +162,39 @@ all parsed timestamps are valid. Bronze ACC is also absent inside these gaps.
 Large ACC source CSVs were not rescanned. See `SOURCE_GAP_FINDINGS.md` for scope,
 limits and the reproducible read-only SQL query. No ETL repair is indicated by
 these three checks; underlying acquisition/source provenance remains unknown.
+
+
+## Configurable replay implementation
+
+The feature-branch controller now accepts explicit session/schedule/model/fixture
+configuration through `replay_config.py`, isolates per-session runtime files,
+validates immutable saved configuration, propagates connection metadata to all
+phases, and supports a bounded `--through-offset`. Fast sensor scheduling shares
+that configuration and validates the bank fixture. Legacy unversioned state is
+not silently resumed. Local suite: 50 passing tests; targeted lint passed.
+
+Read-only preflight confirmed the intended 66-person fixture and model are ready
+for a five-minute new-session run. The live smoke test is blocked by lack of
+READ access to secret scope `se-project-2`; no session was created or published.
+See `CONFIGURABLE_REPLAY.md` for exact setup, bounded commands and limitations.
+
+
+## Replay cloud verification completed
+
+After secret-scope access was granted, configurable replay preparation and the
+five-minute batch succeeded in isolated session `replay-config-check-v1`.
+330 events were inserted; immediate retry inserted zero. Delta and Tiger have
+11,154 matching window keys and exactly matching checked metrics. Repeating the
+completed endpoint submitted no new run. The original session's ordered payload
+digest/counts/latest time remained unchanged. See `REPLAY_VERIFICATION_RESULTS.md`.
+The one-second sensor sender and live in-flight cancellation were not exercised.
+
+
+## Runtime safety follow-up
+
+A separate session `replay-runtime-safety-v1` passed five bounded synthetic
+sensor ticks (66 timestamped rows, 50 missing HR values, no minute emissions),
+then a cancellation test after Bronze commit and before refresh. The cursor
+and 11,088 seeded windows were retained. Explicit retry recovered to 11,154
+windows / 330 unique events with no duplicate inserts and no changes to the
+original session. Local tests: 58 passed. See `RUNTIME_SAFETY_RESULTS.md`.
