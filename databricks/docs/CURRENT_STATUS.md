@@ -108,3 +108,39 @@ sample-ratio prefilter and measure consecutive gaps by participant. Preserve
 existing coverage thresholds for the baseline. Any proposed alternative must
 be evaluated inside a participant-held-out experiment rather than chosen simply
 to maximize accepted windows or performance on reused held-out results.
+
+## Gap attribution and filter-loss diagnostic
+
+`minute_gap_audit.sql` uses a complete minute grid between each approved
+participant's first and last sample-ratio-passing minute. Across those spans:
+
+- 180,885 elapsed minute positions = 149,076 passing + 31,599 absent Silver
+  minutes + 210 present-but-filtered minutes.
+- 99.34% of non-passing minute positions are absent Silver rows. This is a
+  Silver availability finding, not proof of a physical device failure. Source
+  acquisition/processing provenance would be needed to assign a root cause.
+- Longest combined gap is 3,340 minutes (55.7 hours); the longest contiguous
+  present-but-filtered run is two minutes.
+- The lowest accepted-window contributors include participant 011 (6/218),
+  participant 003 (9/161), and participant 006 (16/216). Participant 013 has
+  18/179 despite only 518 absent and 17 filtered minutes, illustrating how
+  overlapping windows and a strict hourly gate amplify short gaps.
+
+`filter_loss_upper_bound.sql` reruns the original candidate ends with all
+available finite Silver measurements, ignoring sample ratios for diagnosis
+only. It preserves the 80% total and 30-per-hour gates:
+
+- 727 candidate windows pass versus 660 currently (+67; 27.4% vs 24.9%).
+- Gains occur in participants 003 (+1), 005 (+22), 007 (+22), and 014 (+22).
+- 1,926 candidates still fail even under that diagnostic policy.
+- Missing/nonfinite values remain excluded. This is an upper bound on retention
+  from restoring finite filtered minutes at the same candidate endpoints, not
+  an approved training policy or estimated accuracy improvement.
+
+## Decision
+
+Keep existing eligibility thresholds and the 660-window reference set for the
+first feature/model comparison. Filter loosening does not address most lost
+minute positions and changes the evaluated sample. Prioritize a controlled
+feature comparison plus source-provenance follow-up, preserving participant
+weighting and nested participant splits. See `MODEL_EXPERIMENT_PLAN.md`.
