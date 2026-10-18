@@ -15,6 +15,7 @@ from agents import (
     GuardrailFunctionOutput,
     InputGuardrail,
     InputGuardrailTripwireTriggered,
+    ModelSettings,
     RunContextWrapper,
     Runner,
     TResponseInputItem,
@@ -119,12 +120,15 @@ def decline_message(tripwire: InputGuardrailTripwireTriggered, role: Role) -> st
     return policy.declines[policy.fallback]
 
 
-def build_input_guardrails(model: str, role: Role) -> list[InputGuardrail]:
+def build_input_guardrails(
+    model: str, role: Role, model_settings: ModelSettings | None = None
+) -> list[InputGuardrail]:
     policy = POLICIES[role]
     classifier = Agent(
         name=f"{role}_request_classifier",
         instructions=policy.instructions,
         model=model,
+        model_settings=model_settings or ModelSettings(),
         output_type=GuardrailVerdict,
     )
 

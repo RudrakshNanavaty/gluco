@@ -1,16 +1,18 @@
 """The LLM connection: the one module that knows which provider is behind the SDK.
 
-Today that is Gemini through its OpenAI-compatible endpoint. Callers configure it
-once at startup and ask `is_ready()`; nothing else names the provider. With a
-single provider live this is a module, not a seam; add an adapter only if a
-second provider ever runs alongside it.
+Today that is OpenRouter's OpenAI-compatible endpoint, with model slugs such as
+`z-ai/glm-4.7-flash:floor` (the `:floor` suffix picks the cheapest host). Callers
+configure it once at startup and ask `is_ready()`; nothing else names the
+provider. With a single provider live this is a module, not a seam; add an
+adapter only if a second provider ever runs alongside it.
 """
 
 from collections.abc import AsyncIterator
 from functools import cached_property
-from typing import Any
+from typing import Any, Literal
 
 from agents import (
+    ModelSettings,
     set_default_openai_api,
     set_default_openai_client,
     set_tracing_disabled,
@@ -27,11 +29,11 @@ from agent.config import Settings
 class ToolCallIndexFix:
     """Gives every streamed tool call its own index.
 
-    Gemini's OpenAI-compatible stream sends parallel tool calls under the same
-    index; the SDK groups deltas by index and would merge two calls into one with
-    unparseable arguments ('{...}{...}'), which Gemini then rejects. A delta that
-    carries a new call id starts a new index; deltas without an id continue the
-    current call.
+    Gemini's OpenAI-compatible stream (also behind OpenRouter) sends parallel tool
+    calls under the same index; the SDK groups deltas by index and would merge two
+    calls into one with unparseable arguments ('{...}{...}'), which Gemini then
+    rejects. A delta that carries a new call id starts a new index; deltas without
+    an id continue the current call.
     """
 
     def __init__(self, stream: Any) -> None:
@@ -73,7 +75,7 @@ class _Chat(AsyncChat):
         return _Completions(self._client)
 
 
-class GeminiCompatClient(AsyncOpenAI):
+class ChatCompletionsClient(AsyncOpenAI):
     """AsyncOpenAI with the tool-call index fix applied to streamed completions."""
 
     @cached_property
@@ -82,13 +84,34 @@ class GeminiCompatClient(AsyncOpenAI):
 
 
 class LlmConnection:
-    def __init__(self, api_key: SecretStr | None, base_url: str) -> None:
+    def __init__(
+        self,
+        api_key: SecretStr | None,
+        base_url: str,
+        require_parameters: bool = True,
+        data_collection: Literal["allow", "deny"] = "deny",
+    ) -> None:
         self._api_key = api_key
         self._base_url = base_url
+        self._require_parameters = require_parameters
+        self._data_collection = data_collection
 
     @classmethod
     def from_settings(cls, settings: Settings) -> "LlmConnection":
-        return cls(settings.llm_api_key, settings.llm_base_url)
+        return cls(
+            settings.llm_api_key,
+            settings.llm_base_url,
+            settings.llm_require_parameters,
+            settings.llm_data_collection,
+        )
+
+    def model_settings(self) -> ModelSettings:
+        """Per-call provider routing, shared by the agent and the guardrails."""
+        provider = {
+            "require_parameters": self._require_parameters,
+            "data_collection": self._data_collection,
+        }
+        return ModelSettings(extra_body={"provider": provider})
 
     def is_ready(self) -> bool:
         """True when a key is configured; never contacts the provider."""
@@ -101,7 +124,7 @@ class LlmConnection:
         # The OpenAI-compat layer speaks Chat Completions, not Responses.
         set_default_openai_api("chat_completions")
         if self._api_key is not None:
-            client = GeminiCompatClient(
+            client = ChatCompletionsClient(
                 api_key=self._api_key.get_secret_value(), base_url=self._base_url
             )
             set_default_openai_client(client, use_for_tracing=False)

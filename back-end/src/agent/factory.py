@@ -3,7 +3,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from agents import Agent, FunctionTool, InputGuardrail
+from agents import Agent, FunctionTool, InputGuardrail, ModelSettings
 
 from agent.auth import Principal
 from agent.domain.metrics import METRICS
@@ -32,6 +32,7 @@ def build_agent(
     principal: Principal,
     now: datetime | None,
     model: str,
+    model_settings: ModelSettings,
     tools: list[FunctionTool],
     input_guardrails: list[InputGuardrail],
 ) -> Agent:
@@ -39,6 +40,7 @@ def build_agent(
         name=f"{principal.role}_assistant",
         instructions=instructions(principal, now),
         model=model,
+        model_settings=model_settings,
         tools=list(tools),  # the SDK wants list[Tool]; ours is list[FunctionTool]
         input_guardrails=list(input_guardrails),
     )

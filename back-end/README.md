@@ -16,7 +16,7 @@ adapter sees the raw index.
 cd back-end
 source .venv/bin/activate
 uv sync
-cp .env.example .env   # GEMINI_API_KEY, AGENT_MODEL, and the PG* variables for Tiger
+cp .env.example .env   # LLM_API_KEY (OpenRouter), AGENT_MODEL, and the PG* variables for Tiger
 ```
 
 With no database configured, the app uses a seeded mock that has the same shape
@@ -122,7 +122,7 @@ an unknown metric).
 src/agent/
   config.py        Settings; the only reader of env vars
   bootstrap.py     Composition root: Runtime, and Scope (one Principal's queries, tools, agent)
-  llm.py           The only module that knows the provider (Gemini, OpenAI-compatible)
+  llm.py           The only module that knows the provider (OpenRouter, OpenAI-compatible)
   auth.py          Authenticator (Clerk session -> Principal), ClerkMetadata
   store.py         In-memory windows, incremental refresh
   clock.py         Replay clock
@@ -157,9 +157,15 @@ To add a tool, put it in `tools/clinician.py` or `tools/patient.py`. Tools call 
 - **The agent knows "now".** The replay clock's time is written into each turn's
   instructions, and every tool returns it as `as_of`, so the agent never guesses
   dates.
-- **Gemini quirk.** Gemini's OpenAI-compatible stream gives parallel tool calls the
-  same index. `llm.py` re-indexes them; otherwise the SDK merges the calls and
-  Gemini rejects the next request.
+- **OpenRouter routing.** Models are `<vendor>/<model>`; add `:floor` for the
+  cheapest host. Every call also sends `provider.require_parameters` (only hosts
+  that support tools and structured output) and `provider.data_collection=deny`
+  (no hosts that keep or train on prompts); see `LLM_REQUIRE_PARAMETERS` and
+  `LLM_DATA_COLLECTION`. SDK tracing stays off, so no OpenAI key is needed.
+  Gemini works too via `LLM_BASE_URL` and `LLM_API_KEY`.
+- **Gemini quirk.** Gemini's OpenAI-compatible stream (also behind OpenRouter)
+  gives parallel tool calls the same index. `llm.py` re-indexes them; otherwise
+  the SDK merges the calls and Gemini rejects the next request.
 - **Database access.** Connections are read-only with a statement timeout. Still
   use a SELECT-only role: startup logs a warning if the role could write.
 - **CORS** allows `ALLOWED_ORIGINS` only (a JSON list; the default is the Vite and

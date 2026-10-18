@@ -70,6 +70,7 @@ class Scope:
             principal=self.principal,
             now=runtime.clock.now(),
             model=runtime.settings.agent_model,
+            model_settings=runtime.llm.model_settings(),
             tools=self.tools,
             input_guardrails=runtime.guardrails[self.principal.role],
         )
@@ -100,7 +101,9 @@ def build_runtime(
         time_source=time_source,
     )
     guardrails: dict[Role, list[InputGuardrail]] = {
-        role: build_input_guardrails(settings.effective_guardrail_model, role)
+        role: build_input_guardrails(
+            settings.effective_guardrail_model, role, llm.model_settings()
+        )
         for role in ("clinician", "patient")
     }
     sessions = ChatSessions(settings.session_db_path)
