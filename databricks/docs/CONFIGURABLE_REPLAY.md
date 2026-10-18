@@ -87,7 +87,8 @@ publication separately from analytics and label interpolated ticks synthetic.
 Local tests and a dry-run passed. Read-only cloud preflight confirmed 760,320
 history-minute rows (66 x 11,520), 330 reserved rows for a five-minute batch,
 one reference release, and no existing `replay-config-check-v1` session.
-Full cloud replay and sensor execution remain unverified: the current account
-cannot read Databricks secret scope `se-project-2`. The workspace owner must
-provide READ on that existing scope or an appropriately scoped credential
-mechanism before running the notebooks. No new session was published.
+Secret-scope access was subsequently granted. Preparation and a five-minute
+replay completed successfully in `replay-config-check-v1`; retries, publication,
+exact key/metric agreement and no-op resume were verified. See
+`REPLAY_VERIFICATION_RESULTS.md` for run IDs and evidence. The separate
+one-second sensor sender and in-flight cloud cancellation remain unverified.

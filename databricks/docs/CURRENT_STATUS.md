@@ -177,3 +177,14 @@ Read-only preflight confirmed the intended 66-person fixture and model are ready
 for a five-minute new-session run. The live smoke test is blocked by lack of
 READ access to secret scope `se-project-2`; no session was created or published.
 See `CONFIGURABLE_REPLAY.md` for exact setup, bounded commands and limitations.
+
+
+## Replay cloud verification completed
+
+After secret-scope access was granted, configurable replay preparation and the
+five-minute batch succeeded in isolated session `replay-config-check-v1`.
+330 events were inserted; immediate retry inserted zero. Delta and Tiger have
+11,154 matching window keys and exactly matching checked metrics. Repeating the
+completed endpoint submitted no new run. The original session's ordered payload
+digest/counts/latest time remained unchanged. See `REPLAY_VERIFICATION_RESULTS.md`.
+The one-second sensor sender and live in-flight cancellation were not exercised.
