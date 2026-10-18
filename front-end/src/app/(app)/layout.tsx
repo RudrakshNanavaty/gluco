@@ -73,7 +73,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <ClockProvider key={session.principal.user_id}>
-      <ChatProvider principal={session.principal}>
+      <ChatProvider>
         <AppFrame principal={session.principal} home={session.home}>
           {children}
         </AppFrame>

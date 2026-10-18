@@ -183,7 +183,7 @@ export function ChatPanel({
   onClose?: () => void
 }) {
   const audience = useAudience()
-  const { messages, newChat, send, loadingThread, chartsMissing, streaming } =
+  const { messages, newChat, send, loadingThread, streaming } =
     useChat()
 
   const headerMood = streaming ? "thinking" : "idle"
@@ -271,15 +271,6 @@ export function ChatPanel({
                 </MessageScrollerItem>
               ) : (
                 <>
-                  {chartsMissing ? (
-                    <MessageScrollerItem>
-                      <Marker variant="separator">
-                        <MarkerContent className="text-xs">
-                          Charts from earlier answers aren&apos;t available here
-                        </MarkerContent>
-                      </Marker>
-                    </MessageScrollerItem>
-                  ) : null}
                   {messages.map((message) => (
                     <MessageScrollerItem
                       key={message.id}

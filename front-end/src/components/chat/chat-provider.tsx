@@ -15,8 +15,6 @@ import { api, ApiError, friendlyError, unwrap } from "@/lib/api/client"
 import type { ChatEvent, ChatWidget, QueryResult } from "@/lib/api/events"
 import { keys } from "@/lib/api/queries"
 import { streamSSE } from "@/lib/api/sse"
-import { readCharts, saveChart } from "@/lib/chart-cache"
-import type { Principal } from "@/lib/app-session"
 
 export type ChatPart =
   | { kind: "text"; text: string }
@@ -46,8 +44,6 @@ type ChatContextValue = {
   messages: ChatMessage[]
   streaming: boolean
   loadingThread: boolean
-  /** A reopened thread whose charts this browser didn't keep. */
-  chartsMissing: boolean
   send: (text: string) => void
   stop: () => void
   newChat: () => void
@@ -60,7 +56,10 @@ function newId() {
   return crypto.randomUUID()
 }
 
-/** Apply one Contract B event to the assistant message being streamed. */
+/**
+ * Apply one Contract B event to an assistant message: one being streamed, or
+ * one being restored from the server's transcript.
+ */
 function reduce(message: ChatMessage, event: ChatEvent): ChatMessage {
   const parts = [...message.parts]
   switch (event.type) {
@@ -116,19 +115,12 @@ function reduce(message: ChatMessage, event: ChatEvent): ChatMessage {
   }
 }
 
-export function ChatProvider({
-  principal,
-  children,
-}: {
-  principal: Principal
-  children: React.ReactNode
-}) {
+export function ChatProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient()
   const [sessionId, setSessionId] = useState(newId)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [streaming, setStreaming] = useState(false)
   const [loadingThread, setLoadingThread] = useState(false)
-  const [chartsMissing, setChartsMissing] = useState(false)
   const controller = useRef<AbortController | null>(null)
 
   useEffect(() => () => controller.current?.abort(), [])
@@ -142,7 +134,6 @@ export function ChatProvider({
 
       const abort = new AbortController()
       controller.current = abort
-      const turn = messages.filter((m) => m.role === "user").length
       const assistantId = newId()
       setMessages((prev) => [
         ...prev,
@@ -164,13 +155,7 @@ export function ChatProvider({
           body: JSON.stringify({ session_id: sessionId, message }),
           signal: abort.signal,
         },
-        (data) => {
-          const event = data as ChatEvent
-          if (event.type === "data") {
-            saveChart(principal.user_id, sessionId, turn, event.chart)
-          }
-          update((m) => reduce(m, event))
-        }
+        (data) => update((m) => reduce(m, data as ChatEvent))
       )
         .catch((error: unknown) => {
           if (abort.signal.aborted) {
@@ -193,14 +178,13 @@ export function ChatProvider({
           void queryClient.invalidateQueries({ queryKey: keys.threads })
         })
     },
-    [messages, principal.user_id, queryClient, sessionId]
+    [queryClient, sessionId]
   )
 
   const newChat = useCallback(() => {
     controller.current?.abort()
     setSessionId(newId())
     setMessages([])
-    setChartsMissing(false)
   }, [])
 
   const openThread = useCallback(
@@ -208,7 +192,6 @@ export function ChatProvider({
       controller.current?.abort()
       setSessionId(id)
       setMessages([])
-      setChartsMissing(false)
       setLoadingThread(true)
       try {
         const history = await unwrap(
@@ -216,25 +199,21 @@ export function ChatProvider({
             params: { path: { session_id: id } },
           })
         )
-        const charts = readCharts(principal.user_id, id)
-        const restored: ChatMessage[] = []
-        let turn = -1
-        history.forEach((item, index) => {
-          const role = item.role === "user" ? "user" : "assistant"
-          if (role === "user") turn += 1
-          const parts: ChatPart[] = [{ kind: "text", text: item.text }]
-          // A turn's charts go after its last assistant message.
-          const endsTurn =
-            role === "assistant" && history[index + 1]?.role !== "assistant"
-          if (endsTurn && turn >= 0) {
-            for (const chart of charts?.[turn] ?? [])
-              parts.push({ kind: "chart", chart })
-          }
-          restored.push({ id: newId(), role, parts })
-        })
-        setMessages(restored)
-        setChartsMissing(
-          !charts && restored.some((m) => m.role === "assistant")
+        setMessages(
+          history.map(
+            (item): ChatMessage =>
+              item.role === "user"
+                ? {
+                    id: newId(),
+                    role: "user",
+                    parts: [{ kind: "text", text: item.text ?? "" }],
+                  }
+                : ((item.events ?? []) as ChatEvent[]).reduce(reduce, {
+                    id: newId(),
+                    role: "assistant",
+                    parts: [],
+                  })
+          )
         )
       } catch (error) {
         setMessages([
@@ -253,7 +232,7 @@ export function ChatProvider({
         setLoadingThread(false)
       }
     },
-    [principal.user_id]
+    []
   )
 
   const value = useMemo(
@@ -262,7 +241,6 @@ export function ChatProvider({
       messages,
       streaming,
       loadingThread,
-      chartsMissing,
       send,
       stop,
       newChat,
@@ -273,7 +251,6 @@ export function ChatProvider({
       messages,
       streaming,
       loadingThread,
-      chartsMissing,
       send,
       stop,
       newChat,

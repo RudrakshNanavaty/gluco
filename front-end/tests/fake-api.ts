@@ -42,8 +42,8 @@ function json(status: number, body: unknown) {
 /**
  * Serve API requests from a table for the rest of the test, through the same
  * transport the app uses, so the real query hooks, cache keys and invalidation
- * run. Keys are "METHOD /path/{param}"; a value is the JSON body, a `Reply`, or
- * a function of the request returning either. Requests no route matches stay
+ * run. Keys are "METHOD /path/{param}"; a value is the JSON body, a `Reply`, a
+ * `Response` (for streams), or a function of the request returning one of those. Requests no route matches stay
  * pending and are listed in `unmatched`.
  */
 export function fakeApi(routes: Record<string, Route>) {
@@ -81,6 +81,7 @@ export function fakeApi(routes: Record<string, Route>) {
         typeof route.reply === "function"
           ? await route.reply(fake)
           : route.reply
+      if (value instanceof Response) return value
       return value instanceof Reply ? json(value.status, value.body) : json(200, value)
     }
     unmatched.push(`${request.method} ${url.pathname}`)
