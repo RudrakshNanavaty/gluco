@@ -2,17 +2,10 @@ import { screen } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { PatientDashboard } from "@/components/patient/patient-dashboard"
-import { ApiError } from "@/lib/api/client"
-import {
-  useCatalog,
-  useExplain,
-  useParticipant,
-  usePinnedWidgets,
-  useSeries,
-} from "@/lib/api/queries"
 import { useClock } from "@/lib/clock"
 import { useLiveReading } from "@/lib/live"
 import type { Principal } from "@/lib/session"
+import { fakeApi, PENDING, Reply } from "../fake-api"
 import { renderWithProviders } from "../test-utils"
 
 vi.mock("@/lib/clock", () => ({
@@ -21,24 +14,6 @@ vi.mock("@/lib/clock", () => ({
 
 vi.mock("@/lib/live", () => ({
   useLiveReading: vi.fn(),
-}))
-
-vi.mock("@/lib/api/queries", () => ({
-  keys: {
-    participant: (id: string) => ["data", "participant", id],
-    explain: (id: string, hours: number) => ["data", "explain", id, hours],
-    query: (spec: unknown) => ["data", "query", spec],
-    pins: ["pins"],
-    widget: (id: string) => ["data", "widget", id],
-    catalog: ["catalog"],
-  },
-  useParticipant: vi.fn(),
-  useExplain: vi.fn(),
-  useSeries: vi.fn(),
-  useCatalog: vi.fn(),
-  usePinnedWidgets: vi.fn(),
-  useWidgetData: vi.fn(),
-  useUnpinWidget: vi.fn(),
 }))
 
 describe("PatientDashboard", () => {
@@ -106,6 +81,18 @@ describe("PatientDashboard", () => {
     drivers: [],
   }
 
+  /** The patient's API, with any routes replaced. */
+  function serve(overrides: Record<string, unknown> = {}) {
+    return fakeApi({
+      "GET /catalog": { metrics: sampleCatalogMetrics },
+      "GET /participants/{person_id}": sampleParticipantData,
+      "GET /participants/{person_id}/explain": sampleExplainData,
+      "POST /query": PENDING,
+      "GET /widgets": [],
+      ...overrides,
+    })
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(useClock).mockReturnValue({
@@ -121,67 +108,44 @@ describe("PatientDashboard", () => {
       },
       control: vi.fn(),
     } as unknown as ReturnType<typeof useClock>)
-    vi.mocked(useCatalog).mockReturnValue({
-      data: { metrics: sampleCatalogMetrics },
-      isSuccess: true,
-      isPending: false,
-      isError: false,
-    } as unknown as ReturnType<typeof useCatalog>)
-    vi.mocked(useParticipant).mockReturnValue({
-      data: sampleParticipantData,
-      isPending: false,
-      isError: false,
-    } as unknown as ReturnType<typeof useParticipant>)
     vi.mocked(useLiveReading).mockReturnValue(undefined)
-    vi.mocked(useExplain).mockReturnValue({
-      data: sampleExplainData,
-      isPending: false,
-      isError: false,
-    } as unknown as ReturnType<typeof useExplain>)
-    vi.mocked(useSeries).mockReturnValue({
-      data: undefined,
-      isPending: false,
-      isError: false,
-    } as unknown as ReturnType<typeof useSeries>)
-    vi.mocked(usePinnedWidgets).mockReturnValue({
-      data: [],
-      isPending: false,
-      isError: false,
-    } as unknown as ReturnType<typeof usePinnedWidgets>)
   })
 
   // Verifies that the greeting displays the user name and formatted clock replay timestamp.
-  it("renders personalized greeting and formatted clock timestamp", () => {
+  it("renders personalized greeting and formatted clock timestamp", async () => {
+    serve()
     renderWithProviders(<PatientDashboard principal={patientPrincipal} />)
 
-    expect(screen.getByRole("heading", { level: 1, name: "Hi, Alice Parker" })).toBeInTheDocument()
+    expect(await screen.findByRole("heading", { level: 1, name: "Hi, Alice Parker" })).toBeInTheDocument()
     expect(screen.getByText(/here's how your week looks, as of/i)).toBeInTheDocument()
     expect(screen.getByText(/Fri 16 Oct, 12:00/i)).toBeInTheDocument()
   })
 
   // Verifies that the Gluco Score section renders the score ring and plain-language trend explanation.
-  it("renders Gluco Score ring and friendly change summary", () => {
+  it("renders Gluco Score ring and friendly change summary", async () => {
+    serve()
     renderWithProviders(<PatientDashboard principal={patientPrincipal} />)
 
-    expect(screen.getByRole("heading", { name: "Your Gluco Score" })).toBeInTheDocument()
-    expect(screen.getByRole("meter", { name: "Gluco Score" })).toHaveAttribute("aria-valuenow", "85")
+    expect(await screen.findByRole("heading", { name: "Your Gluco Score" })).toBeInTheDocument()
+    expect(await screen.findByRole("meter", { name: "Gluco Score" })).toHaveAttribute("aria-valuenow", "85")
     expect(screen.getByText("Up 3 points since this time yesterday.")).toBeInTheDocument()
     expect(screen.getByText("Higher is healthier.")).toBeInTheDocument()
   })
 
   // Verifies that primary vital sensor cards render with values and baseline comparisons.
-  it("renders primary vitals tiles for heart rate, movement, and skin temperature", () => {
+  it("renders primary vitals tiles for heart rate, movement, and skin temperature", async () => {
+    serve()
     renderWithProviders(<PatientDashboard principal={patientPrincipal} />)
 
-    expect(screen.getByRole("heading", { name: "Your vitals" })).toBeInTheDocument()
-    expect(screen.getByText("Heart rate")).toBeInTheDocument()
+    expect(await screen.findByRole("heading", { name: "Your vitals" })).toBeInTheDocument()
+    expect(await screen.findByText("Heart rate")).toBeInTheDocument()
     expect(screen.getByText("Movement")).toBeInTheDocument()
     expect(screen.getByText("Skin temperature")).toBeInTheDocument()
-    expect(screen.getAllByText("Close to your usual").length).toBeGreaterThanOrEqual(1)
+    expect((await screen.findAllByText("Close to your usual")).length).toBeGreaterThanOrEqual(1)
   })
 
   // Verifies that live sensor values display inside vital cards when live readings are present.
-  it("displays live sensor readings within vital tiles when live readings exist", () => {
+  it("displays live sensor readings within vital tiles when live readings exist", async () => {
     vi.mocked(useLiveReading).mockReturnValue({
       person_id: "pat-100",
       sensor_time: "2026-10-16T12:00:01Z",
@@ -192,43 +156,40 @@ describe("PatientDashboard", () => {
       },
     } as unknown as ReturnType<typeof useLiveReading>)
 
+    serve()
     renderWithProviders(<PatientDashboard principal={patientPrincipal} />)
 
-    expect(screen.getAllByText("24-hour average").length).toBe(3)
-    expect(screen.getByText("88.0")).toBeInTheDocument()
+    expect((await screen.findAllByText("24-hour average")).length).toBe(3)
+    expect(await screen.findByText("88.0")).toBeInTheDocument()
   })
 
   // Verifies that secondary sensor metrics render in the More from your wearable section.
-  it("renders secondary sensor metrics in More from your wearable section", () => {
+  it("renders secondary sensor metrics in More from your wearable section", async () => {
+    serve()
     renderWithProviders(<PatientDashboard principal={patientPrincipal} />)
 
-    expect(screen.getByRole("heading", { name: "More from your wearable" })).toBeInTheDocument()
+    expect(await screen.findByRole("heading", { name: "More from your wearable" })).toBeInTheDocument()
     expect(screen.getByText("Cadence")).toBeInTheDocument()
     expect(screen.getByText("60.0")).toBeInTheDocument()
   })
 
   // Verifies that a destructive error alert renders when participant data cannot be loaded.
-  it("renders destructive alert banner when loading participant data fails", () => {
-    vi.mocked(useParticipant).mockReturnValue({
-      data: undefined,
-      isPending: false,
-      isError: true,
-      error: new ApiError(500, undefined, "Participant service unavailable"),
-    } as unknown as ReturnType<typeof useParticipant>)
+  it("renders destructive alert banner when loading participant data fails", async () => {
+    serve({
+      "GET /participants/{person_id}": new Reply(500, {
+        detail: "Participant service unavailable",
+      }),
+    })
 
     renderWithProviders(<PatientDashboard principal={patientPrincipal} />)
 
-    expect(screen.getByText("We couldn't load your readings")).toBeInTheDocument()
+    expect(await screen.findByText("We couldn't load your readings")).toBeInTheDocument()
     expect(screen.getByText("Something went wrong. Please try again.")).toBeInTheDocument()
   })
 
   // Verifies that skeleton placeholders render when participant data is still pending.
-  it("renders skeleton placeholders while data queries are pending", () => {
-    vi.mocked(useParticipant).mockReturnValue({
-      data: undefined,
-      isPending: true,
-      isError: false,
-    } as unknown as ReturnType<typeof useParticipant>)
+  it("renders skeleton placeholders while data queries are pending", async () => {
+    serve({ "GET /participants/{person_id}": PENDING })
 
     const { container } = renderWithProviders(<PatientDashboard principal={patientPrincipal} />)
 
@@ -238,20 +199,21 @@ describe("PatientDashboard", () => {
   })
 
   // Verifies that greeting omits the clock timestamp when clock.now is missing.
-  it("omits timestamp gracefully when clock now is null", () => {
+  it("omits timestamp gracefully when clock now is null", async () => {
     vi.mocked(useClock).mockReturnValue({
       connected: true,
       clock: null,
       control: vi.fn(),
     } as unknown as ReturnType<typeof useClock>)
 
+    serve()
     renderWithProviders(<PatientDashboard principal={patientPrincipal} />)
 
-    expect(screen.getByText("Here's how your week looks.")).toBeInTheDocument()
+    expect(await screen.findByText("Here's how your week looks.")).toBeInTheDocument()
   })
 
   // Verifies that empty participant_id is handled safely without throwing runtime errors.
-  it("handles missing participant_id on principal gracefully", () => {
+  it("handles missing participant_id on principal gracefully", async () => {
     const anonymousPrincipal: Principal = {
       user_id: "anon",
       role: "patient",
@@ -259,8 +221,9 @@ describe("PatientDashboard", () => {
       participant_id: null,
     }
 
+    serve()
     renderWithProviders(<PatientDashboard principal={anonymousPrincipal} />)
 
-    expect(screen.getByRole("heading", { level: 1, name: "Hi, Guest" })).toBeInTheDocument()
+    expect(await screen.findByRole("heading", { level: 1, name: "Hi, Guest" })).toBeInTheDocument()
   })
 })

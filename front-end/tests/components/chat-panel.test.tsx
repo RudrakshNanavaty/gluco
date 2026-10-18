@@ -5,21 +5,11 @@ import { ChatLauncher } from "@/components/chat/chat-launcher"
 import { ChatPanel } from "@/components/chat/chat-panel"
 import { useChat } from "@/components/chat/chat-provider"
 import { useMediaQuery } from "@/hooks/use-media-query"
-import { useThreads } from "@/lib/api/queries"
+import { fakeApi } from "../fake-api"
 import { renderWithProviders } from "../test-utils"
 
 vi.mock("@/components/chat/chat-provider", () => ({
   useChat: vi.fn(),
-}))
-
-vi.mock("@/lib/api/queries", () => ({
-  keys: {
-    threads: ["chat", "threads"],
-    pins: ["pins"],
-  },
-  useThreads: vi.fn(),
-  usePinnedWidgets: vi.fn(() => ({ data: [] })),
-  useCatalog: vi.fn(() => ({ data: { metrics: [] }, isSuccess: true })),
 }))
 
 vi.mock("@/hooks/use-media-query", () => ({
@@ -47,14 +37,14 @@ describe("ChatPanel & Composer", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(useChat).mockReturnValue(baseChatState as unknown as ReturnType<typeof useChat>)
-    vi.mocked(useThreads).mockReturnValue({
-      data: [
+    fakeApi({
+      "GET /catalog": { metrics: [] },
+      "GET /widgets": [],
+      "GET /chat/sessions": [
         { session_id: "session-1", title: "Current Chat", created_at: "2026-10-16T10:00:00Z" },
         { session_id: "session-2", title: "Yesterday Insights", created_at: "2026-10-15T10:00:00Z" },
       ],
-      isPending: false,
-      isError: false,
-    } as unknown as ReturnType<typeof useThreads>)
+    })
     vi.mocked(useMediaQuery).mockReturnValue(true)
   })
 
