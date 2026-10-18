@@ -31,7 +31,7 @@ test:
 
 # Read-only checks against the real database configured in .env
 test-live:
-    LIVE_DB=1 uv run pytest tests/test_postgres_live.py -v
+    LIVE_DB=1 uv run pytest tests/test_postgres_live.py tests/test_window_source.py -v
 
 lint:
     uv run ruff check . && uv run ruff format --check . && uv run basedpyright

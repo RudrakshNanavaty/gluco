@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { toast } from "sonner"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -10,14 +10,8 @@ import {
 } from "@/components/gluco-score"
 import { PinnedWidgets } from "@/components/widgets/pinned-widgets"
 import { WidgetView } from "@/components/widgets/widget-view"
-import { ApiError } from "@/lib/api/client"
 import type { QueryResult } from "@/lib/api/events"
-import {
-  useCatalog,
-  usePinnedWidgets,
-  useUnpinWidget,
-  useWidgetData,
-} from "@/lib/api/queries"
+import { fakeApi, PENDING, Reply } from "../fake-api"
 import { renderWithProviders } from "../test-utils"
 
 vi.mock("sonner", () => ({
@@ -26,32 +20,25 @@ vi.mock("sonner", () => ({
   },
 }))
 
-vi.mock("@/lib/api/queries", () => ({
-  keys: {
-    pins: ["pins"],
-    widget: (id: string) => ["data", "widget", id],
-    catalog: ["catalog"],
-  },
-  usePinnedWidgets: vi.fn(),
-  useWidgetData: vi.fn(),
-  useUnpinWidget: vi.fn(),
-  useCatalog: vi.fn(),
-}))
-
 describe("Score Visualizations and Widgets", () => {
   const sampleMetrics = [
     { name: "gluco_score", label: "Gluco Score", unit: "", live: false, description: "Composite score" },
     { name: "heart_rate", label: "Heart Rate", unit: "bpm", live: true, description: "Heart rate" },
   ]
 
+  /** The widget routes, with any replaced. */
+  function serve(overrides: Record<string, unknown> = {}) {
+    return fakeApi({
+      "GET /catalog": { metrics: sampleMetrics },
+      "GET /widgets": [],
+      "GET /widgets/{widget_id}/data": PENDING,
+      "DELETE /widgets/{widget_id}": undefined,
+      ...overrides,
+    })
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useCatalog).mockReturnValue({
-      data: { metrics: sampleMetrics },
-      isSuccess: true,
-      isPending: false,
-      isError: false,
-    } as unknown as ReturnType<typeof useCatalog>)
   })
 
   describe("ScoreRing & GlucoScore", () => {
@@ -107,6 +94,7 @@ describe("Score Visualizations and Widgets", () => {
 
     // Verifies that GlucoScore adapts formatting according to the patient or clinician audience.
     it("renders appropriate score summary layout based on audience prop", () => {
+      serve()
       const { rerender } = renderWithProviders(<GlucoScore value={82} change={2.1} audience="patient" />)
       expect(screen.getByText("Up 2 points since this time yesterday.")).toBeInTheDocument()
       expect(screen.getByText("Higher is healthier.")).toBeInTheDocument()
@@ -117,7 +105,6 @@ describe("Score Visualizations and Widgets", () => {
   })
 
   describe("PinnedWidgets", () => {
-    const mockUnpinMutate = vi.fn()
     const samplePins = [
       {
         id: "pin-1",
@@ -128,100 +115,68 @@ describe("Score Visualizations and Widgets", () => {
       },
     ]
 
-    beforeEach(() => {
-      vi.mocked(useUnpinWidget).mockReturnValue({
-        mutate: mockUnpinMutate,
-        isPending: false,
-      } as unknown as ReturnType<typeof useUnpinWidget>)
-    })
-
     // Verifies that PinnedWidgets returns null when no widgets are pinned.
-    it("returns null when pin collection is empty or undefined", () => {
-      vi.mocked(usePinnedWidgets).mockReturnValue({
-        data: [],
-        isPending: false,
-        isError: false,
-      } as unknown as ReturnType<typeof usePinnedWidgets>)
+    it("returns null when pin collection is empty or undefined", async () => {
+      const api = serve()
 
       const { container } = renderWithProviders(<PinnedWidgets audience="patient" />)
+      await waitFor(() => expect(api.calls).toHaveLength(1))
       expect(container).toBeEmptyDOMElement()
     })
 
     // Verifies that PinnedWidgets renders pinned cards with title and query descriptions.
-    it("renders pinned widget cards and kind descriptions when pins exist", () => {
-      vi.mocked(usePinnedWidgets).mockReturnValue({
-        data: samplePins,
-        isPending: false,
-        isError: false,
-      } as unknown as ReturnType<typeof usePinnedWidgets>)
-      vi.mocked(useWidgetData).mockReturnValue({
-        data: undefined,
-        isPending: true,
-        isError: false,
-      } as unknown as ReturnType<typeof useWidgetData>)
+    it("renders pinned widget cards and kind descriptions when pins exist", async () => {
+      serve({ "GET /widgets": samplePins })
 
       renderWithProviders(<PinnedWidgets audience="patient" />)
 
-      expect(screen.getByRole("heading", { name: "Pinned widgets" })).toBeInTheDocument()
+      expect(await screen.findByRole("heading", { name: "Pinned widgets" })).toBeInTheDocument()
       expect(screen.getByText("Daily Heart Rate")).toBeInTheDocument()
       expect(screen.getByText(/Trend · live, last 72 h/i)).toBeInTheDocument()
     })
 
     // Verifies that clicking the unpin button triggers the unpin mutation with the pin ID.
-    it("triggers unpin mutation when unpin button is clicked", () => {
-      vi.mocked(usePinnedWidgets).mockReturnValue({
-        data: samplePins,
-        isPending: false,
-        isError: false,
-      } as unknown as ReturnType<typeof usePinnedWidgets>)
-      vi.mocked(useWidgetData).mockReturnValue({
-        data: undefined,
-        isPending: true,
-        isError: false,
-      } as unknown as ReturnType<typeof useWidgetData>)
+    it("unpins the widget and refreshes the pin list when unpin is clicked", async () => {
+      const api = serve({ "GET /widgets": samplePins })
 
       renderWithProviders(<PinnedWidgets audience="patient" />)
 
-      const unpinBtn = screen.getByRole("button", { name: "Unpin Daily Heart Rate" })
+      const unpinBtn = await screen.findByRole("button", { name: "Unpin Daily Heart Rate" })
       fireEvent.click(unpinBtn)
 
-      expect(mockUnpinMutate).toHaveBeenCalledWith("pin-1", expect.any(Object))
+      await waitFor(() =>
+        expect(api.calls.map((c) => `${c.method} ${c.path}`)).toEqual(
+          expect.arrayContaining(["DELETE /widgets/pin-1"])
+        )
+      )
+      await waitFor(() =>
+        expect(api.calls.filter((c) => c.path === "/widgets")).toHaveLength(2)
+      )
     })
 
     // Verifies that an unpin mutation error calls toast.error with friendly message.
-    it("displays error toast when unpin mutation encounters an error", () => {
-      mockUnpinMutate.mockImplementationOnce((_id: string, options?: { onError?: (err: unknown) => void }) => {
-        options?.onError?.(new ApiError(500, undefined, "Failed to unpin"))
+    it("displays error toast when unpin mutation encounters an error", async () => {
+      serve({
+        "GET /widgets": samplePins,
+        "DELETE /widgets/{widget_id}": new Reply(500, { detail: "Failed to unpin" }),
       })
-
-      vi.mocked(usePinnedWidgets).mockReturnValue({
-        data: samplePins,
-        isPending: false,
-        isError: false,
-      } as unknown as ReturnType<typeof usePinnedWidgets>)
-      vi.mocked(useWidgetData).mockReturnValue({
-        data: undefined,
-        isPending: false,
-        isError: false,
-      } as unknown as ReturnType<typeof useWidgetData>)
 
       renderWithProviders(<PinnedWidgets audience="patient" />)
 
-      const unpinBtn = screen.getByRole("button", { name: "Unpin Daily Heart Rate" })
+      const unpinBtn = await screen.findByRole("button", { name: "Unpin Daily Heart Rate" })
       fireEvent.click(unpinBtn)
 
-      expect(toast.error).toHaveBeenCalledWith("Something went wrong. Please try again.")
+      await waitFor(() =>
+        expect(toast.error).toHaveBeenCalledWith("Something went wrong. Please try again.")
+      )
     })
 
     // Verifies that compliance note renders when a compliance step is present in widget data.
-    it("renders compliance verification note with shield icon when present", () => {
-      vi.mocked(usePinnedWidgets).mockReturnValue({
-        data: samplePins,
-        isPending: false,
-        isError: false,
-      } as unknown as ReturnType<typeof usePinnedWidgets>)
-      vi.mocked(useWidgetData).mockReturnValue({
-        data: {
+    it("renders compliance verification note with shield icon when present", async () => {
+      serve({
+        "GET /widgets": samplePins,
+        "GET /widgets/{widget_id}/data": {
+          ...samplePins[0],
           result: {
             metrics: ["heart_rate"],
             series: [{ display_name: "Self", points: [] }],
@@ -232,13 +187,13 @@ describe("Score Visualizations and Widgets", () => {
             { stage: "compliance", text: "Checked against clinical protocol parameters" },
           ],
         },
-        isPending: false,
-        isError: false,
-      } as unknown as ReturnType<typeof useWidgetData>)
+      })
 
       renderWithProviders(<PinnedWidgets audience="patient" />)
 
-      expect(screen.getByText("Checked against clinical protocol parameters")).toBeInTheDocument()
+      expect(
+        await screen.findByText("Checked against clinical protocol parameters")
+      ).toBeInTheDocument()
     })
   })
 
@@ -259,26 +214,29 @@ describe("Score Visualizations and Widgets", () => {
     } as unknown as QueryResult
 
     // Verifies that stat widget kind renders metric value and label.
-    it("renders stat widget kind with primary value and metric label", () => {
-      render(<WidgetView kind="stat" result={sampleResult} audience="patient" />)
+    it("renders stat widget kind with primary value and metric label", async () => {
+      serve()
+      renderWithProviders(<WidgetView kind="stat" result={sampleResult} audience="patient" />)
 
-      expect(screen.getByText("76.0")).toBeInTheDocument()
-      expect(screen.getByText(/Heart Rate/)).toBeInTheDocument()
+      expect(await screen.findByText("76.0")).toBeInTheDocument()
+      expect(await screen.findByText(/Heart Rate/)).toBeInTheDocument()
     })
 
     // Verifies that table widget kind renders series names and metric column headers.
-    it("renders table widget kind with series rows and metric columns", () => {
-      render(<WidgetView kind="table" result={sampleResult} audience="patient" />)
+    it("renders table widget kind with series rows and metric columns", async () => {
+      serve()
+      renderWithProviders(<WidgetView kind="table" result={sampleResult} audience="patient" />)
 
-      expect(screen.getByText("Patient A")).toBeInTheDocument()
-      expect(screen.getByText("Heart Rate")).toBeInTheDocument()
+      expect(await screen.findByText("Patient A")).toBeInTheDocument()
+      expect(await screen.findByText("Heart Rate")).toBeInTheDocument()
     })
 
     // Verifies that heatmap widget kind renders day labels and metric guidance note.
-    it("renders heatmap widget kind with day timestamps and legend note", () => {
-      render(<WidgetView kind="heatmap" result={sampleResult} audience="patient" />)
+    it("renders heatmap widget kind with day timestamps and legend note", async () => {
+      serve()
+      renderWithProviders(<WidgetView kind="heatmap" result={sampleResult} audience="patient" />)
 
-      expect(screen.getByText(/Heart Rate by day \(UTC\) · darker is higher/i)).toBeInTheDocument()
+      expect(await screen.findByText(/Heart Rate by day \(UTC\) · darker is higher/i)).toBeInTheDocument()
     })
   })
 })
