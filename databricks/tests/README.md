@@ -29,3 +29,9 @@ replace the remote event-retry and publication smoke test.
 Runtime controls additionally cover terminated-run retry, explicit STOP
 clearance, active-run refusal, submission-failure recovery, persisted stop status,
 synthetic interpolation, missing HR and invalid tick limits.
+
+Accuracy-selection tests check equal participant weighting, training-prediction
+threshold selection, deterministic default-threshold ties, invariance to
+repeating one participant's windows, and invalid probability rejection. The
+separate cloud notebook reproduces baseline predictions before comparing
+regularization and threshold selection on nested participant folds.

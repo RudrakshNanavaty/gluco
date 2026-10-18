@@ -198,3 +198,14 @@ then a cancellation test after Bronze commit and before refresh. The cursor
 and 11,088 seeded windows were retained. Explicit retry recovered to 11,154
 windows / 330 unique events with no duplicate inserts and no changes to the
 original session. Local tests: 58 passed. See `RUNTIME_SAFETY_RESULTS.md`.
+
+## Accuracy development follow-up (October 18, 2026)
+
+A predeclared regularization/threshold comparison reproduced the original
+baseline exactly on the same 660 windows / 15 participants. Adding strongly
+regularized logistic candidates improved participant-weighted accuracy from
+60.42% to 62.11%; inner threshold tuning reduced accuracy to 57.93%. This is
+reused-cohort development evidence only. No model or session was promoted.
+See [plan](ACCURACY_EXPERIMENT_PLAN.md) and
+[full results](ACCURACY_EXPERIMENT_RESULTS.md), including paired participant
+outcomes and the independent-validation requirement.
