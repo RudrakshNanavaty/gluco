@@ -63,3 +63,21 @@ Credentials remain in ignored local configuration or managed secrets, never here
 
 Suggested commit for this document:
 `docs(databricks): record verified pipeline baseline and remaining gaps`
+
+## Coverage follow-up
+
+Read-only SQL in `databricks/sql/coverage_audit.sql` verified:
+
+- BIG IDEAs: 153,400 / 155,116 minutes pass the training sample-ratio prefilter.
+  All three incomplete minutes fail that prefilter. No minute reports source
+  parse errors. The actual 24-hour acceptance gate still applies afterward.
+- IMU50: 6,772 / 6,777 minutes pass the same sample-ratio check, with no
+  incomplete minutes or reported parse errors. This does not make IMU50 labeled
+  training data.
+- Current release training windows: class 0 has 7 people / 401 windows (18–112
+  per person); class 1 has 8 people / 259 windows (6–69 per person).
+- Total accepted training windows: 660 across 15 people. Window counts are not
+  balanced even though participant counts are similar. Preserve equal total
+  participant weights and participant-held-out evaluation.
+- Candidate-window rejection counts have not yet been reconstructed. Passing
+  the minute prefilter alone does not establish 24-hour window eligibility.
