@@ -21,6 +21,11 @@ ask question who="clinician":
 eval *args:
     uv run python evals/run.py {{args}}
 
+# Create or update a Clerk account for every participant (needs CLERK_SECRET_KEY and
+# CLERK_DEMO_PASSWORD): just seed-clerk --dry-run, then just seed-clerk
+seed-clerk *args:
+    uv run python -m agent.clerk_seed {{args}}
+
 test:
     uv run pytest
 

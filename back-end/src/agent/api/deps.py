@@ -1,6 +1,5 @@
 """Request dependencies: the runtime, who is calling, and shared error handling."""
 
-from dataclasses import dataclass
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Request
@@ -29,30 +28,11 @@ RuntimeDep = Annotated[Runtime, Depends(get_runtime)]
 Credentials = Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)]
 
 
-@dataclass(frozen=True)
-class ClerkCredentials:
-    credentials: str | None
-    username_hint: str | None = None
-
-
-def bearer_credentials(
-    request: Request,
-    authorization: HTTPAuthorizationCredentials | None = Depends(_bearer),
-) -> ClerkCredentials:
-    return ClerkCredentials(
-        authorization.credentials if authorization else None,
-        request.headers.get("X-Clerk-Username"),
-    )
-
-
-ClerkCredentialsDep = Annotated[ClerkCredentials, Depends(bearer_credentials)]
-
-
 def current_principal(runtime: RuntimeDep, credentials: Credentials) -> Principal:
     if credentials is None:
         raise HTTPException(
             401,
-            "Please choose a profile to continue.",
+            "Please sign in to continue.",
             headers={"WWW-Authenticate": "Bearer"},
         )
     try:
@@ -60,7 +40,7 @@ def current_principal(runtime: RuntimeDep, credentials: Credentials) -> Principa
     except InvalidTokenError as exc:
         raise HTTPException(
             401,
-            "Your session has ended. Please choose a profile again.",
+            "Your session has ended. Please sign in again.",
             headers={"WWW-Authenticate": "Bearer"},
         ) from exc
 

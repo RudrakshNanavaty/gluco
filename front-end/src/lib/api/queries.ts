@@ -20,7 +20,6 @@ export type SortOrder = "asc" | "desc"
 export const keys = {
   data: ["data"] as const,
   catalog: ["catalog"] as const,
-  personas: ["personas"] as const,
   cohort: ["data", "cohort"] as const,
   participants: (sortBy: string, order: SortOrder) =>
     ["data", "participants", sortBy, order] as const,
@@ -35,15 +34,6 @@ export const keys = {
     ["data", "widget-preview", spec] as const,
   chat: ["chat"] as const,
   threads: ["chat", "threads"] as const,
-}
-
-export function usePersonas(enabled = true) {
-  return useQuery({
-    queryKey: keys.personas,
-    queryFn: () => unwrap(api.GET("/personas")),
-    staleTime: 60_000,
-    enabled,
-  })
 }
 
 /** Metric labels, units and descriptions. Static for a session. */

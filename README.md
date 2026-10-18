@@ -143,7 +143,7 @@ cp .env.example .env.local
 bun dev
 ```
 
-Open `http://localhost:3000` and choose a clinician or patient demo persona.
+Open `http://localhost:3000` and sign in with a Clerk account (seed them with `just seed-clerk` in `back-end/`).
 
 ### Verify the project
 
@@ -280,11 +280,13 @@ alone. Raw or restricted study data should not be committed to this repository.
 
 This project discloses AI assistance in both development and architecture:
 
-- **Development assistance:** [OpenAI Codex](https://developers.openai.com/learn/codex)
-  was used to help analyze the repository, draft and edit documentation—including
-  this README—and run repeatable checks. AI suggestions were reviewed and edited;
-  the project team remains responsible for the code, scientific claims, and
-  documentation.
+- **Development assistance:** AI coding assistants, including
+  [OpenAI Codex](https://developers.openai.com/learn/codex) and other agentic
+  coding tools, were used to help analyze the repository, write and refactor code
+  (for example the sign-in integration, the account-seeding script, and the data
+  pipeline scripts), draft and edit documentation—including this README—and run
+  repeatable checks. AI suggestions were reviewed and edited; the project team
+  remains responsible for the code, scientific claims, and documentation.
 - **Runtime explanations:** the FastAPI service uses the
   [OpenAI Agents SDK](https://developers.openai.com/api/docs/guides/agents/sdk)
   for role-scoped tools and guardrails, with the

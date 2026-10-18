@@ -74,20 +74,15 @@ def build_runtime(
         settings.auth_secret.get_secret_value(),
         timedelta(hours=settings.token_ttl_hours),
     )
-    clerk = (
-        ClerkTokenVerifier(
+    clerk = None
+    if settings.clerk_jwks_url:
+        if not settings.clerk_issuer:
+            raise ValueError("CLERK_ISSUER is required when CLERK_JWKS_URL is set")
+        clerk = ClerkTokenVerifier(
             settings.clerk_jwks_url,
             issuer=settings.clerk_issuer,
             audience=settings.clerk_audience,
-            user_map=settings.clerk_patient_user_map,
-            username_map={
-                f"patient{index:03d}": participant_id
-                for index, participant_id in enumerate(store.participants(), 1)
-            },
         )
-        if settings.clerk_jwks_url
-        else None
-    )
     guardrails = {
         role: build_input_guardrails(settings.effective_guardrail_model, role)
         for role in ("clinician", "patient")

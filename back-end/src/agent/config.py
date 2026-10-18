@@ -51,12 +51,14 @@ class Settings(BaseSettings):
     auth_secret: SecretStr = SecretStr(DEV_AUTH_SECRET)
     token_ttl_hours: float = 24.0
 
-    # Clerk verifies the user's password and session. The app only maps the
-    # verified Clerk identity to a patient in memory.
+    # Clerk verifies the user's password and session; the role and participant
+    # come from the user's public_metadata, carried in the session token.
     clerk_jwks_url: str | None = None
     clerk_issuer: str | None = None
     clerk_audience: str | None = None
-    clerk_patient_user_map: dict[str, str] = Field(default_factory=dict)
+    # Only the seed script (`just seed-clerk`) uses these; the API never does.
+    clerk_secret_key: SecretStr | None = None
+    clerk_demo_password: SecretStr | None = None
 
     # The replay clock walks through the published data so it looks live.
     replay_enabled: bool = True
