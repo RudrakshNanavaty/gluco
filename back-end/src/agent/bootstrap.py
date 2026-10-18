@@ -58,7 +58,14 @@ def build_runtime(
     llm = LlmConnection.from_settings(settings)
     llm.configure()
     if settings.auth_secret.get_secret_value() == DEV_AUTH_SECRET:
-        log.warning("AUTH_SECRET is the development default; set it outside a demo")
+        if not settings.allow_dev_auth_secret:
+            raise ValueError(
+                "AUTH_SECRET is the public development default, so anyone could "
+                "forge a session token. Set AUTH_SECRET to a long random value "
+                "(python -c 'import secrets; print(secrets.token_urlsafe(48))'), "
+                "or set ALLOW_DEV_AUTH_SECRET=true for local development only."
+            )
+        log.warning("AUTH_SECRET is the development default; local development only")
 
     source = source or build_source(settings)
     store = WindowStore(source, settings.store_refresh_s, time_source)

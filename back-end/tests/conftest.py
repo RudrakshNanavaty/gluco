@@ -83,6 +83,7 @@ def make_settings(tmp: Path, **overrides: Any) -> Settings:
     values: dict[str, Any] = {
         "agent_model": "test-model",
         "data_backend": "mock",
+        "allow_dev_auth_secret": True,
         "replay_enabled": False,
         "session_db_path": tmp / "sessions.sqlite",
         "trace_path": tmp / "trace.jsonl",

@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     # Signs the demo login tokens. The default is for local development only.
     auth_secret: SecretStr = SecretStr(DEV_AUTH_SECRET)
     token_ttl_hours: float = 24.0
+    # The default AUTH_SECRET is public (it is in the repo): anyone could forge a
+    # session token with it. Only local development should opt in to using it.
+    allow_dev_auth_secret: bool = False
 
     # Clerk verifies the user's password and session; the role and participant
     # come from the user's public_metadata, carried in the session token.
