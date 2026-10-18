@@ -258,3 +258,99 @@ def test_retry_event_identity_is_stable_and_session_scoped(config):
         != first["event_id"]
     )
     assert first["measurements"]["demo"]["training_eligible"] is False
+
+
+def test_retry_refuses_active_job_and_preserves_stop(
+    configured_controller, monkeypatch, tmp_path
+):
+    state = configured_controller
+    state["pending"] = {"run_id": 123, "mode": "advance", "end": 11525}
+    monkeypatch.setattr(controller, "ROOT", tmp_path)
+    (tmp_path / "STOP").touch()
+    monkeypatch.setattr(
+        controller, "api", lambda *a: {"state": {"life_cycle_state": "RUNNING"}}
+    )
+    with pytest.raises(ValueError, match="still active"):
+        controller.retry_pending(state, 200, True)
+    assert (tmp_path / "STOP").exists()
+    assert state["cursor"] == 11520
+
+
+def test_retry_requires_explicit_stop_clear(
+    configured_controller, monkeypatch, tmp_path
+):
+    state = configured_controller
+    state["pending"] = {"run_id": 123, "mode": "advance", "end": 11525}
+    monkeypatch.setattr(controller, "ROOT", tmp_path)
+    (tmp_path / "STOP").touch()
+    with pytest.raises(ValueError, match="resume-stopped"):
+        controller.retry_pending(state, 200)
+    assert (tmp_path / "STOP").exists()
+
+
+def test_retry_preserves_failed_batch_target(
+    configured_controller, monkeypatch, tmp_path
+):
+    state = configured_controller
+    state["pending"] = {"run_id": 123, "mode": "advance", "end": 11525}
+    monkeypatch.setattr(controller, "ROOT", tmp_path)
+    (tmp_path / "STOP").touch()
+    monkeypatch.setattr(
+        controller,
+        "api",
+        lambda *a: {
+            "state": {"life_cycle_state": "TERMINATED", "result_state": "CANCELED"}
+        },
+    )
+    calls = []
+    monkeypatch.setattr(
+        controller, "submit", lambda s, m, e, d: calls.append((s["cursor"], m, e, d))
+    )
+    controller.retry_pending(state, 200, True)
+    assert calls == [(11520, "advance", 11525, 200)]
+    assert state["retry_history"][0]["run_id"] == 123
+    assert not (tmp_path / "STOP").exists()
+    assert state["cursor"] == 11520
+
+
+def test_retry_submission_failure_retains_old_pending(
+    configured_controller, monkeypatch, tmp_path
+):
+    state = configured_controller
+    pending = {"run_id": 123, "mode": "advance", "end": 11525}
+    state["pending"] = pending.copy()
+    monkeypatch.setattr(controller, "ROOT", tmp_path)
+    monkeypatch.setattr(
+        controller,
+        "api",
+        lambda *a: {
+            "state": {"life_cycle_state": "TERMINATED", "result_state": "FAILED"}
+        },
+    )
+
+    def fail(*a):
+        raise RuntimeError("submission unavailable")
+
+    monkeypatch.setattr(controller, "submit", fail)
+    with pytest.raises(RuntimeError, match="submission unavailable"):
+        controller.retry_pending(state, 200)
+    assert state["pending"] == pending
+    assert state["cursor"] == 11520
+
+
+def test_stop_command_saves_status_and_retains_pending(
+    configured_controller, monkeypatch, tmp_path
+):
+    state = configured_controller
+    state["pending"] = {"run_id": 123, "mode": "advance", "end": 11525}
+    (tmp_path / "state.json").write_text(json.dumps(state))
+    monkeypatch.setattr(controller, "ROOT", tmp_path)
+    monkeypatch.setattr(sys, "argv", ["continuous_demo.py", "stop"])
+    calls = []
+    monkeypatch.setattr(controller, "api", lambda *a: calls.append(a))
+    controller.main()
+    saved = json.loads((tmp_path / "state.json").read_text())
+    assert saved["status"] == "stop_requested"
+    assert saved["pending"] == state["pending"]
+    assert saved["cursor"] == 11520
+    assert calls == [("jobs", "cancel-run", "123")]

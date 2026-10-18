@@ -25,3 +25,7 @@ state paths, immutable resume settings, task dependency/connection propagation,
 batch bounds, a bounded dry-run, failure/stop cursor retention, successful
 refresh advancement, and stable session-scoped event identities. They do not
 replace the remote event-retry and publication smoke test.
+
+Runtime controls additionally cover terminated-run retry, explicit STOP
+clearance, active-run refusal, submission-failure recovery, persisted stop status,
+synthetic interpolation, missing HR and invalid tick limits.

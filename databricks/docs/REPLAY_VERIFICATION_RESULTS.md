@@ -50,7 +50,7 @@ or weakening key equality. Reusable SQL is in `../sql/replay_verification.sql`.
 
 This checks synthetic minute replay and analytics publication, not physical
 sensors, a continuously running service, HTTP ingestion, or the one-second
-sensor sender. Remote cancellation during an in-flight partial batch was not
-exercised; failure/stop cursor retention is covered locally. No model retraining
-or promotion occurred; the 60.42% development baseline is unchanged. Changes
-remain on a local feature branch pending push, PR and GitHub CI.
+sensor sender. This first run did not exercise remote cancellation. A later isolated test
+verified bounded sensor publication and partial-batch cancellation/recovery;
+see `RUNTIME_SAFETY_RESULTS.md`. No model retraining
+or promotion occurred; the 60.42% development baseline is unchanged. Changes are under review in draft PR #91, stacked after #89 and #90.

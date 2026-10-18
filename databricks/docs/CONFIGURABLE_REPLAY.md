@@ -66,8 +66,12 @@ schedule or cadence fails validation. Use a new session for changes. Keep the
 same environment when resuming. `stop` leaves history, cursor and pending run
 identity intact; clearing a STOP marker must be an explicit operator decision.
 The controller does not automatically clear it. A failed batch retains its
-pending run and does not advance the cursor; recovery requires investigating
-that run rather than silently skipping it.
+pending run and does not advance the cursor. Inspect the cloud run first, then
+use `retry --resume-stopped` to explicitly clear STOP and replay the same batch.
+Retry refuses a still-active run, archives the terminated run identity, and
+preserves the original cursor/endpoint. If submission fails, the old pending
+record remains available. Without a STOP marker, `retry` needs no clearance flag.
+A previously successful pending run is settled instead of submitted again.
 
 Existing prepared fixtures are reused. Re-registering `overnight-v1` is not
 part of ordinary prepare; `GLUCO_REGISTER_FIXTURE=true` explicitly opts into the
@@ -90,5 +94,26 @@ one reference release, and no existing `replay-config-check-v1` session.
 Secret-scope access was subsequently granted. Preparation and a five-minute
 replay completed successfully in `replay-config-check-v1`; retries, publication,
 exact key/metric agreement and no-op resume were verified. See
-`REPLAY_VERIFICATION_RESULTS.md` for run IDs and evidence. The separate
-one-second sensor sender and in-flight cloud cancellation remain unverified.
+`REPLAY_VERIFICATION_RESULTS.md` for run IDs and evidence. Subsequent bounded sensor and partial-batch cancellation/recovery checks also
+passed; see `RUNTIME_SAFETY_RESULTS.md` for scope and limits.
+
+
+## Bounded sensor verification controls
+
+`fast_sensor.py --max-ticks 5 --snapshots-only --skip-bootstrap` performs five
+successful snapshot writes, emits no canonical minute events, and uses already
+provisioned tables/views without DDL or grants. It stops and closes its connection
+after the limit. `--max-ticks` is relative to the current launch, including when
+prior sensor-state tick counts exist. Normal sender behavior is unchanged when
+these options are omitted. These options also propagate to a background child.
+
+For cancellation verification, use a separate test session. Cancel a run after
+ingestion but before refresh, wait for a terminal cloud state, then invoke:
+
+```sh
+python databricks/tiger/continuous_demo.py retry --resume-stopped
+```
+
+The retry must leave raw/Bronze identities unique and publish the previously
+unpublished endpoint before advancing the cursor. Never retry a live run or
+change its fixture, model or schedule as a workaround.

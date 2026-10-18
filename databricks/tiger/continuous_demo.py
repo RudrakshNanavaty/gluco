@@ -161,6 +161,7 @@ def settle(state, deadline):
                 status="ready",
             )
             state.pop("pending", None)
+            state.pop("error", None)
             save(state)
             print(
                 json.dumps(
@@ -197,11 +198,47 @@ def submit(state, mode, end, deadline):
     settle(state, deadline)
 
 
+def retry_pending(state, deadline, resume_stopped=False):
+    """Explicit recovery only after the old cloud run has stopped."""
+    pending = state.get("pending")
+    if not pending:
+        raise ValueError("No pending batch to retry")
+    stopped = (ROOT / "STOP").exists()
+    if stopped and not resume_stopped:
+        raise ValueError("Use --resume-stopped to explicitly clear the STOP marker")
+    run = api("jobs", "get-run", str(pending["run_id"]))
+    status = run["state"]
+    if status["life_cycle_state"] not in {"TERMINATED", "SKIPPED", "INTERNAL_ERROR"}:
+        raise ValueError(
+            "Pending run is still active; wait for termination before retrying"
+        )
+    if stopped:
+        (ROOT / "STOP").unlink()
+    if status.get("result_state") == "SUCCESS":
+        settle(state, deadline)
+        return
+    state.setdefault("retry_history", []).append(
+        {**pending, "result_state": status.get("result_state")}
+    )
+    save(state)
+    # Keep the old pending record until submission succeeds; submit replaces it.
+    submit(state, pending["mode"], pending["end"], deadline)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "action",
-        choices=["prepare", "advance", "live", "judge", "status", "stop", "dry-run"],
+        choices=[
+            "prepare",
+            "advance",
+            "live",
+            "judge",
+            "status",
+            "stop",
+            "dry-run",
+            "retry",
+        ],
     )
     parser.add_argument(
         "--fallback",
@@ -219,7 +256,14 @@ def main():
         type=int,
         help="Bound advance/dry-run to a reserved minute offset (11520–12960)",
     )
+    parser.add_argument(
+        "--resume-stopped",
+        action="store_true",
+        help="Explicitly clear STOP when retrying a terminated run",
+    )
     args = parser.parse_args()
+    if args.resume_stopped and args.action != "retry":
+        raise ValueError("resume-stopped is only supported for retry")
     if args.through_offset is not None:
         if (
             args.action not in {"advance", "dry-run"}
@@ -272,6 +316,8 @@ def main():
         return
     if args.action == "stop":
         (ROOT / "STOP").touch()
+        state["status"] = "stop_requested"
+        save(state)
         if state.get("pending"):
             api("jobs", "cancel-run", str(state["pending"]["run_id"]))
         print("Stopped new replay batches; dashboard history is preserved")
@@ -334,6 +380,9 @@ def main():
         raise ValueError("Outside configured live replay window")
     if not 1 <= args.batch_minutes <= 60:
         raise ValueError("batch-minutes must be 1–60")
+    if args.action == "retry":
+        retry_pending(state, min(STOP_AT, time.time() + 2400), args.resume_stopped)
+        return
     if (ROOT / "STOP").exists():
         raise ValueError(
             "STOP marker is present; request an explicit resume before clearing it"

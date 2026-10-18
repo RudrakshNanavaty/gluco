@@ -188,3 +188,13 @@ five-minute batch succeeded in isolated session `replay-config-check-v1`.
 completed endpoint submitted no new run. The original session's ordered payload
 digest/counts/latest time remained unchanged. See `REPLAY_VERIFICATION_RESULTS.md`.
 The one-second sensor sender and live in-flight cancellation were not exercised.
+
+
+## Runtime safety follow-up
+
+A separate session `replay-runtime-safety-v1` passed five bounded synthetic
+sensor ticks (66 timestamped rows, 50 missing HR values, no minute emissions),
+then a cancellation test after Bronze commit and before refresh. The cursor
+and 11,088 seeded windows were retained. Explicit retry recovered to 11,154
+windows / 330 unique events with no duplicate inserts and no changes to the
+original session. Local tests: 58 passed. See `RUNTIME_SAFETY_RESULTS.md`.
