@@ -30,6 +30,7 @@ import type { Schemas } from "@/lib/api/client"
 import type { QueryResult } from "@/lib/api/events"
 import {
   formatValue,
+  numberAt,
   roundValue,
   shortUnit,
   type MetricInfo,
@@ -253,10 +254,10 @@ function Value({
 function dailyPoints(week: QueryResult | undefined, metric: string) {
   const points = week?.series[0]?.points ?? []
   return points.flatMap((point) => {
-    const value = point[metric]
-    return typeof value === "number" && Number.isFinite(value)
-      ? [{ t: String(point.t), v: roundValue(metric, value) }]
-      : []
+    const value = numberAt(point, metric)
+    return value === null
+      ? []
+      : [{ t: String(point.t), v: roundValue(metric, value) }]
   })
 }
 

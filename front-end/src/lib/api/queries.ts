@@ -13,6 +13,9 @@ export type QuerySpec = Schemas["QuerySpec"]
 export type WidgetSpec = Schemas["WidgetSpec"]
 export type SortOrder = "asc" | "desc"
 
+/** Marks queries that show live readings; the clock refreshes them as they change. */
+export const LIVE = { live: true } as const
+
 /**
  * Query keys. Everything that depends on the replay clock lives under `data`, so
  * one invalidation refreshes every view when the clock moves.
@@ -57,6 +60,7 @@ export function useCohort() {
 export function useParticipants(sortBy: string, order: SortOrder) {
   return useQuery({
     queryKey: keys.participants(sortBy, order),
+    meta: LIVE,
     queryFn: () =>
       unwrap(
         api.GET("/participants", {
@@ -119,9 +123,6 @@ export function usePinnedWidgets() {
   })
 }
 
-// Widgets showing live readings also refresh between new analytics windows.
-const LIVE_WIDGET_REFRESH_MS = 5_000
-
 /** A pinned widget rebuilt on the server (query + compliance check). */
 export function useWidgetData(id: string, live = false) {
   return useQuery({
@@ -133,7 +134,7 @@ export function useWidgetData(id: string, live = false) {
         })
       ),
     placeholderData: keepPreviousData,
-    refetchInterval: live ? LIVE_WIDGET_REFRESH_MS : false,
+    meta: live ? LIVE : undefined,
   })
 }
 
@@ -153,7 +154,7 @@ export function useWidgetPreview(
     initialData: initial,
     initialDataUpdatedAt: 0,
     placeholderData: keepPreviousData,
-    refetchInterval: live ? LIVE_WIDGET_REFRESH_MS : false,
+    meta: live ? LIVE : undefined,
   })
 }
 

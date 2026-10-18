@@ -7,8 +7,6 @@ rows Databricks publishes while the app runs show up without a restart.
 """
 
 import bisect
-import logging
-import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -16,8 +14,7 @@ from datetime import datetime
 
 from agent.domain.models import Window
 from agent.domain.ports import WindowSource
-
-log = logging.getLogger(__name__)
+from agent.refresher import Refresher
 
 
 @dataclass(frozen=True)
@@ -38,36 +35,27 @@ class WindowStore:
         time_source: Callable[[], float] = time.monotonic,
     ) -> None:
         self._source = source
-        self._refresh_s = refresh_s
-        self._time = time_source
-        self._lock = threading.Lock()
         self._rows: dict[tuple[str, datetime], Window] = {}
         self._last_published: datetime | None = None
-        self._refreshed_at: float | None = None
         self._snapshot: _Snapshot | None = None
+        self._refresher = Refresher(self._pull, refresh_s, time_source, "store")
 
     # --- refresh ------------------------------------------------------------
 
-    def refresh(self) -> int:
-        """Merge newly published windows; returns how many rows arrived."""
-        with self._lock:
-            return self._refresh_locked()
-
-    def _refresh_locked(self) -> int:
+    def _pull(self) -> None:
+        """Merge windows published since the last pull."""
         published = self._source.fetch_since(self._last_published)
         for row in published:
             w = row.window
             self._rows[(w.person_id, w.window_end)] = w
             if self._last_published is None or row.published_at > self._last_published:
                 self._last_published = row.published_at
-        self._refreshed_at = self._time()
         if published or self._snapshot is None:
             self._snapshot = self._build_snapshot()
-        return len(published)
 
     def invalidate(self) -> None:
         """Refresh on the next read rather than waiting out `refresh_s`."""
-        self._refreshed_at = None
+        self._refresher.invalidate()
 
     def _build_snapshot(self) -> _Snapshot:
         by_person: dict[str, list[Window]] = {}
@@ -92,29 +80,12 @@ class WindowStore:
         effort: if one fails, or another thread is already refreshing, readers
         keep the previous snapshot.
         """
-        snapshot = self._snapshot
-        stale = (
-            snapshot is None
-            or self._refreshed_at is None
-            or self._time() - self._refreshed_at >= self._refresh_s
-        )
-        if not stale and snapshot is not None:
-            return snapshot
-        if snapshot is None:
-            with self._lock:
-                if self._snapshot is None:
-                    self._refresh_locked()
-            assert self._snapshot is not None
-            return self._snapshot
-        if self._lock.acquire(blocking=False):
-            try:
-                self._refresh_locked()
-            except Exception:
-                log.exception("store refresh failed; serving the previous data")
-                self._refreshed_at = self._time()  # back off until the next period
-            finally:
-                self._lock.release()
-        return self._snapshot or snapshot
+        if self._snapshot is None:
+            self._refresher.run()
+        else:
+            self._refresher.run_if_stale()
+        assert self._snapshot is not None
+        return self._snapshot
 
     # --- reads ----------------------------------------------------------------
 

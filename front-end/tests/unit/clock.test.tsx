@@ -3,6 +3,7 @@ import { act, renderHook, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { api, ApiError } from "@/lib/api/client"
+import { LIVE } from "@/lib/api/queries"
 import type { ClockState, TickEvent } from "@/lib/api/events"
 import * as sseModule from "@/lib/api/sse"
 import { ClockProvider, useClock } from "@/lib/clock"
@@ -143,6 +144,33 @@ describe("ClockProvider", () => {
     renderHook(() => useClock(), { wrapper })
 
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["data"] })
+  })
+
+  // Verifies live-marked queries refresh when live readings change, at most every 5 s
+  it("refreshes live queries on new live readings, at most every 5 s", () => {
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries")
+    let emit: (tick: TickEvent) => void = () => {}
+    vi.spyOn(sseModule, "streamSSE").mockImplementation(
+      async (_path, _init, onEvent) => {
+        emit = (tick) => onEvent(tick, "message")
+        return new Promise(() => {})
+      }
+    )
+    const now = vi.spyOn(Date, "now").mockReturnValue(10_000)
+
+    renderHook(() => useClock(), { wrapper: createWrapper(queryClient) })
+    act(() => emit({ ...MOCK_TICK, live_at: "2026-10-04T07:15:01Z" }))
+    act(() => emit({ ...MOCK_TICK, live_at: "2026-10-04T07:15:02Z" }))
+    now.mockReturnValue(15_000)
+    act(() => emit({ ...MOCK_TICK, live_at: "2026-10-04T07:15:03Z" }))
+
+    const live = invalidateSpy.mock.calls.filter(
+      ([filters]) => filters?.predicate !== undefined
+    )
+    expect(live).toHaveLength(2)
+    const predicate = live[0][0]!.predicate!
+    expect(predicate({ meta: LIVE } as never)).toBe(true)
+    expect(predicate({ meta: undefined } as never)).toBe(false)
   })
 
   // Verifies termination of stream reconnect loop on 401 unauthorized error
