@@ -1,9 +1,6 @@
-from support import PID
+import json
 
-from agent.analysis.compliance import sanitize
-from agent.auth import CLINICIAN, patient
 from agent.domain.metrics import GLUCO_SCORE
-from agent.query import QuerySpec
 
 STAGES = ["design", "fetch", "compliance", "bind"]
 RANKING = {
@@ -35,7 +32,7 @@ async def test_build_widget_runs_the_whole_pipeline(invoke_clinician):
     assert "start" not in widget["query"]  # relative, so a pin follows the clock
     series = out["chart"]["series"]
     assert len(series) == 5
-    assert not any(s["participant_id"].startswith("demo:") for s in series)
+    assert "demo:" not in json.dumps(out)
     scores = [s["points"][-1][GLUCO_SCORE] for s in series]
     assert scores == sorted(scores)
 
@@ -45,7 +42,7 @@ async def test_a_patient_widget_only_ever_shows_their_own_data(invoke_patient):
         "build_my_widget", title="My heart rate", metrics=["hr_mean_bpm_24h"]
     )
     [series] = out["chart"]["series"]
-    assert series["participant_id"] == "Patient 013"
+    assert series["display_name"] == "Patient 013"
     compliance = next(s for s in out["widget"]["steps"] if s["stage"] == "compliance")
     assert "your own data only" in compliance["text"]
     assert out["widget"]["kind"] == "trend"
@@ -58,22 +55,27 @@ async def test_build_widget_failures_are_payloads(invoke_clinician):
     assert bad["code"] == "bad_argument"
 
 
-def test_sanitize_hides_small_cohort_cells(clinician):
-    raw = clinician.query(
-        QuerySpec(metrics=[GLUCO_SCORE], hours=48, bucket="hour", group_by="cohort")
+SMALL_COHORT = {"participants": ["13", "2"], "bucket": "day", "group_by": "cohort"}
+
+
+def test_post_query_hides_small_cells_and_internal_keys(client, as_clinician):
+    """The disclosure rule holds outside widgets too, not only in the pipeline."""
+    body = client.post("/query", json=SMALL_COHORT, headers=as_clinician).json()
+    assert all(p[GLUCO_SCORE] is None for p in body["series"][0]["points"])
+    assert "hidden" in body["audit"][-1]
+    named = client.post(
+        "/query", json={"participants": ["13", "2"]}, headers=as_clinician
+    ).json()
+    assert "demo:" not in json.dumps(named["series"])
+
+
+async def test_tool_charts_hide_small_cells_and_internal_keys(invoke_clinician):
+    out = await invoke_clinician("query_data", metrics=[GLUCO_SCORE], **SMALL_COHORT)
+    assert all(p[GLUCO_SCORE] is None for p in out["chart"]["series"][0]["points"])
+    named = await invoke_clinician(
+        "query_data", metrics=[GLUCO_SCORE], participants=["13", "2"]
     )
-    raw.series[0].points[0]["participants"] = 2
-    clean, audit = sanitize(raw, CLINICIAN)
-    assert clean.series[0].points[0][GLUCO_SCORE] is None
-    assert clean.series[0].points[1][GLUCO_SCORE] is not None
-    assert any("hidden" in line for line in audit)
-
-
-def test_sanitize_keeps_a_patient_to_their_own_series(clinician):
-    raw = clinician.query(QuerySpec(metrics=[GLUCO_SCORE], hours=24))
-    clean, audit = sanitize(raw, patient(PID))
-    assert [s.participant_id for s in clean.series] == ["Patient 013"]
-    assert "other series removed" in audit[0]
+    assert "demo:" not in json.dumps(named["chart"])
 
 
 def test_pin_list_refresh_and_unpin(client, as_clinician, as_patient):
@@ -100,7 +102,7 @@ def test_a_chat_widget_rebuilds_without_pinning(client, as_clinician, as_patient
     assert len(data["result"]["series"]) == 5
     assert client.get("/widgets", headers=as_clinician).json() == []  # not pinned
     mine = client.post("/widgets/preview", json=RANKING, headers=as_patient).json()
-    assert [s["participant_id"] for s in mine["result"]["series"]] == ["Patient 013"]
+    assert [s["display_name"] for s in mine["result"]["series"]] == ["Patient 013"]
 
 
 def test_patients_cannot_pin_cohort_views(client, as_patient):
@@ -125,8 +127,7 @@ async def test_every_clinician_widget_kind_builds(invoke_clinician):
         out = await invoke_clinician("build_widget", title=kind, kind=kind, **args)
         assert "error" not in out, (kind, out)
         assert [s["stage"] for s in out["widget"]["steps"]] == STAGES
-        keys = [s["participant_id"] for s in out["chart"]["series"]]
-        assert not any(str(k).startswith("demo:") for k in keys), kind
+        assert "demo:" not in json.dumps(out["chart"]), kind
 
 
 async def test_a_clinician_stat_defaults_to_the_panel_average(invoke_clinician):
@@ -165,7 +166,7 @@ async def test_patient_widget_kinds_stay_on_their_own_data(invoke_patient):
             metrics=[GLUCO_SCORE, "hr_mean_bpm_24h"],
         )
         assert "error" not in out, (kind, out)
-        assert [s["participant_id"] for s in out["chart"]["series"]] == ["Patient 013"]
+        assert [s["display_name"] for s in out["chart"]["series"]] == ["Patient 013"]
     refused = await invoke_patient(
         "build_my_widget", title="x", kind="heatmap", metrics=[GLUCO_SCORE]
     )

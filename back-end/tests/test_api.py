@@ -93,7 +93,7 @@ def test_generic_query(client, as_clinician):
     }
     result = client.post("/query", headers=as_clinician, json=body).json()
     [series] = result["series"]
-    assert series["participant_id"] is None
+    assert series["display_name"] == "Cohort"
     assert set(series["points"][0]) >= {"t", "n", GLUCO_SCORE, "hr_mean_bpm_24h"}
     bad = client.post("/query", headers=as_clinician, json={"metrics": ["glucose"]})
     assert bad.status_code == 400

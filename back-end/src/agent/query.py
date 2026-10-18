@@ -1,11 +1,16 @@
 """The one place that decides what a user sees and derives every number.
 
 `QueryService` is built per request for one signed-in user. It applies scope
-(clinicians see everyone, patients only themselves) and the replay clock (only
-windows ending at or before "now"), overlays the live sensor readings on each
-person's newest window once the clock has reached it, then answers with plain
-pydantic models that the REST API returns as-is and the agents' tools hand to
-the LLM. Both read the same numbers because both come through here.
+(clinicians see everyone, patients only themselves), the replay clock (only
+windows ending at or before "now") and the disclosure rule
+(`analysis.compliance`), overlays the live sensor readings on each person's
+newest window once the clock has reached it, then answers with plain pydantic
+models that the REST API returns as-is and the agents' tools hand to the LLM.
+Both read the same numbers because both come through here.
+
+Every public method that names a person takes a reference ("13", "Patient 013"
+or the full key) and resolves it itself, so no caller can reach a person's data
+without passing scope.
 """
 
 import difflib
@@ -16,6 +21,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from agent.analysis import query as q
+from agent.analysis.compliance import disclose
 from agent.analysis.deviation import FeatureDeviation, describe_feature, top_deviations
 from agent.analysis.ids import display_name, resolve_participant
 from agent.analysis.stats import compute_feature_stats
@@ -72,8 +78,7 @@ class QuerySpec(BaseModel):
 
 
 class Series(BaseModel):
-    participant_id: str | None  # None for a pooled cohort series
-    display_name: str
+    display_name: str  # never an internal participant key
     points: list[dict[str, Any]]
 
 
@@ -89,6 +94,8 @@ class QueryResult(BaseModel):
     series: list[Series]
     total_series: int
     truncated: bool
+    # One line per disclosure rule applied, for the widget's compliance step.
+    audit: list[str] = Field(default_factory=list)
 
 
 class ParticipantRow(BaseModel):
@@ -122,6 +129,12 @@ class ChangeReport(BaseModel):
     changes: list[MetricChange]
     largest_shifts: list[str]  # sensor metrics most unusual vs their own week
     note: str = CHANGE_NOTE
+
+
+class Explanation(BaseModel):
+    change: ChangeReport
+    # Where the person sits against everyone's newest windows; clinicians only.
+    cohort_position: list[FeatureDeviation] | None
 
 
 class CohortComparison(BaseModel):
@@ -276,7 +289,7 @@ class QueryService:
         end = now if end is None else min(end, now)
         return self._store.history(person_id, start, end)
 
-    def latest(self, person_id: str) -> Window | None:
+    def _latest(self, person_id: str) -> Window | None:
         """The newest window up to now, with the live readings when there are any."""
         windows = self._history(person_id)
         return self._with_live(windows[-1]) if windows else None
@@ -306,16 +319,13 @@ class QueryService:
             return window
         return window.model_copy(update={"values": {**window.values, **reading.values}})
 
-    def live(self, person_id: str) -> LiveReading | None:
-        newest = self._store.latest(person_id)
-        return self._live_for(newest) if newest else None
-
     def live_readings(self) -> list[LiveReading]:
         """Everyone visible's live readings (for the live stream)."""
-        return [r for pid in self.visible() if (r := self.live(pid))]
+        newest = (self._store.latest(pid) for pid in self.visible())
+        return [r for w in newest if w and (r := self._live_for(w))]
 
     def _require_latest(self, person_id: str) -> Window:
-        window = self.latest(person_id)
+        window = self._latest(person_id)
         if window is None:
             raise QueryError(f"There are no readings for {person_id} up to now.")
         return window
@@ -386,10 +396,10 @@ class QueryService:
             pooled = q.pool(
                 list(per_person.values()), spec.metrics, spec.agg, spec.bucket
             )
-            series = [Series(participant_id=None, display_name="Cohort", points=pooled)]
+            series = [Series(display_name="Cohort", points=pooled)]
         else:
             series = [
-                Series(participant_id=pid, display_name=display_name(pid), points=pts)
+                Series(display_name=display_name(pid), points=pts)
                 for pid, pts in per_person.items()
             ]
             if spec.sort_by is not None:
@@ -398,6 +408,12 @@ class QueryService:
                     series, lambda s: q.sort_key(s.points, metric), spec.order
                 )
 
+        series, audit = disclose(
+            series,
+            pooled=spec.group_by == "cohort",
+            metrics=spec.metrics,
+            principal=self.principal,
+        )
         total = len(series)
         truncated = False
         if spec.limit is not None and total > spec.limit:
@@ -420,6 +436,7 @@ class QueryService:
             series=series,
             total_series=total,
             truncated=truncated,
+            audit=audit,
         )
 
     # --- participants -------------------------------------------------------
@@ -430,15 +447,25 @@ class QueryService:
         """Each visible participant's newest window up to now."""
         if sort_by != "person_id":
             check_metrics([sort_by])
-        rows = [self._row(w) for pid in self.visible() if (w := self.latest(pid))]
+        rows = [self._row(w) for pid in self.visible() if (w := self._latest(pid))]
         if sort_by == "person_id":
             return sorted(rows, key=lambda r: r.person_id, reverse=order == "desc")
         return q.rank(rows, lambda r: r.values.get(sort_by), order)
 
-    def participant(self, person_id: str) -> ParticipantRow:
-        return self._row(self._require_latest(person_id))
+    def participant(self, ref: str) -> ParticipantRow:
+        return self._row(self._require_latest(self.resolve(ref)))
 
-    def explain_change(self, person_id: str, hours: float = 24.0) -> ChangeReport:
+    def explain(self, ref: str, hours: float = 24.0) -> Explanation:
+        """What changed, plus where the person sits in the cohort for clinicians."""
+        person_id = self.resolve(ref)
+        return Explanation(
+            change=self._change(person_id, hours),
+            cohort_position=(
+                self._cohort_position(person_id) if self.is_clinician else None
+            ),
+        )
+
+    def _change(self, person_id: str, hours: float) -> ChangeReport:
         """Now vs `hours` ago, and now vs the person's own last 7 days."""
         if hours <= 0:
             raise QueryError("hours must be positive.")
@@ -500,9 +527,9 @@ class QueryService:
 
     def _cohort_latest(self) -> list[Window]:
         self.require_clinician()
-        return [w for pid in self.visible() if (w := self.latest(pid))]
+        return [w for pid in self.visible() if (w := self._latest(pid))]
 
-    def cohort_position(self, person_id: str, n: int = 5) -> list[FeatureDeviation]:
+    def _cohort_position(self, person_id: str, n: int = 5) -> list[FeatureDeviation]:
         """The person's metrics furthest from everyone's newest windows."""
         latest = self._cohort_latest()
         stats = compute_feature_stats(w.values for w in latest)
@@ -520,9 +547,10 @@ class QueryService:
             for d in top_deviations(sensors, stats, n)
         ]
 
-    def compare_to_cohort(self, person_id: str, metric: str) -> CohortComparison:
+    def compare_to_cohort(self, ref: str, metric: str) -> CohortComparison:
         check_metrics([metric])
         latest = self._cohort_latest()
+        person_id = self.resolve(ref)
         stat = compute_feature_stats(w.values for w in latest).get(metric)
         value = self._require_latest(person_id).value(metric)
         if value is None:

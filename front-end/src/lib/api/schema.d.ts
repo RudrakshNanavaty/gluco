@@ -515,8 +515,8 @@ export interface components {
                 [key: string]: components["schemas"]["MetricSummary"];
             };
         };
-        /** ExplainResponse */
-        ExplainResponse: {
+        /** Explanation */
+        Explanation: {
             change: components["schemas"]["ChangeReport"];
             /** Cohort Position */
             cohort_position: components["schemas"]["FeatureDeviation"][] | null;
@@ -715,6 +715,8 @@ export interface components {
             total_series: number;
             /** Truncated */
             truncated: boolean;
+            /** Audit */
+            audit?: string[];
         };
         /**
          * QuerySpec
@@ -762,8 +764,6 @@ export interface components {
         };
         /** Series */
         Series: {
-            /** Participant Id */
-            participant_id: string | null;
             /** Display Name */
             display_name: string;
             /** Points */
@@ -1019,7 +1019,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ExplainResponse"];
+                    "application/json": components["schemas"]["Explanation"];
                 };
             };
             /** @description Validation Error */
