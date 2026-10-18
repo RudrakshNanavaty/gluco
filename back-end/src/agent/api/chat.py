@@ -1,7 +1,5 @@
 """Chat endpoints: one streamed turn, and the caller's own threads."""
 
-from typing import Any
-
 from fastapi import APIRouter, HTTPException
 from sse_starlette.sse import EventSourceResponse
 
@@ -20,7 +18,7 @@ async def chat_turn(
 ) -> EventSourceResponse:
     async def events():
         async for event in runtime.chat.stream(
-            principal, request.session_id, request.message
+            runtime.for_principal(principal), request.session_id, request.message
         ):
             yield sse_frame(event)
 
@@ -39,16 +37,3 @@ async def thread(
     if not runtime.sessions.owns(principal.user_id, session_id):
         raise HTTPException(404, "We couldn't find that conversation.")
     return await runtime.sessions.messages(principal.user_id, session_id)
-
-
-@router.get("/tools")
-def tools(runtime: RuntimeDep, principal: CurrentPrincipal) -> list[dict[str, Any]]:
-    """The tools the caller's chatbot can use, with their JSON schemas."""
-    return [
-        {
-            "name": tool.name,
-            "description": tool.description,
-            "parameters": tool.params_json_schema,
-        }
-        for tool in runtime.tools_for(principal)
-    ]

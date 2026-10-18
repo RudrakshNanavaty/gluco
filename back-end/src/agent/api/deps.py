@@ -61,7 +61,7 @@ CurrentPrincipal = Annotated[Principal, Depends(current_principal)]
 
 
 def query_service(runtime: RuntimeDep, principal: CurrentPrincipal) -> QueryService:
-    return runtime.queries(principal)
+    return runtime.for_principal(principal).queries
 
 
 Queries = Annotated[QueryService, Depends(query_service)]

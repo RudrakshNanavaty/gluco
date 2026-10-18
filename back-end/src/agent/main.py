@@ -46,7 +46,8 @@ async def _ask(question: str, session_id: str, who: str) -> None:
     )
     print(f"[as {principal.display_name}, now {runtime.clock.now()}]", file=sys.stderr)
     printer = _Printer()
-    async for event in runtime.chat.stream(principal, session_id, question):
+    scope = runtime.for_principal(principal)
+    async for event in runtime.chat.stream(scope, session_id, question):
         printer.handle(event)
     print()
 

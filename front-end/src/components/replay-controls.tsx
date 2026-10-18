@@ -14,6 +14,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useAudience } from "@/lib/app-session"
 import { useClock } from "@/lib/clock"
 import { formatReplayTime } from "@/lib/format"
 
@@ -23,6 +24,7 @@ const SPEEDS = [1, 2, 5, 15]
 
 export function AsOf() {
   const { clock } = useClock()
+  const audience = useAudience()
   if (!clock?.now) return <Skeleton className="h-4 w-44" />
   return (
     <span className="flex items-center gap-1.5 text-sm whitespace-nowrap">
@@ -42,7 +44,9 @@ export function AsOf() {
         </TooltipTrigger>
         <TooltipContent className="max-w-64">
           This demo moves through a week of data as if it were happening now.
-          Changing the time changes everyone&apos;s view.
+          {audience === "clinician"
+            ? " Changing the time changes everyone's view."
+            : " Your care team controls the demo time."}
         </TooltipContent>
       </Tooltip>
     </span>
@@ -51,6 +55,7 @@ export function AsOf() {
 
 export function ReplayControls() {
   const { clock, control } = useClock()
+  const audience = useAudience()
   const [dragging, setDragging] = useState<number | null>(null)
 
   if (!clock?.now || !clock.data_start || !clock.data_end) {
@@ -58,6 +63,17 @@ export function ReplayControls() {
   }
   // Replay off: the data is live, so there is no demo time to control.
   if (!clock.enabled) return <LiveStatus clock={clock} />
+  // The clock is shared, so only clinicians move it (ADR 0002).
+  if (audience !== "clinician") {
+    return (
+      <div className="flex items-center gap-3">
+        <Badge variant="outline" className="bg-background">
+          Demo time
+        </Badge>
+        <AsOf />
+      </div>
+    )
+  }
 
   const start = Date.parse(clock.data_start)
   const end = Date.parse(clock.data_end)
