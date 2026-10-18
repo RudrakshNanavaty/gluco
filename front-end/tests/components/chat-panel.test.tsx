@@ -50,7 +50,7 @@ describe("ChatPanel & Composer", () => {
 
   // Verifies that Send button is disabled when draft is empty and enables upon typing content.
   it("enforces disabled send button when input is empty or whitespace only", () => {
-    renderWithProviders(<ChatPanel audience="patient" />)
+    renderWithProviders(<ChatPanel />, { role: "patient" })
 
     const sendBtn = screen.getByRole("button", { name: "Send" })
     expect(sendBtn).toBeDisabled()
@@ -65,7 +65,7 @@ describe("ChatPanel & Composer", () => {
 
   // Verifies that pressing Enter key dispatches the message and clears the draft input.
   it("submits message and resets input when pressing Enter without shift", () => {
-    renderWithProviders(<ChatPanel audience="patient" />)
+    renderWithProviders(<ChatPanel />, { role: "patient" })
 
     const textarea = screen.getByRole("textbox", { name: "Message Gluco" })
     fireEvent.change(textarea, { target: { value: "Why did my score change?" } })
@@ -77,7 +77,7 @@ describe("ChatPanel & Composer", () => {
 
   // Verifies that pressing Shift+Enter does not trigger send and preserves newline formatting.
   it("allows multiline input without submitting when Shift+Enter is pressed", () => {
-    renderWithProviders(<ChatPanel audience="patient" />)
+    renderWithProviders(<ChatPanel />, { role: "patient" })
 
     const textarea = screen.getByRole("textbox", { name: "Message Gluco" })
     fireEvent.change(textarea, { target: { value: "Line one" } })
@@ -93,7 +93,7 @@ describe("ChatPanel & Composer", () => {
       streaming: true,
     } as unknown as ReturnType<typeof useChat>)
 
-    renderWithProviders(<ChatPanel audience="patient" />)
+    renderWithProviders(<ChatPanel />, { role: "patient" })
 
     expect(screen.queryByRole("button", { name: "Send" })).not.toBeInTheDocument()
     const stopBtn = screen.getByRole("button", { name: "Stop answering" })
@@ -105,7 +105,7 @@ describe("ChatPanel & Composer", () => {
 
   // Verifies that greeting and audience prompt suggestions render in empty conversation state.
   it("renders empty greeting and triggers send when prompt suggestion is clicked", () => {
-    renderWithProviders(<ChatPanel audience="patient" />)
+    renderWithProviders(<ChatPanel />, { role: "patient" })
 
     expect(screen.getByText("Hi, I'm Gluco!")).toBeInTheDocument()
     expect(screen.getByText("Ask me about your week, your score, or anything you're curious about.")).toBeInTheDocument()
@@ -118,18 +118,21 @@ describe("ChatPanel & Composer", () => {
 
   // Verifies audience-specific titles and disclaimer text for patients and clinicians.
   it("renders audience-specific subtitles and disclaimers", () => {
-    const { rerender } = renderWithProviders(<ChatPanel audience="patient" />)
+    const { unmount } = renderWithProviders(<ChatPanel />, { role: "patient" })
     expect(screen.getByText("Your assistant")).toBeInTheDocument()
     expect(screen.getByText(/explains your data but can't diagnose/i)).toBeInTheDocument()
 
-    rerender(<ChatPanel audience="clinician" />)
+    unmount()
+
+
+    renderWithProviders(<ChatPanel />, { role: "clinician" })
     expect(screen.getByText("Clinical assistant")).toBeInTheDocument()
     expect(screen.getByText(/don't replace clinical judgment/i)).toBeInTheDocument()
   })
 
   // Verifies that new conversation button is disabled when empty and triggers newChat when populated.
   it("controls new conversation button state based on message count and streaming", () => {
-    const { rerender } = renderWithProviders(<ChatPanel audience="patient" />)
+    const { rerender } = renderWithProviders(<ChatPanel />, { role: "patient" })
     const newChatBtn = screen.getByRole("button", { name: "New conversation" })
     expect(newChatBtn).toBeDisabled()
 
@@ -138,7 +141,7 @@ describe("ChatPanel & Composer", () => {
       messages: [{ id: "m1", role: "user", parts: [{ kind: "text", text: "Hi" }] }],
     } as unknown as ReturnType<typeof useChat>)
 
-    rerender(<ChatPanel audience="patient" />)
+    rerender(<ChatPanel />)
     expect(newChatBtn).not.toBeDisabled()
 
     fireEvent.click(newChatBtn)
@@ -148,7 +151,7 @@ describe("ChatPanel & Composer", () => {
   // Verifies that close button invokes onClose callback when provided.
   it("invokes onClose callback when close button is clicked", () => {
     const mockClose = vi.fn()
-    renderWithProviders(<ChatPanel audience="patient" onClose={mockClose} />)
+    renderWithProviders(<ChatPanel onClose={mockClose} />, { role: "patient" })
 
     const closeBtn = screen.getByRole("button", { name: "Close chat" })
     fireEvent.click(closeBtn)
@@ -163,7 +166,7 @@ describe("ChatPanel & Composer", () => {
       loadingThread: true,
     } as unknown as ReturnType<typeof useChat>)
 
-    renderWithProviders(<ChatPanel audience="patient" />)
+    renderWithProviders(<ChatPanel />, { role: "patient" })
 
     expect(screen.getByText("Opening conversation…")).toBeInTheDocument()
   })
@@ -176,7 +179,7 @@ describe("ChatPanel & Composer", () => {
       messages: [{ id: "m1", role: "user", parts: [{ kind: "text", text: "Show chart" }] }],
     } as unknown as ReturnType<typeof useChat>)
 
-    renderWithProviders(<ChatPanel audience="patient" />)
+    renderWithProviders(<ChatPanel />, { role: "patient" })
 
     expect(screen.getByText("Charts from earlier answers aren't available here")).toBeInTheDocument()
   })
@@ -190,7 +193,7 @@ describe("ChatLauncher", () => {
     } as unknown as ReturnType<typeof useChat>)
     vi.mocked(useMediaQuery).mockReturnValue(true)
 
-    renderWithProviders(<ChatLauncher audience="patient" />)
+    renderWithProviders(<ChatLauncher />, { role: "patient" })
 
     expect(screen.getByRole("button", { name: "Ask Gluco" })).toBeInTheDocument()
   })
@@ -210,7 +213,7 @@ describe("ChatLauncher", () => {
     } as unknown as ReturnType<typeof useChat>)
     vi.mocked(useMediaQuery).mockReturnValue(true)
 
-    renderWithProviders(<ChatLauncher audience="patient" />)
+    renderWithProviders(<ChatLauncher />, { role: "patient" })
 
     const launcherBtn = screen.getByRole("button", { name: "Ask Gluco" })
     fireEvent.click(launcherBtn)

@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 
-import type { Audience } from "@/components/estimate-note"
 import { ChatPanel } from "@/components/chat/chat-panel"
 import { useChat } from "@/components/chat/chat-provider"
 import { GlucoDot, type GlucoMood } from "@/components/chat/gluco-dot"
@@ -43,7 +42,7 @@ function LauncherButton({
   )
 }
 
-export function ChatLauncher({ audience }: { audience: Audience }) {
+export function ChatLauncher() {
   const isDesktop = useMediaQuery("(min-width: 768px)")
   const [open, setOpen] = useState(false)
   const { streaming } = useChat()
@@ -71,7 +70,7 @@ export function ChatLauncher({ audience }: { audience: Audience }) {
                 Ask Gluco questions about the health data.
               </SheetDescription>
             </SheetHeader>
-            <ChatPanel audience={audience} onClose={() => setOpen(false)} />
+            <ChatPanel onClose={() => setOpen(false)} />
           </SheetContent>
         </Sheet>
       </>
@@ -103,7 +102,7 @@ export function ChatLauncher({ audience }: { audience: Audience }) {
         onFocusOutside={(event) => event.preventDefault()}
         className="h-[min(640px,calc(100dvh-7rem))] w-[400px] gap-0 overflow-hidden rounded-xl p-0 xl:w-[440px]"
       >
-        <ChatPanel audience={audience} onClose={() => setOpen(false)} />
+        <ChatPanel onClose={() => setOpen(false)} />
       </PopoverContent>
     </Popover>
   )

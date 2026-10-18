@@ -1,28 +1,24 @@
 "use client";
 
-import { SignIn, useAuth as useClerkAuth, useClerk } from "@clerk/nextjs";
+import { SignIn } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { useHydrated, useSession } from "@/lib/auth";
-import { homeFor } from "@/lib/session";
+import { useAppSession } from "@/lib/app-session";
 
 export default function SignInPage() {
   const router = useRouter();
-  const hydrated = useHydrated();
-  const { isLoaded, isSignedIn } = useClerkAuth();
-  const { signOut } = useClerk();
-  const session = useSession();
+  const session = useAppSession();
+  const home = session.status === "signed-in" ? session.home : null;
 
   useEffect(() => {
-    if (session) router.replace(homeFor(session.principal));
-  }, [session, router]);
+    if (home) router.replace(home);
+  }, [home, router]);
 
-  // Signed in with Clerk: the app token is being exchanged (see ClerkAuthSync).
-  const signingIn = !hydrated || !isLoaded || isSignedIn || session !== null;
+  const signingIn = session.status !== "signed-out";
 
   return (
     <main className="mx-auto grid w-full max-w-6xl flex-1 gap-12 px-4 py-10 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
@@ -55,12 +51,8 @@ export default function SignInPage() {
         {signingIn ? (
           <div className="flex items-center gap-3">
             <Spinner aria-label="Signing you in" />
-            {isSignedIn ? (
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => void signOut({ redirectUrl: "/" })}
-              >
+            {session.status === "signing-in" ? (
+              <Button type="button" variant="ghost" onClick={session.signOut}>
                 Use a different account
               </Button>
             ) : null}

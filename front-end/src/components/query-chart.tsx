@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts"
 
-import { EstimateNote, type Audience } from "@/components/estimate-note"
+import { EstimateNote } from "@/components/estimate-note"
 import {
   ChartContainer,
   ChartLegend,
@@ -230,7 +230,6 @@ export function QueryChart({
   snapshot = false,
   showTitles = true,
   height = 200,
-  audience = "clinician",
   hideNote = false,
   className,
 }: {
@@ -239,7 +238,6 @@ export function QueryChart({
   snapshot?: boolean
   showTitles?: boolean
   height?: number
-  audience?: Audience
   /** Skip the estimate note when the surrounding view already shows it. */
   hideNote?: boolean
   className?: string
@@ -312,7 +310,7 @@ export function QueryChart({
           </span>
         ) : null}
         {!hideNote && result.metrics.includes(GLUCO_SCORE) ? (
-          <EstimateNote audience={audience} />
+          <EstimateNote />
         ) : null}
       </figcaption>
     </figure>

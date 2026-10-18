@@ -1,26 +1,14 @@
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest"
 
 import {
   api,
   ApiError,
-  authHeader,
   friendlyError,
-  handleUnauthorized,
   OFFLINE_MESSAGE,
+  setTokenSource,
+  setTransport,
   unwrap,
 } from "@/lib/api/client"
-import { sessionStore, type Session } from "@/lib/session"
-
-const MOCK_SESSION: Session = {
-  token: "header-test-token",
-  principal: {
-    user_id: "patient:1",
-    display_name: "Test Patient",
-    role: "patient",
-    participant_id: "1",
-  },
-  expiresAt: Date.now() + 3_600_000,
-}
 
 describe("ApiError", () => {
   // Verifies constructor assigns all error properties
@@ -122,46 +110,6 @@ describe("friendlyError", () => {
   })
 })
 
-describe("authHeader", () => {
-  beforeEach(() => {
-    sessionStore.set(null)
-  })
-
-  // Verifies Authorization header generation when session token exists
-  it("generates Bearer authorization header when session is active", () => {
-    sessionStore.set(MOCK_SESSION)
-    expect(authHeader()).toEqual({
-      Authorization: "Bearer header-test-token",
-    })
-  })
-
-  // Verifies empty header object when no session is active
-  it("returns empty object when no session is active", () => {
-    expect(authHeader()).toEqual({})
-  })
-})
-
-describe("handleUnauthorized", () => {
-  beforeEach(() => {
-    sessionStore.set(MOCK_SESSION)
-  })
-
-  // Verifies session clearance on 401 unauthorized status
-  it("clears active session store on 401 response", () => {
-    handleUnauthorized(401)
-    expect(sessionStore.get()).toBeNull()
-  })
-
-  // Verifies session preservation on non-401 status codes
-  it("preserves active session store on other HTTP status codes", () => {
-    handleUnauthorized(403)
-    expect(sessionStore.get()).toEqual(MOCK_SESSION)
-
-    handleUnauthorized(500)
-    expect(sessionStore.get()).toEqual(MOCK_SESSION)
-  })
-})
-
 describe("unwrap", () => {
   // Verifies successful resolution and data extraction
   it("returns data payload when response is ok", async () => {
@@ -209,34 +157,67 @@ describe("unwrap", () => {
   })
 })
 
-describe("api middleware", () => {
-  beforeEach(() => {
-    sessionStore.set(null)
+describe("send", () => {
+  afterEach(() => {
+    setTokenSource(null)
   })
 
-  // Verifies auth middleware onRequest hook automatically passes Bearer token to fetch
-  it("attaches Authorization header to outgoing requests when session exists", async () => {
-    sessionStore.set(MOCK_SESSION)
-    const mockFetch = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({}), { status: 200 })
-    )
+  /** Answer requests with `statuses` in turn; returns each request's Authorization. */
+  function serve(...statuses: number[]) {
+    const seen: (string | null)[] = []
+    const previous = setTransport(async (input, init) => {
+      seen.push(new Request(input, init).headers.get("authorization"))
+      return new Response("{}", { status: statuses.shift() ?? 200 })
+    })
+    onTestFinished(() => {
+      setTransport(previous)
+    })
+    return seen
+  }
 
-    await api.GET("/catalog", { fetch: mockFetch })
+  // Verifies every request carries the session token
+  it("sends the session token with each request", async () => {
+    const seen = serve(200)
+    setTokenSource({ token: async () => "t1", rejected: vi.fn() })
 
-    expect(mockFetch).toHaveBeenCalledTimes(1)
-    const request = mockFetch.mock.calls[0][0] as Request
-    expect(request.headers.get("authorization")).toBe("Bearer header-test-token")
+    await api.GET("/catalog")
+
+    expect(seen).toEqual(["Bearer t1"])
   })
 
-  // Verifies auth middleware onResponse hook triggers sign out on 401 response
-  it("clears session store when API responds with 401", async () => {
-    sessionStore.set(MOCK_SESSION)
-    const mockFetch = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ detail: "Token expired" }), { status: 401 })
-    )
+  // Verifies a 401 is retried once with a fresh token, and then succeeds
+  it("retries a 401 once with a fresh token", async () => {
+    const seen = serve(401, 200)
+    const rejected = vi.fn()
+    setTokenSource({
+      token: async (fresh) => (fresh ? "fresh" : "cached"),
+      rejected,
+    })
 
-    await api.GET("/catalog", { fetch: mockFetch })
+    const { response } = await api.GET("/catalog")
 
-    expect(sessionStore.get()).toBeNull()
+    expect(seen).toEqual(["Bearer cached", "Bearer fresh"])
+    expect(response.status).toBe(200)
+    expect(rejected).not.toHaveBeenCalled()
+  })
+
+  // Verifies a refused fresh token ends the session
+  it("ends the session when a fresh token is refused too", async () => {
+    serve(401, 401)
+    const rejected = vi.fn()
+    setTokenSource({ token: async () => "t1", rejected })
+
+    await api.GET("/catalog")
+
+    expect(rejected).toHaveBeenCalledTimes(1)
+  })
+
+  // Verifies a signed-out request carries no token
+  it("sends no token when no one is signed in", async () => {
+    const seen = serve(200)
+
+    await api.GET("/catalog")
+
+    expect(seen).toEqual([null])
   })
 })

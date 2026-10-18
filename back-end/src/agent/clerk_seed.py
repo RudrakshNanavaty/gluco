@@ -22,6 +22,7 @@ from typing import Any
 import httpx
 from faker import Faker
 
+from agent.auth import ClerkMetadata, Role
 from agent.config import Settings
 from agent.data.factory import build_source
 from agent.store import WindowStore
@@ -35,7 +36,7 @@ DEFAULT_CSV = Path("var/clerk-seed.csv")
 @dataclass(frozen=True)
 class Account:
     uuid: str
-    role: str
+    role: Role
     participant_id: str | None
     first_name: str
     last_name: str
@@ -48,12 +49,12 @@ class Account:
 
     @property
     def metadata(self) -> dict[str, Any]:
-        return {
-            "uuid": self.uuid,
-            "role": self.role,
-            "participant_id": self.participant_id,
-            "display_name": self.display_name,
-        }
+        return ClerkMetadata(
+            uuid=uuid.UUID(self.uuid),
+            role=self.role,
+            participant_id=self.participant_id,
+            display_name=self.display_name,
+        ).model_dump(mode="json")
 
 
 def full_roster() -> list[str]:
@@ -95,7 +96,7 @@ def plan_accounts(
     taken = {u.lower() for u in taken_usernames}
     accounts: list[Account] = []
 
-    def build(key: str, role: str, pid: str | None, prefix: str = "") -> None:
+    def build(key: str, role: Role, pid: str | None, prefix: str = "") -> None:
         ident = str(uuid.uuid5(NAMESPACE, key))
         first, last = _name(key)
         username = known.get(ident)

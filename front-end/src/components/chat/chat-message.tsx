@@ -8,7 +8,6 @@ import type {
 } from "@/components/chat/chat-provider"
 import { ThinkingDots } from "@/components/chat/gluco-dot"
 import { Markdown } from "@/components/chat/markdown"
-import type { Audience } from "@/components/estimate-note"
 import { QueryChart } from "@/components/query-chart"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -23,46 +22,44 @@ import {
 } from "@/components/ui/tooltip"
 import { WidgetCard } from "@/components/widgets/widget-card"
 import { cn } from "@/lib/utils"
+import { useAudience } from "@/lib/app-session"
 
-/** What Gluco is doing while a tool runs, and once it has finished. */
-const TOOL_LABELS: Record<Audience, Record<string, [string, string]>> = {
-  patient: {
-    get_my_status: ["Checking your latest score", "Checked your latest score"],
-    explain_my_change: ["Looking at what changed", "Looked at what changed"],
-    get_my_trend: ["Reviewing your recent days", "Reviewed your recent days"],
-    query_my_data: [
-      "Looking through your readings",
-      "Looked through your readings",
-    ],
-    build_my_widget: ["Building your widget", "Built your widget"],
-  },
-  clinician: {
-    list_participants: ["Ranking patients", "Ranked patients"],
-    get_participant: [
-      "Retrieving patient summary",
-      "Retrieved patient summary",
-    ],
-    explain_change: [
-      "Analysing change against baseline",
-      "Analysed change against baseline",
-    ],
-    compare_to_cohort: ["Comparing with panel", "Compared with panel"],
-    cohort_overview: ["Summarising panel", "Summarised panel"],
-    query_data: ["Retrieving readings", "Retrieved readings"],
-    build_widget: [
-      "Building widget: fetch, compliance check, design",
-      "Built widget",
-    ],
-  },
+/**
+ * What Gluco is doing while a tool runs, and once it has finished. Tool names
+ * differ by role, so one table serves both.
+ */
+const TOOL_LABELS: Record<string, [string, string]> = {
+  get_my_status: ["Checking your latest score", "Checked your latest score"],
+  explain_my_change: ["Looking at what changed", "Looked at what changed"],
+  get_my_trend: ["Reviewing your recent days", "Reviewed your recent days"],
+  query_my_data: [
+    "Looking through your readings",
+    "Looked through your readings",
+  ],
+  build_my_widget: ["Building your widget", "Built your widget"],
+  list_participants: ["Ranking patients", "Ranked patients"],
+  get_participant: ["Retrieving patient summary", "Retrieved patient summary"],
+  explain_change: [
+    "Analysing change against baseline",
+    "Analysed change against baseline",
+  ],
+  compare_to_cohort: ["Comparing with panel", "Compared with panel"],
+  cohort_overview: ["Summarising panel", "Summarised panel"],
+  query_data: ["Retrieving readings", "Retrieved readings"],
+  build_widget: [
+    "Building widget: fetch, compliance check, design",
+    "Built widget",
+  ],
 }
 
-function toolLabel(tool: string, audience: Audience, done: boolean) {
-  const labels = TOOL_LABELS[audience][tool]
+function toolLabel(tool: string, done: boolean) {
+  const labels = TOOL_LABELS[tool]
   if (labels) return labels[done ? 1 : 0]
   return done ? "Looked that up" : "Looking that up"
 }
 
-function Part({ part, audience }: { part: ChatPart; audience: Audience }) {
+function Part({ part }: { part: ChatPart }) {
+  const audience = useAudience()
   switch (part.kind) {
     case "text":
       return (
@@ -84,7 +81,7 @@ function Part({ part, audience }: { part: ChatPart; audience: Audience }) {
               part.status === "running" && "shimmer"
             )}
           >
-            {toolLabel(part.tool, audience, part.status !== "running")}
+            {toolLabel(part.tool, part.status !== "running")}
             {/* Summaries are for clinicians only; patients see just the activity label. */}
             {part.summary && audience === "clinician"
               ? ` · ${part.summary}`
@@ -98,7 +95,6 @@ function Part({ part, audience }: { part: ChatPart; audience: Audience }) {
           <WidgetCard
             widget={part.widget}
             chart={part.chart}
-            audience={audience}
           />
         )
       return (
@@ -108,7 +104,6 @@ function Part({ part, audience }: { part: ChatPart; audience: Audience }) {
             snapshot
             hideNote
             height={160}
-            audience={audience}
           />
         </div>
       )
@@ -124,11 +119,10 @@ function Part({ part, audience }: { part: ChatPart; audience: Audience }) {
 
 export function ChatMessage({
   message,
-  audience,
 }: {
   message: ChatMessageType
-  audience: Audience
 }) {
+  const audience = useAudience()
   if (message.role === "user") {
     const text = message.parts
       .map((p) => (p.kind === "text" ? p.text : ""))
@@ -164,7 +158,6 @@ export function ChatMessage({
           <Part
             key={part.kind === "tool" ? part.callId : index}
             part={part}
-            audience={audience}
           />
         ))}
         {message.stopped || message.ungrounded?.length ? (

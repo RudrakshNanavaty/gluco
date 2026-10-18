@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest"
 import { afterEach, vi } from "vitest"
 
-import { mockRouter } from "./tests/test-utils"
+import { mockRouter } from "./tests/mock-router"
 
 vi.mock("next/navigation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/navigation")>()),

@@ -1,41 +1,23 @@
-"""Clerk sign-in: session verification, metadata mapping, and the seed script."""
+"""Clerk sign-in: per-request verification, metadata mapping, and the seed script."""
 
 import logging
 import re
 import uuid
-from dataclasses import replace
-from datetime import UTC, datetime, timedelta
-from types import SimpleNamespace
+from datetime import UTC, datetime
 from typing import Any
 
-import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
-from fastapi.testclient import TestClient
-from support import PID
+from support import PID, authenticator_for, clerk_token, make_settings
 
 from agent import clerk_seed
 from agent.api.app import create_app
-from agent.auth import ClerkTokenVerifier, InvalidTokenError
-from agent.bootstrap import Runtime
+from agent.auth import Authenticator, ClerkMetadata, InvalidTokenError
+from agent.bootstrap import build_runtime
 
-ISSUER = "https://clerk.example.test"
 IDS = [PID, "demo:imu50:00"]
 UUID = "0b0b8a9e-4d3c-5f6a-8b7c-9d0e1f2a3b4c"
-KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 OTHER_KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-
-
-def clerk_token(meta: Any = None, *, key=KEY, **claims: Any) -> str:
-    body: dict[str, Any] = {
-        "sub": "user_1",
-        "iss": ISSUER,
-        "exp": datetime.now(UTC) + timedelta(hours=1),
-        "metadata": meta,
-        **claims,
-    }
-    body = {k: v for k, v in body.items() if v is not None}
-    return jwt.encode(body, key, algorithm="RS256")
 
 
 def patient_meta(**over: Any) -> dict[str, Any]:
@@ -49,25 +31,19 @@ def patient_meta(**over: Any) -> dict[str, Any]:
 
 
 @pytest.fixture
-def verifier(monkeypatch) -> ClerkTokenVerifier:
-    verifier = ClerkTokenVerifier("https://clerk.example.test/jwks.json", ISSUER)
-    monkeypatch.setattr(
-        verifier._keys,
-        "get_signing_key_from_jwt",
-        lambda _token: SimpleNamespace(key=KEY.public_key()),
-    )
-    return verifier
+def authenticator() -> Authenticator:
+    return authenticator_for(lambda: IDS)
 
 
-def test_patient_session_maps_to_its_participant(verifier):
-    principal = verifier.verify(clerk_token(patient_meta()), IDS)
+def test_patient_session_maps_to_its_participant(authenticator):
+    principal = authenticator.authenticate(clerk_token(patient_meta()))
     assert (principal.user_id, principal.role) == (UUID, "patient")
     assert (principal.participant_id, principal.display_name) == (PID, "Maria Lopez")
 
 
-def test_clinician_session_has_no_participant(verifier):
+def test_clinician_session_has_no_participant(authenticator):
     meta = {"uuid": UUID, "role": "clinician", "display_name": "Dr. Priya Shah"}
-    principal = verifier.verify(clerk_token(meta), IDS)
+    principal = authenticator.authenticate(clerk_token(meta))
     assert (principal.role, principal.participant_id) == ("clinician", None)
     assert principal.can_see(PID)
 
@@ -92,53 +68,64 @@ def test_clinician_session_has_no_participant(verifier):
         pytest.param("junk", id="not-a-jwt"),
     ],
 )
-def test_bad_sessions_are_rejected(verifier, token):
+def test_bad_sessions_are_rejected(authenticator, token):
     with pytest.raises(InvalidTokenError):
-        verifier.verify(token, IDS)
+        authenticator.authenticate(token)
 
 
-def test_username_headers_cannot_pick_a_patient(runtime: Runtime, verifier):
-    """The old `X-Clerk-Username` fallback is gone: identity is the session alone."""
-    client = TestClient(create_app(replace(runtime, clerk=verifier)))
-    session = clerk_token(None)  # a Clerk user with no seeded metadata
-    response = client.post(
-        "/auth/clerk-login",
+def test_seeded_metadata_signs_its_account_in():
+    """The seed script and the Authenticator share one metadata model, so a
+    renamed key breaks this test rather than sign-in."""
+    patient, doctor = (
+        next(a for a in clerk_seed.plan_accounts(IDS, 1) if a.role == role)
+        for role in ("patient", "clinician")
+    )
+    for account in (patient, doctor):
+        meta = ClerkMetadata.model_validate(account.metadata)
+        principal = meta.principal(IDS)
+        assert (principal.user_id, principal.role) == (account.uuid, account.role)
+        assert principal.participant_id == account.participant_id
+        assert principal.display_name == account.display_name
+
+
+def test_every_request_is_signed_in_by_its_clerk_session(client):
+    assert client.get("/me").status_code == 401
+    session = clerk_token(patient_meta())
+    me = client.get("/me", headers={"Authorization": f"Bearer {session}"}).json()
+    assert (me["user_id"], me["role"], me["participant_id"]) == (UUID, "patient", PID)
+
+
+def test_username_headers_cannot_pick_a_patient(client):
+    """Identity is the session alone, never a header naming an account."""
+    response = client.get(
+        "/me",
         headers={
-            "Authorization": f"Bearer {session}",
+            "Authorization": f"Bearer {clerk_token(None)}",
             "X-Clerk-Username": "patient001",
         },
     )
     assert response.status_code == 401
 
 
-def test_a_rejected_sign_in_logs_why_but_does_not_tell_the_client(
-    runtime: Runtime, verifier, caplog
-):
-    client = TestClient(create_app(replace(runtime, clerk=verifier)))
+def test_a_rejected_session_logs_why_but_does_not_tell_the_client(client, caplog):
     session = clerk_token(patient_meta(), iss="https://evil")
-    with caplog.at_level(logging.WARNING, logger="agent.api.login"):
-        response = client.post(
-            "/auth/clerk-login", headers={"Authorization": f"Bearer {session}"}
-        )
+    with caplog.at_level(logging.WARNING, logger="agent.api.deps"):
+        response = client.get("/me", headers={"Authorization": f"Bearer {session}"})
     assert response.status_code == 401
-    assert response.json()["detail"] == "This account could not be signed in."
+    assert response.json()["detail"] == "Your session has ended. Please sign in again."
     [record] = caplog.records
-    reason = record.getMessage().removeprefix("Clerk sign-in rejected: ")
+    reason = record.getMessage().removeprefix("Clerk session rejected: ")
     assert reason
     assert reason not in response.text
 
 
-def test_clerk_login_issues_an_app_token(runtime: Runtime, verifier):
-    client = TestClient(create_app(replace(runtime, clerk=verifier)))
-    assert client.post("/auth/clerk-login").status_code == 401
-    session = clerk_token(patient_meta(participant_id=runtime.store.participants()[0]))
-    login = client.post(
-        "/auth/clerk-login", headers={"Authorization": f"Bearer {session}"}
-    )
-    assert login.status_code == 200
-    headers = {"Authorization": f"Bearer {login.json()['token']}"}
-    me = client.get("/me", headers=headers).json()
-    assert (me["user_id"], me["role"]) == (UUID, "patient")
+def test_serving_the_api_needs_clerk_settings(tmp_path, source):
+    runtime = build_runtime(make_settings(tmp_path), source=source)
+    with pytest.raises(ValueError, match="CLERK_JWKS_URL and CLERK_ISSUER"):
+        create_app(runtime)
+    issuer_only = make_settings(tmp_path, clerk_issuer="https://clerk.example.test")
+    with pytest.raises(ValueError, match="CLERK_JWKS_URL and CLERK_ISSUER"):
+        create_app(build_runtime(issuer_only, source=source))
 
 
 # --- seed script ----------------------------------------------------------------

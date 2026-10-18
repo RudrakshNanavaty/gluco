@@ -1,154 +1,67 @@
 import { render, screen } from "@testing-library/react"
-import { act } from "react"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { RoleGate } from "@/components/role-gate"
-import { sessionStore } from "@/lib/session"
-import { mockRouter } from "../test-utils"
+import { AppSessionContext, type AppSession } from "@/lib/app-session"
+import { mockRouter, sessionAs } from "../test-utils"
 
+const SIGNING_IN: AppSession = {
+  status: "signing-in",
+  principal: null,
+  signOut: vi.fn(),
+}
+
+function gate(role: "clinician" | "patient", session: AppSession) {
+  return (
+    <AppSessionContext.Provider value={session}>
+      <RoleGate role={role}>
+        <div data-testid="content">Portal</div>
+      </RoleGate>
+    </AppSessionContext.Provider>
+  )
+}
 
 describe("RoleGate", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    act(() => {
-      sessionStore.set(null)
-    })
   })
 
-  afterEach(() => {
-    act(() => {
-      sessionStore.set(null)
-    })
-  })
+  // Verifies that child content renders when the session role matches the gate.
+  it.each(["clinician", "patient"] as const)(
+    "renders children when the session role matches %s",
+    (role) => {
+      render(gate(role, sessionAs(role)))
 
-  // Verifies that child content renders when the active session role matches the clinician role.
-  it("renders children when the session role matches clinician", () => {
-    act(() => {
-      sessionStore.set({
-        token: "tok-1",
-        expiresAt: Date.now() + 60_000,
-        principal: { user_id: "doc-1", display_name: "Dr. Stone", role: "clinician", participant_id: null },
-      })
-      render(
-        <RoleGate role="clinician">
-          <div data-testid="clinician-content">Clinician Portal</div>
-        </RoleGate>
-      )
-    })
+      expect(screen.getByTestId("content")).toBeInTheDocument()
+      expect(mockRouter.replace).not.toHaveBeenCalled()
+    }
+  )
 
-    expect(screen.getByTestId("clinician-content")).toBeInTheDocument()
+  // Verifies nothing renders, and nobody is redirected, before the session is known.
+  it("renders nothing and does not redirect while signing in", () => {
+    const { container } = render(gate("clinician", SIGNING_IN))
+
+    expect(container).toBeEmptyDOMElement()
     expect(mockRouter.replace).not.toHaveBeenCalled()
   })
 
-  // Verifies that child content renders when the active session role matches the patient role.
-  it("renders children when the session role matches patient", () => {
-    act(() => {
-      sessionStore.set({
-        token: "tok-2",
-        expiresAt: Date.now() + 60_000,
-        principal: { user_id: "pat-1", display_name: "Alice", role: "patient", participant_id: "pat-1" },
-      })
-      render(
-        <RoleGate role="patient">
-          <div data-testid="patient-content">Patient Portal</div>
-        </RoleGate>
-      )
-    })
+  // Verifies each role is sent to its own home from the other role's gate.
+  it.each([
+    ["patient", "clinician", "/me"],
+    ["clinician", "patient", "/clinician"],
+  ] as const)("redirects a %s away from the %s gate to %s", (role, gated, home) => {
+    const { container } = render(gate(gated, sessionAs(role)))
 
-    expect(screen.getByTestId("patient-content")).toBeInTheDocument()
-    expect(mockRouter.replace).not.toHaveBeenCalled()
+    expect(container).toBeEmptyDOMElement()
+    expect(mockRouter.replace).toHaveBeenCalledWith(home)
   })
 
-  // Verifies that children do not render and no redirection occurs when unauthenticated.
-  it("renders null and does not redirect when session is null", () => {
-    let container: HTMLElement
-    act(() => {
-      sessionStore.set(null)
-      const res = render(
-        <RoleGate role="clinician">
-          <div data-testid="protected">Secret</div>
-        </RoleGate>
-      )
-      container = res.container
-    })
-
-    expect(container!).toBeEmptyDOMElement()
-    expect(mockRouter.replace).not.toHaveBeenCalled()
-  })
-
-  // Verifies that mismatched patient role redirects to /me and hides clinician children.
-  it("redirects patient to /me when accessing clinician gate", () => {
-    let container: HTMLElement
-    act(() => {
-      sessionStore.set({
-        token: "tok-3",
-        expiresAt: Date.now() + 60_000,
-        principal: { user_id: "pat-2", display_name: "Bob", role: "patient", participant_id: "pat-2" },
-      })
-      const res = render(
-        <RoleGate role="clinician">
-          <div data-testid="protected">Clinician Only</div>
-        </RoleGate>
-      )
-      container = res.container
-    })
-
-    expect(container!).toBeEmptyDOMElement()
-    expect(mockRouter.replace).toHaveBeenCalledWith("/me")
-  })
-
-  // Verifies that mismatched clinician role redirects to /clinician when accessing patient gate.
-  it("redirects clinician to /clinician when accessing patient gate", () => {
-    let container: HTMLElement
-    act(() => {
-      sessionStore.set({
-        token: "tok-4",
-        expiresAt: Date.now() + 60_000,
-        principal: { user_id: "doc-2", display_name: "Dr. Reed", role: "clinician", participant_id: null },
-      })
-      const res = render(
-        <RoleGate role="patient">
-          <div data-testid="protected">Patient Only</div>
-        </RoleGate>
-      )
-      container = res.container
-    })
-
-    expect(container!).toBeEmptyDOMElement()
-    expect(mockRouter.replace).toHaveBeenCalledWith("/clinician")
-  })
-
-  // Verifies dynamic reaction when session state changes while the component remains mounted.
-  it("re-evaluates gate and triggers redirect when session updates", () => {
-    let rerenderFn: (ui: React.ReactNode) => void
-    act(() => {
-      sessionStore.set({
-        token: "tok-5",
-        expiresAt: Date.now() + 60_000,
-        principal: { user_id: "doc-3", display_name: "Dr. Jones", role: "clinician", participant_id: null },
-      })
-      const res = render(
-        <RoleGate role="clinician">
-          <div data-testid="content">Allowed Content</div>
-        </RoleGate>
-      )
-      rerenderFn = res.rerender
-    })
-
+  // Verifies the gate re-evaluates when the session changes.
+  it("re-evaluates the gate and redirects when the session changes", () => {
+    const { rerender } = render(gate("clinician", sessionAs("clinician")))
     expect(screen.getByTestId("content")).toBeInTheDocument()
 
-    act(() => {
-      sessionStore.set({
-        token: "tok-6",
-        expiresAt: Date.now() + 60_000,
-        principal: { user_id: "pat-3", display_name: "Charlie", role: "patient", participant_id: "pat-3" },
-      })
-      rerenderFn(
-        <RoleGate role="clinician">
-          <div data-testid="content">Allowed Content</div>
-        </RoleGate>
-      )
-    })
+    rerender(gate("clinician", sessionAs("patient")))
 
     expect(screen.queryByTestId("content")).not.toBeInTheDocument()
     expect(mockRouter.replace).toHaveBeenCalledWith("/me")

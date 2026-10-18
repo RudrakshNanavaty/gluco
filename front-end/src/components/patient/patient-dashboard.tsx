@@ -16,7 +16,7 @@ import { GLUCO_CHANGE, GLUCO_SCORE, useMetrics } from "@/lib/catalog"
 import { useClock } from "@/lib/clock"
 import { useLiveReading } from "@/lib/live"
 import { formatReplayTime } from "@/lib/format"
-import type { Principal } from "@/lib/session"
+import type { Principal } from "@/lib/app-session"
 
 const PRIMARY = new Set(PRIMARY_VITALS.map((v) => v.metric))
 
@@ -108,7 +108,6 @@ export function PatientDashboard({ principal }: { principal: Principal }) {
             <GlucoScore
               value={values[GLUCO_SCORE]}
               change={values[GLUCO_CHANGE]}
-              audience="patient"
             />
           ) : (
             <Skeleton className="h-48" />
@@ -128,7 +127,6 @@ export function PatientDashboard({ principal }: { principal: Principal }) {
               result={score.data}
               showTitles={false}
               height={220}
-              audience="patient"
               hideNote
             />
           ) : (
@@ -137,7 +135,7 @@ export function PatientDashboard({ principal }: { principal: Principal }) {
         </section>
       </Card>
 
-      <PinnedWidgets audience="patient" />
+      <PinnedWidgets />
 
       <section className="flex flex-col gap-4" aria-labelledby="vitals-heading">
         <SectionHeading
@@ -204,7 +202,7 @@ export function PatientDashboard({ principal }: { principal: Principal }) {
         </section>
       ) : null}
 
-      <WhatChanged personId={me} audience="patient" />
+      <WhatChanged personId={me} />
     </div>
   )
 }

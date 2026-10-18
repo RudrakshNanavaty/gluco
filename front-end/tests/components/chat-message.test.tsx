@@ -25,7 +25,7 @@ describe("ChatMessage", () => {
       parts: [{ kind: "text", text: "Why did my score drop yesterday?" }],
     }
 
-    renderWithProviders(<ChatMessage message={userMsg} audience="patient" />)
+    renderWithProviders(<ChatMessage message={userMsg} />, { role: "patient" })
 
     expect(screen.getByText("Why did my score drop yesterday?")).toBeInTheDocument()
   })
@@ -39,10 +39,13 @@ describe("ChatMessage", () => {
       parts: [],
     }
 
-    const { rerender } = renderWithProviders(<ChatMessage message={pendingMsg} audience="patient" />)
+    const { unmount } = renderWithProviders(<ChatMessage message={pendingMsg} />, { role: "patient" })
     expect(screen.getByText("One moment…")).toBeInTheDocument()
 
-    rerender(<ChatMessage message={pendingMsg} audience="clinician" />)
+    unmount()
+
+
+    renderWithProviders(<ChatMessage message={pendingMsg} />, { role: "clinician" })
     expect(screen.getByText("Thinking…")).toBeInTheDocument()
   })
 
@@ -61,7 +64,7 @@ describe("ChatMessage", () => {
       ],
     }
 
-    renderWithProviders(<ChatMessage message={toolMsg} audience="patient" />)
+    renderWithProviders(<ChatMessage message={toolMsg} />, { role: "patient" })
 
     expect(screen.getByText("Checking your latest score")).toBeInTheDocument()
     expect(screen.queryByText("Checked your latest score")).not.toBeInTheDocument()
@@ -83,7 +86,7 @@ describe("ChatMessage", () => {
       ],
     }
 
-    renderWithProviders(<ChatMessage message={toolMsg} audience="patient" />)
+    renderWithProviders(<ChatMessage message={toolMsg} />, { role: "patient" })
 
     expect(screen.getByText("Checked your latest score")).toBeInTheDocument()
     // Patient view suppresses technical summary string
@@ -106,7 +109,7 @@ describe("ChatMessage", () => {
       ],
     }
 
-    renderWithProviders(<ChatMessage message={toolMsg} audience="clinician" />)
+    renderWithProviders(<ChatMessage message={toolMsg} />, { role: "clinician" })
 
     expect(screen.getByText(/Ranked patients · 18 patients ranked/i)).toBeInTheDocument()
   })
@@ -124,7 +127,7 @@ describe("ChatMessage", () => {
       ],
     }
 
-    renderWithProviders(<ChatMessage message={markdownMsg} audience="patient" />)
+    renderWithProviders(<ChatMessage message={markdownMsg} />, { role: "patient" })
 
     expect(screen.getByText("Your score improved")).toBeInTheDocument()
     expect(screen.getByText(/by 3 points/)).toBeInTheDocument()
@@ -143,7 +146,7 @@ describe("ChatMessage", () => {
       ],
     }
 
-    renderWithProviders(<ChatMessage message={errorMsg} audience="patient" />)
+    renderWithProviders(<ChatMessage message={errorMsg} />, { role: "patient" })
 
     expect(screen.getByText("Failed to query telemetry records.")).toBeInTheDocument()
   })
@@ -157,7 +160,7 @@ describe("ChatMessage", () => {
       parts: [{ kind: "text", text: "Partial response before cancel" }],
     }
 
-    renderWithProviders(<ChatMessage message={stoppedMsg} audience="patient" />)
+    renderWithProviders(<ChatMessage message={stoppedMsg} />, { role: "patient" })
 
     expect(screen.getByText("Stopped")).toBeInTheDocument()
   })
@@ -171,7 +174,7 @@ describe("ChatMessage", () => {
       parts: [{ kind: "text", text: "Answer with unverified figures" }],
     }
 
-    renderWithProviders(<ChatMessage message={ungroundedMsg} audience="patient" />)
+    renderWithProviders(<ChatMessage message={ungroundedMsg} />, { role: "patient" })
 
     expect(screen.getByText("Some numbers couldn't be checked")).toBeInTheDocument()
   })
@@ -204,7 +207,7 @@ describe("ChatMessage", () => {
       ],
     }
 
-    const { container } = renderWithProviders(<ChatMessage message={chartMsg} audience="patient" />)
+    const { container } = renderWithProviders(<ChatMessage message={chartMsg} />, { role: "patient" })
 
     expect(container.querySelector(".bg-card")).toBeInTheDocument()
   })
