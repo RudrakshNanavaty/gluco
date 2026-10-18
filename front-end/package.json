@@ -11,7 +11,10 @@
     "gen:api": "openapi-typescript http://localhost:8000/openapi.json --default-non-nullable false -o src/lib/api/schema.d.ts",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "secrets:push": "../scripts/secrets.sh frontend push",
+    "secrets:pull": "../scripts/secrets.sh frontend pull",
+    "secrets:diff": "../scripts/secrets.sh frontend diff"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.17",

@@ -35,3 +35,15 @@ test-live:
 
 lint:
     uv run ruff check . && uv run ruff format --check . && uv run basedpyright
+
+# Sync back-end/.env with Google Secret Manager (gluco-backend-env)
+secrets-push:
+    ../scripts/secrets.sh backend push
+
+# Overwrite back-end/.env from Secret Manager (old file saved as .env.bak)
+secrets-pull:
+    ../scripts/secrets.sh backend pull
+
+# Compare local and remote by variable name; values are never printed
+secrets-diff:
+    ../scripts/secrets.sh backend diff
