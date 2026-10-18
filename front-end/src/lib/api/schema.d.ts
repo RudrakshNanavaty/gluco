@@ -374,13 +374,6 @@ export interface components {
              */
             note?: string;
         };
-        /** ChatMessage */
-        ChatMessage: {
-            /** Role */
-            role: string;
-            /** Text */
-            text: string;
-        };
         /** ChatRequest */
         ChatRequest: {
             /** Session Id */
@@ -719,6 +712,30 @@ export interface components {
             display_name: string;
             /** Points */
             points: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
+         * TranscriptMessage
+         * @description One message of a stored thread, in the same shape the stream sends.
+         *
+         *     A user message has `text`. An assistant message has `events`: the Contract
+         *     B events (`token`, `tool_start`, `tool_end`, `data`) it would have streamed,
+         *     in order, so the UI rebuilds it with the reducer it uses live.
+         */
+        TranscriptMessage: {
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /**
+             * Text
+             * @default
+             */
+            text?: string;
+            /** Events */
+            events?: {
                 [key: string]: unknown;
             }[];
         };
@@ -1151,7 +1168,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChatMessage"][];
+                    "application/json": components["schemas"]["TranscriptMessage"][];
                 };
             };
             /** @description Validation Error */

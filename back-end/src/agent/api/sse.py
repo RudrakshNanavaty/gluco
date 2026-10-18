@@ -62,7 +62,8 @@ class StreamTranslator:
                 return [self._tool_start(event.item)]
             if event.name == "tool_output":
                 end = self._tool_end(event.item)
-                return [end, *self._chart(end, event.item.output)]
+                data = end.data
+                return [end, *chart(data["call_id"], data["tool"], event.item.output)]
         return []
 
     def _tool_start(self, item: Any) -> SseEvent:
@@ -73,32 +74,7 @@ class StreamTranslator:
             self._generated += 1
             call_id = f"call-{self._generated}"
         self._open_calls[call_id] = tool
-        return SseEvent(
-            "tool_start",
-            {
-                "call_id": call_id,
-                "tool": tool,
-                "args": _parse_args(_field(raw, "arguments")),
-            },
-        )
-
-    @staticmethod
-    def _chart(end: SseEvent, output: Any) -> list[SseEvent]:
-        """A `data` event when the tool returned series to draw.
-
-        A built widget rides along as `widget` (title, kind, query, steps), so
-        the UI can show its pipeline and pin it.
-        """
-        if not isinstance(output, dict) or not isinstance(output.get("chart"), dict):
-            return []
-        data = {
-            "call_id": end.data["call_id"],
-            "tool": end.data["tool"],
-            "chart": output["chart"],
-        }
-        if isinstance(output.get("widget"), dict):
-            data["widget"] = output["widget"]
-        return [SseEvent("data", data)]
+        return tool_start(call_id, tool, _field(raw, "arguments"))
 
     def _tool_end(self, item: Any) -> SseEvent:
         call_id = _field(item.raw_item, "call_id")
@@ -106,19 +82,43 @@ class StreamTranslator:
             # No usable id on the result: pair with the oldest open call, if any.
             call_id = next(iter(self._open_calls), call_id or "unknown")
         tool = self._open_calls.pop(call_id, "unknown")
-        output = item.output
-        self.tool_outputs.append(output)
-        if isinstance(output, dict):
-            summary = output.get("summary") or output.get("error") or ""
-            rows = output.get("rows", 0)
-        else:
-            summary, rows = str(output), 0
-        return SseEvent(
-            "tool_end",
-            {
-                "call_id": call_id,
-                "tool": tool,
-                "summary": str(summary)[:SUMMARY_LIMIT],
-                "rows": rows,
-            },
-        )
+        self.tool_outputs.append(item.output)
+        return tool_end(call_id, tool, item.output)
+
+
+def tool_start(call_id: str, tool: str, arguments: Any) -> SseEvent:
+    return SseEvent(
+        "tool_start",
+        {"call_id": call_id, "tool": tool, "args": _parse_args(arguments)},
+    )
+
+
+def tool_end(call_id: str, tool: str, output: Any) -> SseEvent:
+    if isinstance(output, dict):
+        summary = output.get("summary") or output.get("error") or ""
+        rows = output.get("rows", 0)
+    else:
+        summary, rows = str(output), 0
+    return SseEvent(
+        "tool_end",
+        {
+            "call_id": call_id,
+            "tool": tool,
+            "summary": str(summary)[:SUMMARY_LIMIT],
+            "rows": rows,
+        },
+    )
+
+
+def chart(call_id: str, tool: str, output: Any) -> list[SseEvent]:
+    """A `data` event when the tool returned series to draw.
+
+    A built widget rides along as `widget` (title, kind, query, steps), so the
+    UI can show its pipeline and pin it.
+    """
+    if not isinstance(output, dict) or not isinstance(output.get("chart"), dict):
+        return []
+    data = {"call_id": call_id, "tool": tool, "chart": output["chart"]}
+    if isinstance(output.get("widget"), dict):
+        data["widget"] = output["widget"]
+    return [SseEvent("data", data)]

@@ -6,7 +6,7 @@ from sse_starlette.sse import EventSourceResponse
 from agent.api.dashboard import SSE_HEADERS
 from agent.api.deps import CurrentPrincipal, RuntimeDep
 from agent.api.schemas import ChatRequest, SessionId
-from agent.api.sessions import ChatMessage, ChatThread
+from agent.api.sessions import ChatThread, TranscriptMessage
 from agent.api.sse import sse_frame
 
 router = APIRouter(tags=["chat"])
@@ -33,7 +33,7 @@ def threads(runtime: RuntimeDep, principal: CurrentPrincipal) -> list[ChatThread
 @router.get("/chat/sessions/{session_id}")
 async def thread(
     session_id: SessionId, runtime: RuntimeDep, principal: CurrentPrincipal
-) -> list[ChatMessage]:
+) -> list[TranscriptMessage]:
     if not runtime.sessions.owns(principal.user_id, session_id):
         raise HTTPException(404, "We couldn't find that conversation.")
-    return await runtime.sessions.messages(principal.user_id, session_id)
+    return await runtime.sessions.transcript(principal.user_id, session_id)

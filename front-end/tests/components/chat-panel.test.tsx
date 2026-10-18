@@ -27,7 +27,6 @@ describe("ChatPanel & Composer", () => {
     messages: [],
     streaming: false,
     loadingThread: false,
-    chartsMissing: false,
     send: mockSend,
     stop: mockStop,
     newChat: mockNewChat,
@@ -171,21 +170,6 @@ describe("ChatPanel & Composer", () => {
     expect(screen.getByText("Opening conversation…")).toBeInTheDocument()
   })
 
-  // Verifies that chartsMissing banner displays when reopening thread without cached charts.
-  it("renders chartsMissing notice when chartsMissing is true", () => {
-    vi.mocked(useChat).mockReturnValue({
-      ...baseChatState,
-      chartsMissing: true,
-      messages: [{ id: "m1", role: "user", parts: [{ kind: "text", text: "Show chart" }] }],
-    } as unknown as ReturnType<typeof useChat>)
-
-    renderWithProviders(<ChatPanel />, { role: "patient" })
-
-    expect(screen.getByText("Charts from earlier answers aren't available here")).toBeInTheDocument()
-  })
-})
-
-describe("ChatLauncher", () => {
   // Verifies that floating launcher button renders with accessible label.
   it("renders floating launcher trigger with accessible name", () => {
     vi.mocked(useChat).mockReturnValue({
@@ -205,8 +189,7 @@ describe("ChatLauncher", () => {
       messages: [],
       streaming: false,
       loadingThread: false,
-      chartsMissing: false,
-      send: vi.fn(),
+        send: vi.fn(),
       stop: vi.fn(),
       newChat: vi.fn(),
       openThread: vi.fn(),

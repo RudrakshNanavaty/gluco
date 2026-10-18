@@ -4,13 +4,13 @@ Only the spec is stored, never data: a pinned widget is rebuilt (and checked
 again) every time it is shown, so it follows the clock and the caller's scope.
 """
 
-import sqlite3
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
 from pydantic import BaseModel
 
+from agent.api.sqlite import connect, create_table
 from agent.query import QuerySpec
 from agent.widgets import WidgetKind, WidgetSpec
 
@@ -28,18 +28,14 @@ class PinnedWidget(BaseModel):
 
 class WidgetStore:
     def __init__(self, db_path: Path) -> None:
-        db_path.parent.mkdir(parents=True, exist_ok=True)
         self._path = db_path
-        with self._connect() as conn:
-            conn.execute(
-                "CREATE TABLE IF NOT EXISTS pinned_widgets ("
-                "id TEXT PRIMARY KEY, user_id TEXT NOT NULL, title TEXT NOT NULL, "
-                "kind TEXT NOT NULL, query_json TEXT NOT NULL, "
-                "created_at TEXT NOT NULL)"
-            )
-
-    def _connect(self) -> sqlite3.Connection:
-        return sqlite3.connect(self._path)
+        create_table(
+            db_path,
+            "CREATE TABLE IF NOT EXISTS pinned_widgets ("
+            "id TEXT PRIMARY KEY, user_id TEXT NOT NULL, title TEXT NOT NULL, "
+            "kind TEXT NOT NULL, query_json TEXT NOT NULL, "
+            "created_at TEXT NOT NULL)",
+        )
 
     @staticmethod
     def _row(row: tuple[str, str, str, str, str]) -> PinnedWidget:
@@ -52,7 +48,7 @@ class WidgetStore:
         )
 
     def list(self, user_id: str) -> list[PinnedWidget]:
-        with self._connect() as conn:
+        with connect(self._path) as conn:
             rows = conn.execute(
                 "SELECT id, title, kind, query_json, created_at FROM pinned_widgets "
                 "WHERE user_id = ? ORDER BY created_at",
@@ -61,7 +57,7 @@ class WidgetStore:
         return [self._row(r) for r in rows]
 
     def get(self, user_id: str, widget_id: str) -> PinnedWidget | None:
-        with self._connect() as conn:
+        with connect(self._path) as conn:
             row = conn.execute(
                 "SELECT id, title, kind, query_json, created_at FROM pinned_widgets "
                 "WHERE user_id = ? AND id = ?",
@@ -77,7 +73,7 @@ class WidgetStore:
             query=spec.query,
             created_at=datetime.now(UTC),
         )
-        with self._connect() as conn:
+        with connect(self._path) as conn:
             conn.execute(
                 "INSERT INTO pinned_widgets VALUES (?, ?, ?, ?, ?, ?)",
                 (
@@ -92,7 +88,7 @@ class WidgetStore:
         return pinned
 
     def delete(self, user_id: str, widget_id: str) -> bool:
-        with self._connect() as conn:
+        with connect(self._path) as conn:
             cursor = conn.execute(
                 "DELETE FROM pinned_widgets WHERE user_id = ? AND id = ?",
                 (user_id, widget_id),
