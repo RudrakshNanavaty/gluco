@@ -6,7 +6,7 @@ would kill the stream mid-answer.
 
 import logging
 from collections.abc import AsyncIterator, Callable
-from typing import Any
+from typing import Any, Protocol
 
 from agents import Agent, InputGuardrailTripwireTriggered, MaxTurnsExceeded, Runner
 
@@ -26,7 +26,14 @@ MAX_TURNS_REPLY = (
 )
 
 RunStreamed = Callable[..., Any]
-AgentFactory = Callable[[Principal], Agent]
+
+
+class ChatScope(Protocol):
+    """Who is asking, and the agent built for them (`bootstrap.Scope`)."""
+
+    principal: Principal
+
+    def agent(self) -> Agent: ...
 
 
 class ChatService:
@@ -34,21 +41,20 @@ class ChatService:
 
     def __init__(
         self,
-        agents: AgentFactory,
         sessions: ChatSessions,
         tracer: Tracer,
         max_turns: int,
         run_streamed: RunStreamed = Runner.run_streamed,
     ) -> None:
-        self._agents = agents
         self._sessions = sessions
         self._tracer = tracer
         self._max_turns = max_turns
         self._run_streamed = run_streamed
 
     async def stream(
-        self, principal: Principal, session_id: str, message: str
+        self, scope: ChatScope, session_id: str, message: str
     ) -> AsyncIterator[SseEvent]:
+        principal = scope.principal
         recorder = self._tracer.start(
             ChatSessions.key(principal.user_id, session_id), message
         )
@@ -62,7 +68,7 @@ class ChatService:
             try:
                 self._sessions.touch(principal.user_id, session_id, message)
                 result = self._run_streamed(
-                    self._agents(principal),
+                    scope.agent(),
                     message,
                     session=self._sessions.open(principal.user_id, session_id),
                     max_turns=self._max_turns,

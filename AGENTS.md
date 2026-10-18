@@ -18,3 +18,6 @@ Front-end (from `front-end/`): `bun dev`, `bun run test`, `bun run lint`, `bun r
 - Never commit `.env*` (except `.env.example`) or data files.
 - Don't hand-edit `uv.lock` / `bun.lock`.
 - Don't make medical or diagnostic claims in code, copy, or docs.
+- PR descriptions carry no AI attribution (no "Generated with Claude Code" line). Commit messages keep the `Co-Authored-By` trailer.
+- Make code changes on feature branches, never directly on `main`. Use
+  Conventional Commits for commit messages.

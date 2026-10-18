@@ -97,7 +97,6 @@ class FakeSessions:
 
 def service(result: FakeResult, tracer=None, sessions=None) -> ChatService:
     return ChatService(
-        agents=lambda principal: None,  # type: ignore[arg-type,return-value]
         sessions=sessions or FakeSessions(),  # type: ignore[arg-type]
         tracer=tracer or NullTracer(),
         max_turns=6,
@@ -106,7 +105,8 @@ def service(result: FakeResult, tracer=None, sessions=None) -> ChatService:
 
 
 async def collect(svc: ChatService, principal=CLINICIAN):
-    return [e async for e in svc.stream(principal, "s1", "hello")]
+    scope = SimpleNamespace(principal=principal, agent=lambda: None)
+    return [e async for e in svc.stream(scope, "s1", "hello")]  # type: ignore[arg-type]
 
 
 async def test_stream_happy_path_ends_with_done():

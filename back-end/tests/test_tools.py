@@ -17,7 +17,7 @@ async def test_get_participant_resolves_short_refs_and_charts_the_week(
     invoke_clinician,
 ):
     out = await invoke_clinician("get_participant", person_id="P013")
-    assert out["participant"]["person_id"] == PID
+    assert out["latest"]["person_id"] == PID
     assert out["gluco_week"]["points"] == 168
     [series] = out["chart"]["series"]
     assert len(series["points"]) <= 48
@@ -68,4 +68,4 @@ async def test_patient_tools_are_bound_to_the_patient(invoke_patient):
     trend = await invoke_patient("get_my_trend", metric="motion_mean_g", bucket="day")
     assert trend["trend"]["metric"] == "motion_mean_g"
     data = await invoke_patient("query_my_data", metrics=[GLUCO_SCORE], agg="min")
-    assert [s["participant_id"] for s in data["chart"]["series"]] == [PID]
+    assert [s["display_name"] for s in data["chart"]["series"]] == ["Patient 013"]

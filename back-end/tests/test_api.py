@@ -5,9 +5,10 @@ from fastapi.testclient import TestClient
 from support import OTHER, PID, authenticator_for, clerk_user_id
 
 from agent.api.app import create_app
-from agent.auth import patient
+from agent.auth import CLINICIAN, patient
 from agent.domain.events import SseEvent
 from agent.domain.metrics import GLUCO_SCORE
+from agent.store import WindowStore
 
 ALLOWED = "http://localhost:5173"
 
@@ -46,7 +47,7 @@ def test_there_is_no_login_without_clerk(client):
 
 
 def test_data_routes_need_a_valid_token(client):
-    for path in ("/catalog", "/participants", "/cohort", "/clock", "/chat/sessions"):
+    for path in ("/catalog", "/participants", "/cohort", "/chat/sessions"):
         assert client.get(path).status_code == 401
         bad = client.get(path, headers={"Authorization": "Bearer junk"})
         assert bad.status_code == 401
@@ -92,7 +93,7 @@ def test_generic_query(client, as_clinician):
     }
     result = client.post("/query", headers=as_clinician, json=body).json()
     [series] = result["series"]
-    assert series["participant_id"] is None
+    assert series["display_name"] == "Cohort"
     assert set(series["points"][0]) >= {"t", "n", GLUCO_SCORE, "hr_mean_bpm_24h"}
     bad = client.post("/query", headers=as_clinician, json={"metrics": ["glucose"]})
     assert bad.status_code == 400
@@ -126,12 +127,21 @@ def test_cohort_and_compare(client, as_clinician):
 
 
 def test_clock_control(client, as_clinician):
-    state = client.get("/clock", headers=as_clinician).json()
-    assert state["enabled"] is False  # tests run with the replay disabled
     seek = client.post("/clock", headers=as_clinician, json={"action": "speed"})
     assert seek.status_code == 422
     paused = client.post("/clock", headers=as_clinician, json={"action": "pause"})
     assert paused.json()["playing"] is False
+    assert paused.json()["enabled"] is False  # tests run with the replay disabled
+
+
+def test_only_clinicians_move_the_shared_clock(client, as_patient, runtime):
+    """One patient pausing would change "now" for everyone (ADR 0002)."""
+    before = runtime.clock.state()
+    for action in ({"action": "pause"}, {"action": "play"}):
+        response = client.post("/clock", headers=as_patient, json=action)
+        assert response.status_code == 403
+        assert response.json()["code"] == "not_permitted"
+    assert runtime.clock.state() == before
 
 
 # --- chat -------------------------------------------------------------------------
@@ -141,8 +151,8 @@ class FakeChat:
     def __init__(self) -> None:
         self.calls: list[tuple[str, str, str]] = []
 
-    async def stream(self, principal, session_id: str, message: str):
-        self.calls.append((principal.user_id, session_id, message))
+    async def stream(self, scope, session_id: str, message: str):
+        self.calls.append((scope.principal.user_id, session_id, message))
         yield SseEvent("tool_start", {"tool": "get_my_status", "args": {}})
         yield SseEvent("data", {"chart": {"series": []}})
         yield SseEvent("token", {"text": f"echo:{message}"})
@@ -193,20 +203,39 @@ def test_chat_threads_belong_to_their_user(runtime, client, as_patient, as_clini
     assert client.get("/chat/sessions/t1", headers=as_clinician).status_code == 404
 
 
-def test_tools_listing_depends_on_role(client, as_patient, as_clinician):
-    patient_tools = {t["name"] for t in client.get("/tools", headers=as_patient).json()}
-    clinician_tools = {
-        t["name"] for t in client.get("/tools", headers=as_clinician).json()
-    }
+def test_tools_depend_on_role(runtime):
+    patient_tools = {t.name for t in runtime.for_principal(patient(PID)).tools}
+    clinician_tools = {t.name for t in runtime.for_principal(CLINICIAN).tools}
     assert "get_my_status" in patient_tools
     assert "query_data" in clinician_tools
     assert not patient_tools & clinician_tools
 
 
-def test_patient_tool_schemas_take_no_participant(client, as_patient):
-    for tool in client.get("/tools", headers=as_patient).json():
-        params = set(tool["parameters"].get("properties", {}))
-        assert not params & {"person_id", "participants", "group_by"}, tool["name"]
+def test_patient_tool_schemas_take_no_participant(runtime):
+    for tool in runtime.for_principal(patient(PID)).tools:
+        params = set(tool.params_json_schema.get("properties", {}))
+        assert not params & {"person_id", "participants", "group_by"}, tool.name
+
+
+class EmptySource:
+    def fetch_since(self, published_after):
+        return []
+
+    def fetch_live(self):
+        return []
+
+    def ping(self) -> bool:
+        return True
+
+
+def test_every_part_of_a_scope_reads_the_runtime_it_came_from(runtime):
+    """Swapping the store reaches the queries, the tools and the agent alike."""
+    scope = replace(runtime, store=WindowStore(EmptySource())).for_principal(CLINICIAN)
+    assert scope.queries.visible() == []
+    assert runtime.for_principal(CLINICIAN).queries.visible() != []
+    agent_tools = scope.agent().tools
+    assert agent_tools
+    assert all(tool in agent_tools for tool in scope.tools)
 
 
 def test_cors_allows_only_the_configured_origins(client):

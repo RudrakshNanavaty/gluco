@@ -11,13 +11,13 @@ from agents import FunctionTool, function_tool
 from agent.domain.metrics import GLUCO_SCORE, metric_label
 from agent.query import QueryService, QuerySpec
 from agent.tools.base import (
+    answer,
     chart,
-    dump,
-    grouping_phrase,
+    explain,
     parse_time,
-    require_points,
     result,
     safe_tool,
+    status,
     week_summary,
 )
 from agent.tools.widgets import build_my_widget_tool
@@ -33,16 +33,7 @@ def build(svc: QueryService) -> list[FunctionTool]:
     def get_my_status() -> dict[str, Any]:
         """Your newest values (Gluco Score and every sensor metric) and your Gluco
         Score over the last 7 days."""
-        latest = svc.participant(me)
-        week = svc.query(QuerySpec(metrics=[GLUCO_SCORE], hours=168, bucket="hour"))
-        return result(
-            summary=f"Gluco Score {latest.values.get(GLUCO_SCORE)}",
-            rows=1,
-            as_of=svc.as_of(),
-            latest=dump(latest),
-            gluco_week=week_summary(week, GLUCO_SCORE),
-            chart=chart(week),
-        )
+        return status(svc, me)
 
     @function_tool
     @safe_tool
@@ -57,19 +48,7 @@ def build(svc: QueryService) -> list[FunctionTool]:
         Args:
             hours: How far back to compare (default 24).
         """
-        report = svc.explain_change(me, hours)
-        shown = [GLUCO_SCORE, *report.largest_shifts[:1]]
-        trend = svc.query(
-            QuerySpec(metrics=shown, hours=max(hours * 2, 48), bucket="hour")
-        )
-        gluco = next(c for c in report.changes if c.metric == GLUCO_SCORE)
-        return result(
-            summary=f"Gluco Score {gluco.then} -> {gluco.now} over {hours:g} h",
-            rows=len(report.changes),
-            as_of=svc.as_of(),
-            change=dump(report),
-            chart=chart(trend),
-        )
+        return explain(svc, me, hours)
 
     @function_tool
     @safe_tool
@@ -122,26 +101,16 @@ def build(svc: QueryService) -> list[FunctionTool]:
             bucket: "raw" (every hourly window), "hour", "day", or "all" (one value).
             agg: How to reduce each bucket. "delta" is last minus first.
         """
-        answer = require_points(
-            svc.query(
-                QuerySpec(
-                    metrics=metrics,
-                    hours=hours,
-                    start=parse_time(start),
-                    end=parse_time(end),
-                    bucket=bucket,
-                    agg=agg,
-                )
-            )
-        )
-        return result(
-            summary=(
-                f"{', '.join(metric_label(m) for m in metrics)} "
-                f"({grouping_phrase(bucket, agg)})"
+        return answer(
+            svc,
+            QuerySpec(
+                metrics=metrics,
+                hours=hours,
+                start=parse_time(start),
+                end=parse_time(end),
+                bucket=bucket,
+                agg=agg,
             ),
-            rows=sum(len(s.points) for s in answer.series),
-            as_of=svc.as_of(),
-            chart=chart(answer),
         )
 
     return [

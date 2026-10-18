@@ -105,8 +105,9 @@ def principal_for(runtime: Runtime, case: dict) -> Principal:
 async def run_case(runtime: Runtime, case: dict) -> CaseOutcome:
     started = time.perf_counter()
     collector = _Collector()
+    scope = runtime.for_principal(principal_for(runtime, case))
     async for event in runtime.chat.stream(
-        principal_for(runtime, case), f"eval-{uuid.uuid4().hex}", case["question"]
+        scope, f"eval-{uuid.uuid4().hex}", case["question"]
     ):
         collector.handle(event)
     answer = "".join(collector.tokens)

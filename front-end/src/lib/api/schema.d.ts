@@ -147,10 +147,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Clock State */
-        get: operations["clock_state_clock_get"];
+        get?: never;
         put?: never;
-        /** Control Clock */
+        /**
+         * Control Clock
+         * @description Move the shared replay clock; clinicians only (ADR 0002).
+         */
         post: operations["control_clock_clock_post"];
         delete?: never;
         options?: never;
@@ -225,26 +227,6 @@ export interface paths {
         };
         /** Thread */
         get: operations["thread_chat_sessions__session_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/tools": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Tools
-         * @description The tools the caller's chatbot can use, with their JSON schemas.
-         */
-        get: operations["tools_tools_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -491,8 +473,8 @@ export interface components {
                 [key: string]: components["schemas"]["MetricSummary"];
             };
         };
-        /** ExplainResponse */
-        ExplainResponse: {
+        /** Explanation */
+        Explanation: {
             change: components["schemas"]["ChangeReport"];
             /** Cohort Position */
             cohort_position: components["schemas"]["FeatureDeviation"][] | null;
@@ -677,6 +659,8 @@ export interface components {
             total_series: number;
             /** Truncated */
             truncated: boolean;
+            /** Audit */
+            audit?: string[];
         };
         /**
          * QuerySpec
@@ -724,8 +708,6 @@ export interface components {
         };
         /** Series */
         Series: {
-            /** Participant Id */
-            participant_id: string | null;
             /** Display Name */
             display_name: string;
             /** Points */
@@ -985,7 +967,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ExplainResponse"];
+                    "application/json": components["schemas"]["Explanation"];
                 };
             };
             /** @description Validation Error */
@@ -1048,26 +1030,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CohortOverview"];
-                };
-            };
-        };
-    };
-    clock_state_clock_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ClockState"];
                 };
             };
         };
@@ -1216,28 +1178,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    tools_tools_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
                 };
             };
         };
