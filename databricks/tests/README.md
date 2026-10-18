@@ -14,3 +14,8 @@ Spark session, trained artifacts, or LLM calls.
 
 The `databricks` CI job runs them independently of app tests. Passing does not
 establish model accuracy, external validity, or cloud ingestion correctness.
+
+The experimental-feature tests additionally check unchanged baseline features,
+elapsed-time slopes across irregular missing minutes, zero spread/slope for
+constant signals, exclusion of future values, baseline rejection gates, and
+invariance to absolute timestamp offsets.
