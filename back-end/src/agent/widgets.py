@@ -7,15 +7,14 @@ refresh of a pinned one:
 1. design:     turn the kind into a re-runnable QuerySpec (relative `hours`,
                never absolute times, so a pinned widget follows the clock);
 2. fetch:      run it through the caller's QueryService (scope + replay clock);
-3. compliance: `analysis.compliance.sanitize`;
+3. compliance: report the disclosure rule `QueryService.query()` applied;
 4. bind:       return the spec with the data, so a pin can refresh itself.
 """
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from agent.analysis.compliance import sanitize
 from agent.domain.errors import QueryError
 from agent.domain.metrics import metric_label
 from agent.query import QueryResult, QueryService, QuerySpec
@@ -70,58 +69,36 @@ def design(
     panel average; a patient's QueryService only ever sees themselves anyway.
     """
     participants = participants or None  # models send [] for "everyone"
-    bucket = "hour" if hours <= 48 else "day"
-    if kind == "stat":
-        return QuerySpec(
-            metrics=metrics[:1],
-            participants=participants,
-            hours=hours,
-            bucket=bucket,
-            agg=agg or "mean",  # pyright: ignore[reportArgumentType]
-            group_by="cohort" if panel and participants is None else "participant",
-        )
-    if kind == "heatmap":
-        return QuerySpec(
-            metrics=metrics[:1],
-            participants=participants,
-            hours=hours,
-            bucket="day",
-            agg=agg or "mean",  # pyright: ignore[reportArgumentType]
-            sort_by=None if participants else metrics[0],
-            order=order,  # pyright: ignore[reportArgumentType]
-            limit=None if participants else limit,
-        )
-    if kind in ("ranking", "table"):
-        return QuerySpec(
-            metrics=metrics,
-            participants=participants,
-            hours=hours,
-            bucket="all",
-            agg=agg or "last",  # pyright: ignore[reportArgumentType]
-            sort_by=metrics[0],
-            order=order,  # pyright: ignore[reportArgumentType]
-            limit=limit,
-        )
-    if kind == "cohort_trend":
-        return QuerySpec(
-            metrics=metrics,
-            hours=hours,
-            bucket=bucket,
-            agg=agg or "mean",  # pyright: ignore[reportArgumentType]
-            group_by="cohort",
-        )
-    return QuerySpec(
-        metrics=metrics,
-        participants=participants,
-        hours=hours,
-        bucket=bucket,
-        agg=agg or "mean",  # pyright: ignore[reportArgumentType]
-        # Without named people, keep the chart readable: the `limit` lowest or
-        # highest by their newest value.
-        sort_by=None if participants else metrics[0],
-        order=order,  # pyright: ignore[reportArgumentType]
-        limit=None if participants else limit,
-    )
+    named = participants is not None
+    base: dict[str, Any] = {
+        "metrics": metrics,
+        "participants": participants,
+        "hours": hours,
+        "bucket": "hour" if hours <= 48 else "day",
+        "agg": agg or "mean",
+        "order": order,
+    }
+    # Without named people, keep the chart readable: the `limit` lowest or
+    # highest by their newest value.
+    top: dict[str, Any] = {} if named else {"sort_by": metrics[0], "limit": limit}
+    match kind:
+        case "stat":
+            group_by = "cohort" if panel and not named else "participant"
+            extra = {"metrics": metrics[:1], "group_by": group_by}
+        case "heatmap":
+            extra = {"metrics": metrics[:1], "bucket": "day", **top}
+        case "ranking" | "table":
+            extra = {
+                "bucket": "all",
+                "agg": agg or "last",
+                "sort_by": metrics[0],
+                "limit": limit,
+            }
+        case "cohort_trend":
+            extra = {"participants": None, "group_by": "cohort"}
+        case "trend":
+            extra = top
+    return QuerySpec.model_validate(base | extra)
 
 
 def build(svc: QueryService, spec: WidgetSpec) -> BuiltWidget:
@@ -135,8 +112,8 @@ def build(svc: QueryService, spec: WidgetSpec) -> BuiltWidget:
         )
     ]
 
-    raw = svc.query(query)
-    points = sum(len(s.points) for s in raw.series)
+    found = svc.query(query)
+    points = sum(len(s.points) for s in found.series)
     if points == 0:
         raise QueryError(
             "No data in that range.",
@@ -145,15 +122,13 @@ def build(svc: QueryService, spec: WidgetSpec) -> BuiltWidget:
     steps.append(
         WidgetStep(
             stage="fetch",
-            text=f"Fetched {points} data points across {len(raw.series)} series",
+            text=f"Fetched {points} data points across {len(found.series)} series",
         )
     )
-
-    clean, audit = sanitize(raw, svc.principal)
-    steps.append(WidgetStep(stage="compliance", text="; ".join(audit)))
+    steps.append(WidgetStep(stage="compliance", text="; ".join(found.audit)))
     steps.append(
         WidgetStep(
             stage="bind", text="Bound to a live query: refreshes as data streams in"
         )
     )
-    return BuiltWidget(spec=spec, result=clean, steps=steps)
+    return BuiltWidget(spec=spec, result=found, steps=steps)

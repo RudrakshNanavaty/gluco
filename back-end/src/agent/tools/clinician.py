@@ -13,14 +13,13 @@ from agent.domain.metrics import GLUCO_SCORE, metric_label
 from agent.query import QueryService, QuerySpec
 from agent.tools.base import (
     MAX_ROWS,
-    chart,
+    answer,
     dump,
-    grouping_phrase,
+    explain,
     parse_time,
-    require_points,
     result,
     safe_tool,
-    week_summary,
+    status,
 )
 from agent.tools.widgets import build_widget_tool
 
@@ -67,22 +66,7 @@ def build(svc: QueryService) -> list[FunctionTool]:
         Args:
             person_id: The participant, e.g. "13", "P013", "IMU-13" or the full key.
         """
-        pid = svc.resolve(person_id)
-        latest = svc.participant(pid)
-        week = svc.query(
-            QuerySpec(
-                metrics=[GLUCO_SCORE], participants=[pid], hours=168, bucket="hour"
-            )
-        )
-        score = latest.values.get(GLUCO_SCORE)
-        return result(
-            summary=f"{display_name(pid)}: Gluco Score {score}",
-            rows=1,
-            as_of=svc.as_of(),
-            participant=dump(latest),
-            gluco_week=week_summary(week, GLUCO_SCORE),
-            chart=chart(week),
-        )
+        return status(svc, person_id)
 
     @function_tool
     @safe_tool
@@ -99,29 +83,7 @@ def build(svc: QueryService) -> list[FunctionTool]:
             person_id: The participant, e.g. "13" or the full key.
             hours: How far back to compare (default 24).
         """
-        pid = svc.resolve(person_id)
-        report = svc.explain_change(pid, hours)
-        shown = [GLUCO_SCORE, *report.largest_shifts[:1]]
-        trend = svc.query(
-            QuerySpec(
-                metrics=shown,
-                participants=[pid],
-                hours=max(hours * 2, 48),
-                bucket="hour",
-            )
-        )
-        gluco = next(c for c in report.changes if c.metric == GLUCO_SCORE)
-        return result(
-            summary=(
-                f"{display_name(pid)}: Gluco Score {gluco.then} -> {gluco.now} "
-                f"over {hours:g} h"
-            ),
-            rows=len(report.changes),
-            as_of=svc.as_of(),
-            change=dump(report),
-            cohort_position=[dump(d) for d in svc.cohort_position(pid)],
-            chart=chart(trend),
-        )
+        return explain(svc, person_id, hours)
 
     @function_tool
     @safe_tool
@@ -134,11 +96,11 @@ def build(svc: QueryService) -> list[FunctionTool]:
             person_id: The participant, e.g. "13" or the full key.
             metric: A metric name from the catalog, e.g. "hr_mean_bpm_24h".
         """
-        pid = svc.resolve(person_id)
-        comparison = svc.compare_to_cohort(pid, metric)
+        comparison = svc.compare_to_cohort(person_id, metric)
         return result(
             summary=(
-                f"{display_name(pid)} {metric_label(metric)}: {comparison.value} vs "
+                f"{display_name(comparison.person_id)} {metric_label(metric)}: "
+                f"{comparison.value} vs "
                 f"panel median {comparison.cohort_median}"
             ),
             rows=1,
@@ -195,28 +157,21 @@ def build(svc: QueryService) -> list[FunctionTool]:
             order: "asc" or "desc" for sort_by.
             limit: Keep only this many series after sorting.
         """
-        spec = QuerySpec(
-            metrics=metrics,
-            participants=participants or None,
-            hours=hours,
-            start=parse_time(start),
-            end=parse_time(end),
-            bucket=bucket,
-            agg=agg,
-            group_by=group_by,
-            sort_by=sort_by,
-            order=order,
-            limit=limit,
-        )
-        answer = require_points(svc.query(spec))
-        return result(
-            summary=(
-                f"{', '.join(metric_label(m) for m in metrics)} "
-                f"({grouping_phrase(bucket, agg)})"
+        return answer(
+            svc,
+            QuerySpec(
+                metrics=metrics,
+                participants=participants or None,
+                hours=hours,
+                start=parse_time(start),
+                end=parse_time(end),
+                bucket=bucket,
+                agg=agg,
+                group_by=group_by,
+                sort_by=sort_by,
+                order=order,
+                limit=limit,
             ),
-            rows=sum(len(s.points) for s in answer.series),
-            as_of=svc.as_of(),
-            chart=chart(answer),
         )
 
     return [

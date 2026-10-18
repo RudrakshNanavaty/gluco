@@ -224,7 +224,7 @@ describe("Score Visualizations and Widgets", () => {
         data: {
           result: {
             metrics: ["heart_rate"],
-            series: [{ participant_id: null, display_name: "Self", points: [] }],
+            series: [{ display_name: "Self", points: [] }],
             start: "2026-10-13T10:00:00Z",
             end: "2026-10-16T10:00:00Z",
           },
@@ -247,7 +247,6 @@ describe("Score Visualizations and Widgets", () => {
       metrics: ["heart_rate"],
       series: [
         {
-          participant_id: "pat-a",
           display_name: "Patient A",
           points: [
             { t: "2026-10-15T00:00:00Z", heart_rate: 72 },

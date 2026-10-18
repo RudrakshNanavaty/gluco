@@ -148,7 +148,7 @@ function LinePanel({
         ) : null}
         {series.map((s, i) => (
           <Line
-            key={s.participant_id ?? s.display_name}
+            key={s.display_name}
             dataKey={`s${i}`}
             type="monotone"
             stroke={`var(--color-s${i})`}
