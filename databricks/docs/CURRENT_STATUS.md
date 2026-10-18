@@ -152,3 +152,13 @@ predictions, then compared the predeclared extension. Accuracy was 54.37% for
 extended features and 59.31% for joint family/model selection, below 60.42% for
 the reference. Probability losses also worsened. No promotion occurred. See
 `ROBUST_FEATURE_RESULTS.md` for run references, all metrics and limitations.
+
+## Source-gap follow-up completed
+
+Direct scans of three staged temperature CSVs (participants 004, 006, 011)
+confirm the selected largest gaps already exist in the staged source inputs.
+Source and Bronze temperature row counts and nearest gap boundaries match;
+all parsed timestamps are valid. Bronze ACC is also absent inside these gaps.
+Large ACC source CSVs were not rescanned. See `SOURCE_GAP_FINDINGS.md` for scope,
+limits and the reproducible read-only SQL query. No ETL repair is indicated by
+these three checks; underlying acquisition/source provenance remains unknown.
