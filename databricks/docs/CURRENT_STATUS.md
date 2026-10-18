@@ -81,3 +81,30 @@ Read-only SQL in `databricks/sql/coverage_audit.sql` verified:
   participant weights and participant-held-out evaluation.
 - Candidate-window rejection counts have not yet been reconstructed. Passing
   the minute prefilter alone does not establish 24-hour window eligibility.
+
+## Reconstructed 24-hour window rejection audit
+
+`databricks/sql/window_rejection_audit.sql` reconstructs the training script's
+15-person roster, sample-ratio prefilter, hourly candidate ends and past-only
+24-hour bounds. It then applies the same count/nonfinite/hourly-bin gates and
+compares accepted participant/end-time keys with the saved release.
+
+Verified against the existing warehouse:
+
+- 2,653 candidate windows; 660 accepted (24.9%).
+- 734 rejected for fewer than 1,152 observations (80% of 24 hours).
+- A further 1,259 rejected for an hourly coverage gap: fewer than 30 observations
+  in an hour or an absent hour, despite passing the total-observation gate.
+- No additional nonfinite-input rejections after the minute prefilter.
+- Zero accepted-key differences versus the saved release, across all 15 people.
+
+Rejection categories follow code precedence and are mutually exclusive, not
+independent counts of every failed condition. Initial warmup time before the
+first candidate is not counted as a rejected window. These results describe
+availability of already-prefiltered minutes, not raw device missingness alone.
+
+The next investigation should separate elapsed gaps from minutes lost to the
+sample-ratio prefilter and measure consecutive gaps by participant. Preserve
+existing coverage thresholds for the baseline. Any proposed alternative must
+be evaluated inside a participant-held-out experiment rather than chosen simply
+to maximize accepted windows or performance on reused held-out results.
