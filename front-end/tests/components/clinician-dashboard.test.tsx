@@ -14,13 +14,8 @@ import {
   useSeries,
 } from "@/lib/api/queries"
 import { useLiveReading, useLiveReadings } from "@/lib/live"
-import { createMockRouter, renderWithProviders } from "../test-utils"
+import { mockRouter, renderWithProviders } from "../test-utils"
 
-const mockRouter = createMockRouter()
-
-vi.mock("next/navigation", () => ({
-  useRouter: () => mockRouter,
-}))
 
 vi.mock("@/lib/api/queries", () => ({
   keys: {

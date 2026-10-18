@@ -2,8 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import jwt
 import pytest
-from conftest import make_settings
-from support import PID
+from support import PID, make_settings
 
 from agent.auth import CLINICIAN, InvalidTokenError, Principal, TokenSigner, patient
 from agent.bootstrap import build_runtime

@@ -1,4 +1,16 @@
 import "@testing-library/jest-dom/vitest"
+import { afterEach, vi } from "vitest"
+
+import { mockRouter } from "./tests/test-utils"
+
+vi.mock("next/navigation", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/navigation")>()),
+  useRouter: () => mockRouter,
+}))
+
+afterEach(() => {
+  for (const fn of Object.values(mockRouter)) fn.mockClear()
+})
 
 class ResizeObserverMock {
   observe() {}
