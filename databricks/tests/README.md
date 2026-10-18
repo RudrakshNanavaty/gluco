@@ -35,3 +35,10 @@ threshold selection, deterministic default-threshold ties, invariance to
 repeating one participant's windows, and invalid probability rejection. The
 separate cloud notebook reproduces baseline predictions before comparing
 regularization and threshold selection on nested participant folds.
+
+The nonlinear-temperature study adds tests for a fixed, uncalibrated sigmoid
+of SVC decision margins: finite bounded output at extreme margins, monotonic
+ordering, preservation of the zero-margin classification boundary and rejection
+of nonfinite inputs. The separate cloud notebook reproduces the temperature
+control and enforces participant-disjoint fitting; no row-level internal SVC
+probability calibration is enabled.
