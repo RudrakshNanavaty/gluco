@@ -8,8 +8,6 @@ from psycopg.conninfo import make_conninfo
 from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-DEV_AUTH_SECRET = "dev-only-pulsecast-secret-change-me"  # noqa: S105
-
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -47,15 +45,9 @@ class Settings(BaseSettings):
     agent_model: str
     guardrail_model: str | None = None
 
-    # Signs the demo login tokens. The default is for local development only.
-    auth_secret: SecretStr = SecretStr(DEV_AUTH_SECRET)
-    token_ttl_hours: float = 24.0
-    # The default AUTH_SECRET is public (it is in the repo): anyone could forge a
-    # session token with it. Only local development should opt in to using it.
-    allow_dev_auth_secret: bool = False
-
-    # Clerk verifies the user's password and session; the role and participant
-    # come from the user's public_metadata, carried in the session token.
+    # Clerk verifies the user's password and session; every request carries the
+    # session token, and the role and participant come from the user's
+    # public_metadata inside it. The API server needs the JWKS URL and issuer.
     clerk_jwks_url: str | None = None
     clerk_issuer: str | None = None
     clerk_audience: str | None = None

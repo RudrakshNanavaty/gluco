@@ -30,13 +30,6 @@ class PrincipalOut(BaseModel):
         )
 
 
-class LoginResponse(BaseModel):
-    token: str
-    token_type: Literal["bearer"] = "bearer"  # noqa: S105
-    expires_in: int  # seconds
-    principal: PrincipalOut
-
-
 class ClockCommand(BaseModel):
     action: Literal["play", "pause", "speed", "seek"]
     seconds_per_hour: float | None = Field(default=None, gt=0)  # for "speed"

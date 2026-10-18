@@ -7,10 +7,10 @@ import pytest
 from agents import FunctionTool
 from agents.tool_context import ToolContext
 from fastapi.testclient import TestClient
-from support import PID, SEED, make_settings
+from support import PID, SEED, authenticator_for, bearer, make_settings
 
 from agent.api.app import create_app
-from agent.auth import CLINICIAN, Principal, patient
+from agent.auth import CLINICIAN, patient
 from agent.bootstrap import Runtime, build_runtime
 from agent.clock import ReplayClock
 from agent.data.mock import MockSource
@@ -85,19 +85,16 @@ def runtime(tmp_path: Path, source: MockSource) -> Runtime:
 
 @pytest.fixture
 def client(runtime: Runtime) -> TestClient:
-    return TestClient(create_app(runtime))
-
-
-def auth(runtime: Runtime, principal: Principal) -> dict[str, str]:
-    """Sign-in is Clerk-only, so tests issue the app token directly."""
-    return {"Authorization": f"Bearer {runtime.signer.issue(principal)}"}
+    return TestClient(
+        create_app(runtime, authenticator_for(runtime.store.participants))
+    )
 
 
 @pytest.fixture
-def as_clinician(runtime: Runtime) -> dict[str, str]:
-    return auth(runtime, CLINICIAN)
+def as_clinician() -> dict[str, str]:
+    return bearer(CLINICIAN)
 
 
 @pytest.fixture
-def as_patient(runtime: Runtime) -> dict[str, str]:
-    return auth(runtime, patient(PID))
+def as_patient() -> dict[str, str]:
+    return bearer(patient(PID))
