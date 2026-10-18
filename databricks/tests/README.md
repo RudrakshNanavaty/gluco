@@ -35,3 +35,10 @@ threshold selection, deterministic default-threshold ties, invariance to
 repeating one participant's windows, and invalid probability rejection. The
 separate cloud notebook reproduces baseline predictions before comparing
 regularization and threshold selection on nested participant folds.
+
+Sensor-group tests enforce the fixed six movement / five temperature features,
+keep cross-channel correlation in Combined only, resolve reordered schemas
+explicitly without selecting target/ID columns, and reject unknown groups,
+missing features or duplicate columns. The separate development notebook also
+requires original baseline prediction agreement and reproduction of the prior
+combined-feature experiment's metrics, fold selections and per-person accuracy.
