@@ -77,6 +77,9 @@ class Settings(BaseSettings):
     store_batch_size: int = 2_000  # rows per statement when loading windows
     store_refresh_s: float = 5.0  # how often new published rows are picked up
     live_refresh_s: float = 1.0  # how often the live sensor readings are re-read
+    # Make up the live sensor readings (a wobble around the last real ones) when
+    # nothing publishes any; the windows still come from the database.
+    simulate_live: bool = False
 
     session_db_path: Path = Path("var/sessions.sqlite")
     trace_path: Path = Path("var/trace.jsonl")
