@@ -73,7 +73,8 @@ class Settings(BaseSettings):
 
     max_turns: int = 8
     mock_seed: int = 7
-    statement_timeout_ms: int = 5_000
+    statement_timeout_ms: int = 5_000  # per statement, so per batch
+    store_batch_size: int = 2_000  # rows per statement when loading windows
     store_refresh_s: float = 5.0  # how often new published rows are picked up
     live_refresh_s: float = 1.0  # how often the live sensor readings are re-read
 
