@@ -129,6 +129,23 @@ def test_clock_control(client, as_clinician):
     assert seek.status_code == 422
     paused = client.post("/clock", headers=as_clinician, json={"action": "pause"})
     assert paused.json()["playing"] is False
+    played = client.post("/clock", headers=as_clinician, json={"action": "play"})
+    # Disabled replay remains at the newest row.
+    assert played.json()["playing"] is False
+    sped = client.post(
+        "/clock", headers=as_clinician, json={"action": "speed", "seconds_per_hour": 2}
+    )
+    assert sped.json()["seconds_per_hour"] == 2
+    missing_seek_target = client.post(
+        "/clock", headers=as_clinician, json={"action": "seek"}
+    )
+    assert missing_seek_target.status_code == 422
+    seek = client.post(
+        "/clock",
+        headers=as_clinician,
+        json={"action": "seek", "to": "2026-10-01T00:00:00Z"},
+    )
+    assert seek.status_code == 200
 
 
 # --- chat -------------------------------------------------------------------------
