@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Copy the database settings CI needs from back-end/.env to GitHub Actions secrets.
+# Copy the database settings CI needs from back-end/.env to the "gluco-back-end"
+# GitHub environment (GITHUB_ENVIRONMENT overrides the name).
 #
 #   scripts/github-secrets.sh [--dry-run]
 #
-# Sets PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD, PGSSLMODE and
-# DASHBOARD_SESSION_ID (read from DASHBOARD_SESSION_ID or DEMO_SESSION_ID) on the
-# repository `gh` resolves for this checkout. Values go to `gh` on stdin, never
-# on a command line or to the terminal. --dry-run prints names only.
+# Variables: PGHOST, PGPORT, PGDATABASE, PGSSLMODE, DASHBOARD_SESSION_ID (read
+# from DASHBOARD_SESSION_ID or DEMO_SESSION_ID). Secrets: PGUSER, PGPASSWORD.
+# Values go to `gh` on stdin, never on a command line or to the terminal.
+# --dry-run prints names only.
 #
 # Needs `gh auth login` with permission to manage the repo's secrets. Use a
 # SELECT-only database role: CI runs pull request code with these credentials.
@@ -14,6 +15,7 @@ set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 file="${ENV_FILE:-$root/back-end/.env}"
+environment="${GITHUB_ENVIRONMENT:-gluco-back-end}"
 dry_run=false
 case "${1:-}" in
   "") ;;
@@ -33,15 +35,16 @@ value_of() {
   printf '%s' "$value"
 }
 
-# secret name : env names to try, first non-empty wins
+# kind:name:env names to try (first non-empty wins). Connection details are
+# plain variables; only the login is a secret.
 mapping=(
-  "PGHOST:PGHOST"
-  "PGPORT:PGPORT"
-  "PGDATABASE:PGDATABASE"
-  "PGUSER:PGUSER"
-  "PGPASSWORD:PGPASSWORD"
-  "PGSSLMODE:PGSSLMODE"
-  "DASHBOARD_SESSION_ID:DASHBOARD_SESSION_ID DEMO_SESSION_ID"
+  "variable:PGHOST:PGHOST"
+  "variable:PGPORT:PGPORT"
+  "variable:PGDATABASE:PGDATABASE"
+  "variable:PGSSLMODE:PGSSLMODE"
+  "variable:DASHBOARD_SESSION_ID:DASHBOARD_SESSION_ID DEMO_SESSION_ID"
+  "secret:PGUSER:PGUSER"
+  "secret:PGPASSWORD:PGPASSWORD"
 )
 
 repo_args=()
@@ -49,9 +52,9 @@ repo_args=()
 
 missing=0
 for entry in "${mapping[@]}"; do
-  name="${entry%%:*}"
+  IFS=: read -r kind name sources <<<"$entry"
   value=""
-  for source in ${entry#*:}; do
+  for source in $sources; do
     value="$(value_of "$source")"
     [[ -z "$value" ]] || break
   done
@@ -62,9 +65,9 @@ for entry in "${mapping[@]}"; do
     continue
   fi
   if $dry_run; then
-    echo "would set $name"
+    echo "would set $kind $name"
   else
-    printf '%s' "$value" | gh secret set "$name" "${repo_args[@]}"
+    printf '%s' "$value" | gh "$kind" set "$name" --env "$environment" "${repo_args[@]}"
   fi
 done
 
