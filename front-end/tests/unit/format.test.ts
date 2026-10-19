@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 import {
   formatClockTime,
@@ -148,5 +148,49 @@ describe("ordinal", () => {
   it("defaults to th suffix for negative numbers", () => {
     expect(ordinal(-1)).toBe("-1th")
     expect(ordinal(-11)).toBe("-11th")
+  })
+})
+
+describe("local timezone", () => {
+  // The formatters read the default timezone when the module loads, so load a
+  // fresh copy per zone.
+  async function inZone(zone: string) {
+    const previous = process.env.TZ
+    process.env.TZ = zone
+    vi.resetModules()
+    const format = await import("@/lib/format")
+    process.env.TZ = previous
+    return format
+  }
+
+  afterEach(() => {
+    vi.resetModules()
+  })
+
+  // Verifies times of day follow the viewer's zone (EDT is UTC-4 in October)
+  it("shifts times of day into the local zone", async () => {
+    const f = await inZone("America/New_York")
+    expect(f.formatReplayTime("2026-10-04T07:15:00Z")).toBe("Sun 4 Oct, 03:15")
+    expect(f.formatClockTime("2026-10-04T14:07:12Z")).toBe("10:07:12")
+    expect(f.formatTick("2026-10-04T07:00:00Z", "hour")).toBe("Sun 03:00")
+  })
+
+  // Verifies the date rolls back when the local time is before midnight UTC
+  it("rolls the local date back across midnight", async () => {
+    const f = await inZone("America/New_York")
+    expect(f.formatReplayTime("2026-10-04T02:30:00Z")).toBe("Sat 3 Oct, 22:30")
+  })
+
+  // Verifies seconds follow the local clock in zones with a fractional offset
+  it("keeps seconds right in a half-hour zone", async () => {
+    const f = await inZone("Asia/Kolkata")
+    expect(f.formatClockTime("2026-10-04T14:07:12Z")).toBe("19:37:12")
+  })
+
+  // Verifies day labels stay on UTC days, matching the back-end's day buckets
+  it("keeps day labels and day ticks in UTC", async () => {
+    const f = await inZone("America/New_York")
+    expect(f.formatReplayDay("2026-10-04T02:30:00Z")).toBe("Sun 4 Oct")
+    expect(f.formatTick("2026-10-04T02:30:00Z", "day")).toBe("Sun 4")
   })
 })
