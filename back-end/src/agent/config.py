@@ -31,15 +31,15 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("DASHBOARD_SESSION_ID", "DEMO_SESSION_ID"),
     )
 
-    # Provider-neutral names; the old GEMINI_* variables still work. The default
-    # endpoint is Gemini's OpenAI-compatible one, the provider in use today.
-    llm_api_key: SecretStr | None = Field(
-        default=None, validation_alias=AliasChoices("LLM_API_KEY", "GEMINI_API_KEY")
-    )
-    llm_base_url: str = Field(
-        default="https://generativelanguage.googleapis.com/v1beta/openai/",
-        validation_alias=AliasChoices("LLM_BASE_URL", "GEMINI_BASE_URL"),
-    )
+    # Any OpenAI-compatible endpoint works; the default is OpenRouter. There are
+    # no GEMINI_* aliases on purpose: an old Gemini key must never reach OpenRouter.
+    llm_api_key: SecretStr | None = None
+    llm_base_url: str = "https://openrouter.ai/api/v1"
+    # OpenRouter provider routing, sent with every call. Require hosts that support
+    # every request parameter (tools, structured output) and skip hosts that keep
+    # or train on prompts. Other endpoints ignore the extra field.
+    llm_require_parameters: bool = True
+    llm_data_collection: Literal["allow", "deny"] = "deny"
 
     # No default on purpose: a missing model must fail at startup, not at 3 a.m.
     agent_model: str
@@ -73,7 +73,8 @@ class Settings(BaseSettings):
 
     max_turns: int = 8
     mock_seed: int = 7
-    statement_timeout_ms: int = 5_000
+    statement_timeout_ms: int = 5_000  # per statement, so per batch
+    store_batch_size: int = 2_000  # rows per statement when loading windows
     store_refresh_s: float = 5.0  # how often new published rows are picked up
     live_refresh_s: float = 1.0  # how often the live sensor readings are re-read
 

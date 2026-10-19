@@ -14,6 +14,9 @@ Score (100 - risk, higher is healthier) here. Provenance fields in the payload
 One connection, opened read-only with a statement timeout, is reused because
 the live view is polled every second. Only SELECTs are issued. Use a role with
 SELECT only: `check_read_only` warns if it can write.
+
+The statement timeout covers sending rows to this machine, so the window table
+is read in keyset-paged batches, each trimmed to the payload keys we read.
 """
 
 import logging
@@ -51,6 +54,10 @@ PAYLOAD_KEYS = {
     "sensor_time": "latest_sensor_time",
     "window_end": "window_end",
 }
+# Everything `to_window` reads from a payload. Only these keys are selected: the
+# rest (provenance) is bulk we never use, and transferring it is what timed out.
+WINDOW_PAYLOAD_KEYS = tuple(dict.fromkeys([*PAYLOAD_KEYS.values(), *WINDOW_METRICS]))
+DEFAULT_BATCH_SIZE = 2_000
 RISK_MAX = 100.0
 DEFAULT_WINDOW_MINUTES = 1440
 
@@ -121,6 +128,17 @@ def _table(name: tuple[str, str] = TABLE) -> sql.Identifier:
     return sql.Identifier(*name)
 
 
+def _trimmed_payload(keys: tuple[str, ...] = WINDOW_PAYLOAD_KEYS) -> sql.Composed:
+    """The payload column cut down to `keys`, as a jsonb object built in SQL."""
+    pairs = sql.SQL(", ").join(
+        sql.SQL("{key}, {payload} -> {key}").format(
+            key=sql.Literal(key), payload=_col("payload")
+        )
+        for key in keys
+    )
+    return sql.SQL("jsonb_build_object({pairs})").format(pairs=pairs)
+
+
 class PostgresSource:
     """Implements WindowSource over Tiger."""
 
@@ -129,9 +147,13 @@ class PostgresSource:
         conninfo: str,
         session_id: str | None = None,
         statement_timeout_ms: int = 5_000,
+        batch_size: int = DEFAULT_BATCH_SIZE,
     ) -> None:
+        if batch_size < 1:
+            raise ValueError("batch_size must be at least 1")
         self._conninfo = conninfo
         self._session_id = session_id
+        self._batch_size = batch_size
         self._options = (
             "-c default_transaction_read_only=on "
             f"-c statement_timeout={statement_timeout_ms}"
@@ -177,33 +199,63 @@ class PostgresSource:
         return self._session_id
 
     def fetch_since(self, published_after: datetime | None) -> list[PublishedWindow]:
+        """Windows published at or after `published_after`, read in batches.
+
+        Each batch is its own statement (and its own timeout), keyed on
+        (published_at, participant, window_end). The first batch uses >= rather
+        than >: rows sharing the last timestamp may be new.
+        """
         session = self.session_id()
         if session is None:
             return []
+        published: list[PublishedWindow] = []
+        cursor: tuple[Any, ...] | None = None
+        while True:
+            batch = self._query(*self._window_batch(session, published_after, cursor))
+            published.extend(
+                PublishedWindow(
+                    window=to_window(
+                        row["person_id"], row["window_end"], row["payload"]
+                    ),
+                    published_at=row["published_at"],
+                )
+                for row in batch
+            )
+            if len(batch) < self._batch_size:
+                return published
+            last = batch[-1]
+            cursor = (last["published_at"], last["person_id"], last["window_end"])
+
+    def _window_batch(
+        self,
+        session: str,
+        published_after: datetime | None,
+        cursor: tuple[Any, ...] | None,
+    ) -> tuple[sql.Composed, tuple[Any, ...]]:
         query = sql.SQL(
             "SELECT {pid} AS person_id, {end} AS window_end, {payload} AS payload, "
             "{pub} AS published_at FROM {t} WHERE {s} = %s"
         ).format(
             pid=_col("person_id"),
             end=_col("window_end"),
-            payload=_col("payload"),
+            payload=_trimmed_payload(),
             pub=_col("published_at"),
             t=_table(),
             s=_col("session"),
         )
         params: tuple[Any, ...] = (session,)
-        if published_after is not None:
-            # >= rather than >: rows sharing the last timestamp may be new.
+        if cursor is not None:
+            query += sql.SQL(" AND ({pub}, {pid}, {end}) > (%s, %s, %s)").format(
+                pub=_col("published_at"), pid=_col("person_id"), end=_col("window_end")
+            )
+            params += cursor
+        elif published_after is not None:
             query += sql.SQL(" AND {pub} >= %s").format(pub=_col("published_at"))
             params += (published_after,)
-        query += sql.SQL(" ORDER BY {pub}").format(pub=_col("published_at"))
-        return [
-            PublishedWindow(
-                window=to_window(row["person_id"], row["window_end"], row["payload"]),
-                published_at=row["published_at"],
-            )
-            for row in self._query(query, params)
-        ]
+        query += sql.SQL(" ORDER BY {pub}, {pid}, {end} LIMIT %s").format(
+            pub=_col("published_at"), pid=_col("person_id"), end=_col("window_end")
+        )
+        return query, (*params, self._batch_size)
 
     def fetch_live(self) -> list[LiveReading]:
         session = self.session_id()
