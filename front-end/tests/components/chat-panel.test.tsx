@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { ChatLauncher } from "@/components/chat/chat-launcher"
@@ -178,11 +179,11 @@ describe("ChatPanel & Composer", () => {
     })
 
     renderWithProviders(<ChatPanel />, { role: "patient" })
-    fireEvent.click(screen.getByRole("button", { name: "Past conversations" }))
+    await userEvent.click(screen.getByRole("button", { name: "Past conversations" }))
 
     const retry = await screen.findByText("Couldn't load conversations. Retry")
     expect(screen.queryByText("No conversations yet")).not.toBeInTheDocument()
-    fireEvent.click(retry)
+    await userEvent.click(retry)
     await waitFor(() =>
       expect(
         api.calls.filter((call) => call.path === "/chat/sessions").length
