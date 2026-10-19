@@ -58,3 +58,19 @@ def test_time_shift_preserves_features():
     assert heart_rate_features(t, v, 1440) == heart_rate_features(
         t + 30000000, v, 30001440
     )
+
+
+def test_linear_series_matches_analytic_summaries():
+    n = 1440
+    f = heart_rate_features(np.arange(n), 60 + np.arange(n) / n, n)
+    assert f["hr_mean_bpm"] == pytest.approx(60 + (n - 1) / (2 * n))
+    assert f["hr_std_bpm"] == pytest.approx(np.sqrt(n * (n + 1) / 12) / n)
+    assert f["hr_p10_bpm"] == pytest.approx(60 + 0.1 * (n - 1) / n)
+    assert f["hr_p90_bpm"] == pytest.approx(60 + 0.9 * (n - 1) / n)
+
+
+def test_values_before_left_boundary_do_not_enter_window():
+    t = np.arange(-1, 1440)
+    v = np.full(len(t), 72.0)
+    v[0] = 1e9
+    assert heart_rate_features(t, v, 1440)["hr_mean_bpm"] == 72
