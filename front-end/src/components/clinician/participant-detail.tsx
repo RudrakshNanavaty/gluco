@@ -141,7 +141,7 @@ export function ParticipantDetail({ id }: { id: string }) {
                 {row.display_name}
               </h1>
               <span className="text-sm text-muted-foreground">
-                Latest 24 h window ends {formatReplayTime(row.window_end)} UTC
+                Latest 24 h window ends {formatReplayTime(row.window_end)}
               </span>
             </>
           ) : (
@@ -157,7 +157,7 @@ export function ParticipantDetail({ id }: { id: string }) {
             <CardTitle>Live sensors</CardTitle>
             <CardDescription>
               Updated every second · last reading{" "}
-              {formatClockTime(live.sensor_time)} UTC
+              {formatClockTime(live.sensor_time)}
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 @2xl/main:grid-cols-3">

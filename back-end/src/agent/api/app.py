@@ -1,7 +1,9 @@
 """FastAPI wiring: auth, dashboard, chat (SSE) and health."""
 
 import logging
-from collections.abc import Callable, Iterable
+import threading
+from collections.abc import AsyncIterator, Callable, Iterable
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -33,8 +35,25 @@ def clerk_authenticator(
     )
 
 
+def _warm_store(runtime: Runtime) -> None:
+    """Load the windows now, so the first login doesn't wait for them."""
+    try:
+        runtime.store.size()
+    except Exception:
+        log.exception("store warm-up failed; it will load on the first request")
+
+
 def create_app(runtime: Runtime, authenticator: Authenticator | None = None) -> FastAPI:
-    app = FastAPI(title="Gluco API")
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+        # Off the event loop and not awaited: the server accepts requests at once,
+        # and one that arrives mid-load waits on the store's refresh lock.
+        threading.Thread(
+            target=_warm_store, args=(runtime,), name="store-warmup", daemon=True
+        ).start()
+        yield
+
+    app = FastAPI(title="Gluco API", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=runtime.settings.allowed_origins,
