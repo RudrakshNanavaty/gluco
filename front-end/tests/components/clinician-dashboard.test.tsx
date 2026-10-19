@@ -234,6 +234,21 @@ describe("Clinician Dashboard Components", () => {
       },
     }
 
+    it("does not expose internal chart errors", async () => {
+      fakeApi({
+        "GET /catalog": catalog,
+        "GET /participants/{person_id}": sampleParticipant,
+        "POST /query": new Reply(500, { detail: "Private database failure" }),
+      })
+
+      renderWithProviders(<ParticipantDetail id="pat-200" />, { role: "clinician" })
+
+      expect(
+        (await screen.findAllByText("Something went wrong. Please try again.")).length
+      ).toBeGreaterThan(0)
+      expect(screen.queryByText("Private database failure")).not.toBeInTheDocument()
+    })
+
     // Verifies that skeleton placeholders render when participant detail data is pending.
     it("renders loading skeletons while participant query is pending", () => {
       fakeApi({ "GET /catalog": catalog, "GET /participants/{person_id}": PENDING })
