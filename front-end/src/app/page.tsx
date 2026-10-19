@@ -57,16 +57,17 @@ export default function SignInPage() {
   }[focus];
 
   return (
-    <main className="mx-auto grid w-full max-w-6xl flex-1 gap-12 px-4 py-10 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
-      <nav className="col-span-full flex items-center justify-between border-b border-border/60 pb-5" aria-label="Main navigation">
+    <main className="relative mx-auto grid w-full max-w-7xl flex-1 gap-10 overflow-hidden rounded-[2rem] bg-gradient-to-br from-background via-background to-primary/5 px-4 py-6 sm:px-6 sm:py-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:px-10">
+      <div className="pointer-events-none absolute -right-32 -top-32 size-80 rounded-full bg-primary/10 blur-3xl" />
+      <nav className="relative z-10 col-span-full flex items-center justify-between border-b border-border/60 pb-5" aria-label="Main navigation">
         <Brand />
-        <div className="hidden items-center gap-6 text-sm text-muted-foreground sm:flex">
+        <div className="hidden items-center gap-1 rounded-full border border-border/70 bg-background/70 p-1 text-sm text-muted-foreground shadow-sm backdrop-blur sm:flex">
           <a className="transition-colors hover:text-foreground" href="#how-it-works">How it works</a>
           <a className="transition-colors hover:text-foreground" href="#security">Security</a>
-          <a className="font-medium text-primary transition-colors hover:text-primary/80" href="#sign-in">Sign in</a>
+          <a className="rounded-full bg-primary px-4 py-2 font-medium text-primary-foreground transition-opacity hover:opacity-90" href="#sign-in">Sign in</a>
         </div>
       </nav>
-      <header className="flex flex-col gap-8 lg:sticky lg:top-16 lg:self-start">
+      <header className="relative z-10 flex flex-col gap-8 lg:sticky lg:top-16 lg:self-start">
         <div className="flex flex-col gap-4">
           <div className="flex w-fit items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary">
             <SparklesIcon className="size-3.5" /> AI-assisted health intelligence
@@ -95,6 +96,27 @@ export default function SignInPage() {
         >
           See your experience <ArrowRightIcon className="size-4 transition-transform duration-200 group-hover:translate-x-1" />
         </Button>
+        <div className="relative overflow-hidden rounded-[1.75rem] border border-primary/15 bg-foreground p-5 text-background shadow-2xl shadow-primary/10">
+          <div className="absolute -right-12 -top-12 size-36 rounded-full bg-primary/30 blur-2xl" />
+          <div className="relative flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-background/60">Today&apos;s signal</p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight">Feeling balanced</p>
+            </div>
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
+              <HeartPulseIcon className="size-7" />
+            </div>
+          </div>
+          <div className="relative mt-6 grid grid-cols-3 gap-2">
+            {["82 score", "7h 42m sleep", "Low stress"].map((label, index) => (
+              <div key={label} className="rounded-xl border border-background/10 bg-background/10 px-3 py-3 backdrop-blur">
+                <div className="mb-2 h-1.5 rounded-full bg-primary/80" style={{ width: `${[82, 68, 54][index]}%` }} />
+                <p className="text-[11px] text-background/70">{label}</p>
+              </div>
+            ))}
+          </div>
+          <p className="relative mt-4 text-xs leading-relaxed text-background/65">Your signals are translated into a calm, explainable view—not another chart to decode.</p>
+        </div>
         <Card className="max-w-md overflow-hidden border-primary/15 bg-card/70 backdrop-blur-sm">
           <CardHeader className="gap-3 pb-3">
             <div className="flex items-center justify-between gap-3">
@@ -206,7 +228,7 @@ export default function SignInPage() {
         </Card>
       </header>
 
-      <div id="sign-in" className="scroll-mt-8 flex flex-col items-start gap-6">
+      <div id="sign-in" className="relative z-10 flex scroll-mt-8 flex-col items-start gap-6 rounded-[1.75rem] border border-border/70 bg-background/85 p-5 shadow-xl shadow-primary/5 backdrop-blur sm:p-8">
         <div className="flex flex-col gap-1">
           <h2 className="text-xl font-semibold tracking-tight">Sign in</h2>
           <p className="text-sm text-muted-foreground">
