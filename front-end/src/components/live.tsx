@@ -41,7 +41,7 @@ export function LiveStatus({ clock }: { clock: ClockState }) {
           dateTime={live.at ?? undefined}
           className="font-medium tabular-nums"
         >
-          {formatClockTime(live.at)} UTC
+          {formatClockTime(live.at)}
         </time>
       </span>
       <span className="flex items-center gap-1.5 whitespace-nowrap">
@@ -50,7 +50,7 @@ export function LiveStatus({ clock }: { clock: ClockState }) {
           dateTime={clock.now ?? undefined}
           className="font-medium tabular-nums"
         >
-          {formatReplayTime(clock.now)} UTC
+          {formatReplayTime(clock.now)}
         </time>
         <Tooltip>
           <TooltipTrigger asChild>
