@@ -138,8 +138,9 @@ describe("Clinician Dashboard Components", () => {
 
       renderWithProviders(<ParticipantTable />, { role: "clinician" })
 
-      expect(await screen.findByRole("status")).toHaveTextContent(
-        "No patients to show yet."
+      expect(await screen.findByText("No patients to show yet.")).toHaveAttribute(
+        "role",
+        "status"
       )
       expect(screen.queryByRole("table")).not.toBeInTheDocument()
     })
