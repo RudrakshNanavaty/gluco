@@ -7,6 +7,7 @@ import {
   CheckCircle2Icon,
   ChevronDownIcon,
   HeartPulseIcon,
+  LockKeyholeIcon,
   ShieldCheckIcon,
   SparklesIcon,
 } from "lucide-react";
@@ -57,17 +58,30 @@ export default function SignInPage() {
 
   return (
     <main className="mx-auto grid w-full max-w-6xl flex-1 gap-12 px-4 py-10 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
-      <header className="flex flex-col gap-8 lg:sticky lg:top-16 lg:self-start">
+      <nav className="col-span-full flex items-center justify-between border-b border-border/60 pb-5" aria-label="Main navigation">
         <Brand />
+        <div className="hidden items-center gap-6 text-sm text-muted-foreground sm:flex">
+          <a className="transition-colors hover:text-foreground" href="#how-it-works">How it works</a>
+          <a className="transition-colors hover:text-foreground" href="#security">Security</a>
+          <a className="font-medium text-primary transition-colors hover:text-primary/80" href="#sign-in">Sign in</a>
+        </div>
+      </nav>
+      <header className="flex flex-col gap-8 lg:sticky lg:top-16 lg:self-start">
         <div className="flex flex-col gap-4">
+          <div className="flex w-fit items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary">
+            <SparklesIcon className="size-3.5" /> AI-assisted health intelligence
+          </div>
           <h1 className="text-4xl leading-[1.05] font-bold tracking-tight text-balance sm:text-5xl">
-            Your wearable, explained in plain language.
+            Health insights that feel human.
           </h1>
           <p className="max-w-md text-lg text-muted-foreground">
-            Gluco turns your wearable&apos;s daily readings into a simple score
-            and answers your questions about them, for people at risk of
-            diabetes and their care team.
+            Gluco turns everyday wearable signals into clear, actionable context
+            for people at risk of diabetes and the care teams supporting them.
           </p>
+        </div>
+        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground" id="security">
+          <span className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5"><LockKeyholeIcon className="size-3.5" /> Private by design</span>
+          <span className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5"><ShieldCheckIcon className="size-3.5" /> Explainable insights</span>
         </div>
         <p className="max-w-md text-xs text-muted-foreground">
           The Gluco Score is an estimate based on wearable data. It is not a
@@ -170,6 +184,7 @@ export default function SignInPage() {
             </Button>
             <button
               type="button"
+              id="how-it-works"
               onClick={() => setShowDetails((current) => !current)}
               aria-expanded={showDetails}
               className="flex items-center justify-between border-t border-border/60 pt-3 text-left text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
