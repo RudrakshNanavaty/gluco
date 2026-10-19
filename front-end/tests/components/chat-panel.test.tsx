@@ -1,11 +1,11 @@
-import { fireEvent, screen } from "@testing-library/react"
+import { fireEvent, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { ChatLauncher } from "@/components/chat/chat-launcher"
 import { ChatPanel } from "@/components/chat/chat-panel"
 import { useChat } from "@/components/chat/chat-provider"
 import { useMediaQuery } from "@/hooks/use-media-query"
-import { fakeApi } from "../fake-api"
+import { fakeApi, Reply } from "../fake-api"
 import { renderWithProviders } from "../test-utils"
 
 vi.mock("@/components/chat/chat-provider", () => ({
@@ -168,6 +168,26 @@ describe("ChatPanel & Composer", () => {
     renderWithProviders(<ChatPanel />, { role: "patient" })
 
     expect(screen.getByText("Opening conversation…")).toBeInTheDocument()
+  })
+
+  it("offers a retry when conversation history fails to load", async () => {
+    const api = fakeApi({
+      "GET /catalog": { metrics: [] },
+      "GET /widgets": [],
+      "GET /chat/sessions": new Reply(403, { detail: "Unavailable" }),
+    })
+
+    renderWithProviders(<ChatPanel />, { role: "patient" })
+    fireEvent.click(screen.getByRole("button", { name: "Past conversations" }))
+
+    const retry = await screen.findByText("Couldn't load conversations. Retry")
+    expect(screen.queryByText("No conversations yet")).not.toBeInTheDocument()
+    fireEvent.click(retry)
+    await waitFor(() =>
+      expect(
+        api.calls.filter((call) => call.path === "/chat/sessions").length
+      ).toBeGreaterThan(1)
+    )
   })
 
   // Verifies that floating launcher button renders with accessible label.
