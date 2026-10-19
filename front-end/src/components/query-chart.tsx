@@ -310,7 +310,7 @@ export function QueryChart({
         ) : null}
         {snapshot && result.as_of ? (
           <span className="text-xs text-muted-foreground">
-            Data as of {formatReplayTime(result.as_of)} UTC
+            Data as of {formatReplayTime(result.as_of)}
           </span>
         ) : null}
         {!hideNote && result.metrics.includes(GLUCO_SCORE) ? (
