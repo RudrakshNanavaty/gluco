@@ -8,7 +8,6 @@ import {
 } from "lucide-react"
 import { useState } from "react"
 
-import type { Audience } from "@/components/estimate-note"
 import { usualStatus } from "@/components/vitals"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -48,12 +47,13 @@ import {
   useMetrics,
 } from "@/lib/catalog"
 import { formatReplayTime, ordinal } from "@/lib/format"
+import { useAudience, type Role } from "@/lib/app-session"
 
 type MetricChange = Schemas["MetricChange"]
 type ChangeReport = Schemas["ChangeReport"]
 type FeatureDeviation = Schemas["FeatureDeviation"]
 
-const WINDOWS: Record<Audience, { hours: number; label: string }[]> = {
+const WINDOWS: Record<Role, { hours: number; label: string }[]> = {
   clinician: [
     { hours: 24, label: "24 h" },
     { hours: 48, label: "48 h" },
@@ -292,11 +292,10 @@ function PatientChanges({
 /** GET /participants/{id}/explain: how each metric moved, and how unusual that is. */
 export function WhatChanged({
   personId,
-  audience,
 }: {
   personId: string
-  audience: Audience
 }) {
+  const audience = useAudience()
   const options = WINDOWS[audience]
   const [hours, setHours] = useState(options[0].hours)
   const explain = useExplain(personId, hours)

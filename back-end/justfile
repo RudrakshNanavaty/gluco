@@ -1,5 +1,5 @@
-# Run `just` to list targets. All commands assume the project .venv is active
-# (source .venv/bin/activate) and go through uv.
+# Run `just` to list targets. Every recipe goes through `uv run`, so no venv
+# needs to be activated.
 
 default:
     @just --list
@@ -21,12 +21,29 @@ ask question who="clinician":
 eval *args:
     uv run python evals/run.py {{args}}
 
+# Create or update a Clerk account for every participant (needs CLERK_SECRET_KEY and
+# CLERK_DEMO_PASSWORD): just seed-clerk --dry-run, then just seed-clerk
+seed-clerk *args:
+    uv run python -m agent.clerk_seed {{args}}
+
 test:
     uv run pytest
 
 # Read-only checks against the real database configured in .env
 test-live:
-    LIVE_DB=1 uv run pytest tests/test_postgres_live.py -v
+    LIVE_DB=1 uv run pytest tests/test_postgres_live.py tests/test_window_source.py -v
 
 lint:
     uv run ruff check . && uv run ruff format --check . && uv run basedpyright
+
+# Sync back-end/.env with Google Secret Manager (gluco-backend-env)
+secrets-push:
+    ../scripts/secrets.sh backend push
+
+# Overwrite back-end/.env from Secret Manager (old file saved as .env.bak)
+secrets-pull:
+    ../scripts/secrets.sh backend pull
+
+# Compare local and remote by variable name; values are never printed
+secrets-diff:
+    ../scripts/secrets.sh backend diff

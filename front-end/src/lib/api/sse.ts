@@ -4,8 +4,7 @@ import {
   API_BASE_URL,
   ApiError,
   OFFLINE_MESSAGE,
-  authHeader,
-  handleUnauthorized,
+  send,
 } from "@/lib/api/client"
 
 /**
@@ -20,11 +19,10 @@ export async function streamSSE(
 ): Promise<void> {
   let response: Response
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await send(`${API_BASE_URL}${path}`, {
       ...init,
       headers: {
         Accept: "text/event-stream",
-        ...authHeader(),
         ...init.headers,
       },
     })
@@ -34,7 +32,6 @@ export async function streamSSE(
   }
 
   if (!response.ok || !response.body) {
-    handleUnauthorized(response.status)
     const body = await response.json().catch(() => undefined)
     throw ApiError.from(response.status, body)
   }

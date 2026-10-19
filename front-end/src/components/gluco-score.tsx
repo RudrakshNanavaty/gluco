@@ -2,10 +2,11 @@
 
 import { ArrowDownRightIcon, ArrowUpRightIcon, MinusIcon } from "lucide-react"
 
-import { EstimateNote, type Audience } from "@/components/estimate-note"
+import { EstimateNote } from "@/components/estimate-note"
 import { Badge } from "@/components/ui/badge"
 import { formatValue, GLUCO_CHANGE, GLUCO_SCORE } from "@/lib/catalog"
 import { cn } from "@/lib/utils"
+import { useAudience } from "@/lib/app-session"
 
 // Changes smaller than this many points read as "about the same".
 const STEADY = 1
@@ -113,12 +114,11 @@ export function ScoreRing({
 export function GlucoScore({
   value,
   change,
-  audience,
 }: {
   value: number | null | undefined
   change: number | null | undefined
-  audience: Audience
 }) {
+  const audience = useAudience()
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
@@ -137,7 +137,7 @@ export function GlucoScore({
           </div>
         )}
       </div>
-      <EstimateNote audience={audience} />
+      <EstimateNote />
     </div>
   )
 }

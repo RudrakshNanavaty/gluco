@@ -48,20 +48,6 @@ export function formatTick(iso: string, bucket: string): string {
   return `${p.weekday} ${p.hour}:${p.minute}`
 }
 
-/** "3 h before" style distance between two replay times. */
-export function formatGap(
-  fromIso: string,
-  toIso: string | null | undefined
-): string {
-  if (!toIso) return ""
-  const hours = Math.round(
-    (Date.parse(toIso) - Date.parse(fromIso)) / 3_600_000
-  )
-  if (hours <= 0) return "latest"
-  if (hours < 48) return `${hours} h earlier`
-  return `${Math.round(hours / 24)} days earlier`
-}
-
 /** 1 -> "1st", 22 -> "22nd", 13 -> "13th". */
 export function ordinal(n: number): string {
   const value = Math.round(n)

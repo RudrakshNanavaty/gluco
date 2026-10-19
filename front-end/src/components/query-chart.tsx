@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts"
 
-import { EstimateNote, type Audience } from "@/components/estimate-note"
+import { EstimateNote } from "@/components/estimate-note"
 import {
   ChartContainer,
   ChartLegend,
@@ -28,7 +28,13 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import type { QueryResult } from "@/lib/api/events"
-import { formatValue, GLUCO_SCORE, roundValue, useMetrics } from "@/lib/catalog"
+import {
+  formatValue,
+  GLUCO_SCORE,
+  numberAt,
+  roundValue,
+  useMetrics,
+} from "@/lib/catalog"
 import { formatReplayTime, formatTick } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -48,10 +54,8 @@ function valueOf(
   point: Record<string, unknown>,
   metric: string
 ): number | null {
-  const value = point[metric]
-  return typeof value === "number" && Number.isFinite(value)
-    ? roundValue(metric, value)
-    : null
+  const value = numberAt(point, metric)
+  return value === null ? null : roundValue(metric, value)
 }
 
 function hasValues(series: Series, metric: string) {
@@ -148,7 +152,7 @@ function LinePanel({
         ) : null}
         {series.map((s, i) => (
           <Line
-            key={s.participant_id ?? s.display_name}
+            key={s.display_name}
             dataKey={`s${i}`}
             type="monotone"
             stroke={`var(--color-s${i})`}
@@ -230,7 +234,6 @@ export function QueryChart({
   snapshot = false,
   showTitles = true,
   height = 200,
-  audience = "clinician",
   hideNote = false,
   className,
 }: {
@@ -239,7 +242,6 @@ export function QueryChart({
   snapshot?: boolean
   showTitles?: boolean
   height?: number
-  audience?: Audience
   /** Skip the estimate note when the surrounding view already shows it. */
   hideNote?: boolean
   className?: string
@@ -312,7 +314,7 @@ export function QueryChart({
           </span>
         ) : null}
         {!hideNote && result.metrics.includes(GLUCO_SCORE) ? (
-          <EstimateNote audience={audience} />
+          <EstimateNote />
         ) : null}
       </figcaption>
     </figure>

@@ -1,0 +1,100 @@
+name: "test suite"
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# A new push to a PR cancels its older run; runs on main always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  back-end:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: back-end
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        id: install
+        run: uv sync --locked
+
+      # Once install succeeds, every check runs even if an earlier one failed.
+      - name: Tests
+        run: uv run pytest
+
+      - name: Ruff lint
+        if: (success() || failure()) && steps.install.outcome == 'success'
+        run: uv run ruff check
+
+      - name: Ruff format
+        if: (success() || failure()) && steps.install.outcome == 'success'
+        run: uv run ruff format --check
+
+      - name: Type check
+        if: (success() || failure()) && steps.install.outcome == 'success'
+        run: uv run basedpyright
+
+  front-end:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: front-end
+    env:
+      # A syntactically valid placeholder so the build can prerender; not a real key.
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_Y2xlcmsuZXhhbXBsZS5jb20k
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.2"
+
+      - name: Install dependencies
+        id: install
+        run: bun install --frozen-lockfile
+
+      # Once install succeeds, every check runs even if an earlier one failed.
+      - name: Tests
+        run: bun run test
+
+      - name: Type check
+        if: (success() || failure()) && steps.install.outcome == 'success'
+        run: bun run typecheck
+
+      - name: Lint
+        if: (success() || failure()) && steps.install.outcome == 'success'
+        run: bun run lint
+
+      - name: Build
+        if: (success() || failure()) && steps.install.outcome == 'success'
+        run: bun run build
+
+  databricks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v5
+      - name: Verify rolling feature and scoring contracts
+        run: uv run --no-project --with-requirements databricks/requirements-test.txt python -m pytest databricks/tests -q

@@ -42,6 +42,15 @@ function decimals(metric: string, value: number): number {
   return 3
 }
 
+/** A point's value for `metric` as a finite number, or null for a gap. */
+export function numberAt(
+  point: Record<string, unknown>,
+  metric: string
+): number | null {
+  const value = point[metric]
+  return typeof value === "number" && Number.isFinite(value) ? value : null
+}
+
 /** A value rounded for display, as a number (for charts and tooltips). */
 export function roundValue(metric: string, value: number): number {
   const factor = 10 ** decimals(metric, value)

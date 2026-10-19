@@ -45,10 +45,14 @@ Tiger gold.dashboard_windows -> data/postgres.py (or data/mock.py)   WindowSourc
                                                      -> agent per request -> POST /chat (SSE)
 ```
 
-- **Identity** (`auth.py`). There are no passwords. `GET /personas` lists
-  "Dr. Demo" plus one persona per participant. `POST /auth/login` returns a signed
-  JWT, sent afterwards as `Authorization: Bearer …`. The server decides what each
-  request may see from that token, never from the UI or the LLM.
+- **Identity** (`auth.py`). Sign-in is Clerk only. Every request carries the
+  user's Clerk session token as `Authorization: Bearer …`; the Authenticator
+  verifies it and reads `{uuid, role, participant_id, display_name}` from the
+  user's `public_metadata` (carried in the token's `metadata` claim; only the
+  backend can write it). The server decides what each request may see from that
+  session, never from the UI or the LLM. Serving the API needs `CLERK_JWKS_URL`
+  and `CLERK_ISSUER` (ADR 0001). `just seed-clerk` creates one account
+  per participant plus three doctors (idempotent; `--dry-run` first).
 - **Scope** (`query.py`). Clinicians see everyone. Patients see only their own
   rows: no other participant, no cohort aggregates. Asking for anything else
   returns `403 not_permitted`.
@@ -56,7 +60,8 @@ Tiger gold.dashboard_windows -> data/postgres.py (or data/mock.py)   WindowSourc
   shared simulated "now" walks through it and everything is limited to windows
   ending at or before it. It starts on first use, one day after the first window,
   at `REPLAY_SECONDS_PER_HOUR` (default 5), and pauses when it reaches the newest
-  window. `REPLAY_ENABLED=false` always shows everything.
+  window. Only clinicians may move it (ADR 0002). `REPLAY_ENABLED=false` always
+  shows everything.
 - **Two agents** (`tools/`, `prompts/`, `guardrails.py`). Agents are built per
   request for the caller's role. Patient tools take no participant argument
   (they are bound to the token), so other people's data is out of reach even
@@ -66,11 +71,11 @@ Tiger gold.dashboard_windows -> data/postgres.py (or data/mock.py)   WindowSourc
 
 ## API
 
-All routes except `/personas`, `/auth/login` and `/health` need a token.
+All routes except `/health` need a Clerk session token.
 
 | Endpoint | Returns |
 | --- | --- |
-| `GET /personas`, `POST /auth/login {persona_id}`, `GET /me` | persona picker, token, caller |
+| `GET /me` | the signed-in caller |
 | `GET /catalog` | metrics (label, unit, description, `higher_is_better`), visible participants, data range, supported buckets/aggs |
 | `POST /query` | the generic query behind most widgets (below) |
 | `GET /participants?sort_by=gluco_score&order=asc` | newest values per visible participant |
@@ -78,11 +83,10 @@ All routes except `/personas`, `/auth/login` and `/health` need a token.
 | `GET /participants/{id}/explain?hours=24` | now vs N hours ago and vs their own week; plus where they sit in the cohort (clinicians only) |
 | `GET /participants/{id}/compare?metric=…` | one metric vs the cohort (clinicians only) |
 | `GET /cohort` | cohort overview: Gluco spread, lowest scores, biggest 24 h drops and gains (clinicians only) |
-| `GET /clock`, `POST /clock {action: play\|pause\|speed\|seek, seconds_per_hour?, to?}` | replay control |
+| `POST /clock {action: play\|pause\|speed\|seek, seconds_per_hour?, to?}` | replay control; clinicians only (ADR 0002). `/stream` carries the clock state |
 | `GET /stream` | SSE `tick` events: clock state plus newly visible windows (`reset: true` after a backwards seek) |
 | `POST /chat {session_id, message}` | SSE: `token`, `tool_start`, `tool_end`, `data`, `done`, `error` |
 | `GET /chat/sessions`, `GET /chat/sessions/{id}` | the caller's conversations and their messages |
-| `GET /tools` | the caller's chatbot tools and their JSON schemas |
 | `GET /health` | database, LLM key, row count, clock |
 
 `POST /query` body (all fields optional):
@@ -99,10 +103,14 @@ All routes except `/personas`, `/auth/login` and `/health` need a token.
 }
 ```
 
-The response is `{as_of, start, end, metrics, units, series: [{participant_id,
-display_name, points: [{t, n, <metric>: value}]}], total_series, truncated}`. A
-chat `data` event carries this same shape under `chart`, so one chart component
-can serve both the dashboard and the chat.
+The response is `{as_of, start, end, metrics, units, series: [{display_name,
+points: [{t, n, <metric>: value}]}], total_series, truncated, audit}`. A chat
+`data` event carries this same shape under `chart`, so one chart component can
+serve both the dashboard and the chat.
+
+Every result passes the disclosure rule first (`analysis/compliance.py`): series
+carry display names, never internal participant keys, and pooled cohort points
+built from fewer than 3 people are hidden. `audit` lists what was applied.
 
 Errors come back as `{detail, code, …}`, where `code` is one of `not_found`,
 `ambiguous`, `not_permitted` or `bad_query` (the last includes `suggestions` for
@@ -113,19 +121,19 @@ an unknown metric).
 ```
 src/agent/
   config.py        Settings; the only reader of env vars
-  bootstrap.py     Composition root (Runtime)
+  bootstrap.py     Composition root: Runtime, and Scope (one Principal's queries, tools, agent)
   llm.py           The only module that knows the provider (Gemini, OpenAI-compatible)
-  auth.py          Personas, tokens, Principal
+  auth.py          Authenticator (Clerk session -> Principal), ClerkMetadata
   store.py         In-memory windows, incremental refresh
   clock.py         Replay clock
-  query.py         QueryService: scope, clock, every derived number
+  query.py         QueryService: scope, clock, disclosure, every derived number
   domain/          Window, metric catalog, WindowSource port, errors, Contract B events
   data/            postgres.py and mock.py implement WindowSource; factory.py picks one
   analysis/        Pure logic: aggregation, deviations, stats, id resolution, grounding
-  tools/           clinician.py, patient.py; registry.py picks by role
+  tools/           clinician.py, patient.py; TOOLS picks by role
   factory.py       Builds the role's Agent;  guardrails.py  per-role input guardrail
   prompts/         clinician.md, patient.md
-  api/             app.py, deps.py (auth, errors), login.py, dashboard.py, chat.py,
+  api/             app.py, deps.py (auth, errors), me.py, dashboard.py, chat.py,
                    chat_service.py, sse.py, sessions.py (per-user SQLite memory)
   observability/   JSONL turn log (SDK tracing is disabled)
 evals/             cases.yaml (per role) + run.py

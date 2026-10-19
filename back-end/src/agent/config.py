@@ -8,8 +8,6 @@ from psycopg.conninfo import make_conninfo
 from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-DEV_AUTH_SECRET = "dev-only-pulsecast-secret-change-me"  # noqa: S105
-
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -47,16 +45,15 @@ class Settings(BaseSettings):
     agent_model: str
     guardrail_model: str | None = None
 
-    # Signs the demo login tokens. The default is for local development only.
-    auth_secret: SecretStr = SecretStr(DEV_AUTH_SECRET)
-    token_ttl_hours: float = 24.0
-
-    # Clerk verifies the user's password and session. The app only maps the
-    # verified Clerk identity to a patient in memory.
+    # Clerk verifies the user's password and session; every request carries the
+    # session token, and the role and participant come from the user's
+    # public_metadata inside it. The API server needs the JWKS URL and issuer.
     clerk_jwks_url: str | None = None
     clerk_issuer: str | None = None
     clerk_audience: str | None = None
-    clerk_patient_user_map: dict[str, str] = Field(default_factory=dict)
+    # Only the seed script (`just seed-clerk`) uses these; the API never does.
+    clerk_secret_key: SecretStr | None = None
+    clerk_demo_password: SecretStr | None = None
 
     # The replay clock walks through the published data so it looks live.
     replay_enabled: bool = True

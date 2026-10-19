@@ -3,7 +3,6 @@
 import { PinOffIcon, ShieldCheckIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import type { Audience } from "@/components/estimate-note"
 import { WidgetView } from "@/components/widgets/widget-view"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,6 +21,7 @@ import {
   useWidgetData,
 } from "@/lib/api/queries"
 import { useMetrics } from "@/lib/catalog"
+import { useAudience } from "@/lib/app-session"
 
 type PinnedWidget = Schemas["PinnedWidget"]
 
@@ -36,10 +36,8 @@ const KIND_LABELS: Record<PinnedWidget["kind"], string> = {
 
 function PinnedWidgetCard({
   pin,
-  audience,
 }: {
   pin: PinnedWidget
-  audience: Audience
 }) {
   const metrics = useMetrics()
   const data = useWidgetData(pin.id, metrics.anyLive(pin.query.metrics ?? []))
@@ -74,7 +72,6 @@ function PinnedWidgetCard({
           <WidgetView
             kind={pin.kind}
             result={data.data.result}
-            audience={audience}
             height={180}
           />
         ) : data.isError ? (
@@ -99,7 +96,8 @@ function PinnedWidgetCard({
 }
 
 /** Widgets the user pinned from the chat. Hidden until there is one. */
-export function PinnedWidgets({ audience }: { audience: Audience }) {
+export function PinnedWidgets() {
+  const audience = useAudience()
   const pins = usePinnedWidgets()
   if (!pins.data?.length) return null
 
@@ -120,7 +118,7 @@ export function PinnedWidgets({ audience }: { audience: Audience }) {
       </div>
       <div className="grid gap-4 @2xl/main:grid-cols-2 @5xl/main:grid-cols-3">
         {pins.data.map((pin) => (
-          <PinnedWidgetCard key={pin.id} pin={pin} audience={audience} />
+          <PinnedWidgetCard key={pin.id} pin={pin} />
         ))}
       </div>
     </section>

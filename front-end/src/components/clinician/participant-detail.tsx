@@ -185,7 +185,6 @@ export function ParticipantDetail({ id }: { id: string }) {
               <GlucoScore
                 value={row.values[GLUCO_SCORE]}
                 change={row.values[GLUCO_CHANGE]}
-                audience="clinician"
               />
             ) : (
               <Skeleton className="h-40" />
@@ -215,7 +214,7 @@ export function ParticipantDetail({ id }: { id: string }) {
         </CardContent>
       </Card>
 
-      <WhatChanged personId={id} audience="clinician" />
+      <WhatChanged personId={id} />
     </div>
   )
 }

@@ -13,14 +13,18 @@ export type QuerySpec = Schemas["QuerySpec"]
 export type WidgetSpec = Schemas["WidgetSpec"]
 export type SortOrder = "asc" | "desc"
 
+/** Marks queries that show live readings; the clock refreshes them as they change. */
+export const LIVE = { live: true } as const
+
 /**
  * Query keys. Everything that depends on the replay clock lives under `data`, so
  * one invalidation refreshes every view when the clock moves.
  */
 export const keys = {
   data: ["data"] as const,
+  // Who a Clerk user is; per user, so a new sign-in never reads the last one.
+  me: (userId: string | null | undefined) => ["me", userId ?? ""] as const,
   catalog: ["catalog"] as const,
-  personas: ["personas"] as const,
   cohort: ["data", "cohort"] as const,
   participants: (sortBy: string, order: SortOrder) =>
     ["data", "participants", sortBy, order] as const,
@@ -35,15 +39,6 @@ export const keys = {
     ["data", "widget-preview", spec] as const,
   chat: ["chat"] as const,
   threads: ["chat", "threads"] as const,
-}
-
-export function usePersonas(enabled = true) {
-  return useQuery({
-    queryKey: keys.personas,
-    queryFn: () => unwrap(api.GET("/personas")),
-    staleTime: 60_000,
-    enabled,
-  })
 }
 
 /** Metric labels, units and descriptions. Static for a session. */
@@ -67,6 +62,7 @@ export function useCohort() {
 export function useParticipants(sortBy: string, order: SortOrder) {
   return useQuery({
     queryKey: keys.participants(sortBy, order),
+    meta: LIVE,
     queryFn: () =>
       unwrap(
         api.GET("/participants", {
@@ -129,9 +125,6 @@ export function usePinnedWidgets() {
   })
 }
 
-// Widgets showing live readings also refresh between new analytics windows.
-const LIVE_WIDGET_REFRESH_MS = 5_000
-
 /** A pinned widget rebuilt on the server (query + compliance check). */
 export function useWidgetData(id: string, live = false) {
   return useQuery({
@@ -143,7 +136,7 @@ export function useWidgetData(id: string, live = false) {
         })
       ),
     placeholderData: keepPreviousData,
-    refetchInterval: live ? LIVE_WIDGET_REFRESH_MS : false,
+    meta: live ? LIVE : undefined,
   })
 }
 
@@ -163,7 +156,7 @@ export function useWidgetPreview(
     initialData: initial,
     initialDataUpdatedAt: 0,
     placeholderData: keepPreviousData,
-    refetchInterval: live ? LIVE_WIDGET_REFRESH_MS : false,
+    meta: live ? LIVE : undefined,
   })
 }
 

@@ -19,7 +19,7 @@ import {
   type Schemas,
 } from "@/lib/api/client"
 import type { ClockState, TickEvent } from "@/lib/api/events"
-import { keys } from "@/lib/api/queries"
+import { keys, LIVE } from "@/lib/api/queries"
 import { streamSSE } from "@/lib/api/sse"
 import { publishLive } from "@/lib/live"
 
@@ -33,6 +33,9 @@ type ClockContextValue = {
 
 const ClockContext = createContext<ClockContextValue | null>(null)
 
+// Live readings change every second; views showing them refetch at most this often.
+const LIVE_REFRESH_MS = 5_000
+
 function wait(ms: number, signal: AbortSignal) {
   return new Promise<void>((resolve) => {
     const timer = setTimeout(resolve, ms)
@@ -45,17 +48,13 @@ function wait(ms: number, signal: AbortSignal) {
 
 /**
  * The shared replay clock. Holds one GET /stream connection for the signed-in
- * persona and refreshes clock-dependent queries when the clock moves: all of
- * them after a backwards seek, the active ones when new windows land. Each
- * tick's live readings go to the live store (`@/lib/live`).
+ * user (key it on the user, so a new sign-in reconnects) and refreshes
+ * clock-dependent queries when the clock moves: all of them after a backwards
+ * seek, the active ones when new windows land, and the ones marked `LIVE` when
+ * the live readings change. Each tick's live readings also go to the live store
+ * (`@/lib/live`).
  */
-export function ClockProvider({
-  token,
-  children,
-}: {
-  token: string
-  children: React.ReactNode
-}) {
+export function ClockProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient()
   const [clock, setClock] = useState<ClockState | null>(null)
   const [connected, setConnected] = useState(false)
@@ -63,6 +62,8 @@ export function ClockProvider({
   useEffect(() => {
     const controller = new AbortController()
     const { signal } = controller
+    let liveAt: string | null = null
+    let liveRefreshedAt = 0
 
     const onTick = (tick: TickEvent) => {
       setConnected(true)
@@ -75,7 +76,16 @@ export function ClockProvider({
         })
       } else if (tick.new_windows.length > 0) {
         void queryClient.invalidateQueries({ queryKey: keys.data })
+      } else if (
+        tick.live_at !== liveAt &&
+        Date.now() - liveRefreshedAt >= LIVE_REFRESH_MS
+      ) {
+        liveRefreshedAt = Date.now()
+        void queryClient.invalidateQueries({
+          predicate: (query) => query.meta?.live === LIVE.live,
+        })
       }
+      liveAt = tick.live_at
     }
 
     void (async () => {
@@ -99,7 +109,7 @@ export function ClockProvider({
       controller.abort()
       publishLive(null, [])
     }
-  }, [token, queryClient])
+  }, [queryClient])
 
   const control = useCallback(async (command: ClockCommand) => {
     try {

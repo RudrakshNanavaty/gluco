@@ -17,6 +17,7 @@ The back-end's default CORS origins include `http://localhost:3000`.
 | Task | Command |
 | --- | --- |
 | Regenerate API types from the running back-end | `bun run gen:api` |
+| Tests (Vitest; `bun run test:watch` to watch) | `bun run test` |
 | Types, lint, production build | `bun run typecheck`, `bun run lint`, `bun run build` |
 
 ## How it fits together
@@ -33,7 +34,7 @@ The back-end's default CORS origins include `http://localhost:3000`.
   `/catalog`.
 - `src/components/query-chart.tsx`: the one chart for `/query` results and
   chat `data.chart` events.
-- Routes: `/` persona picker, `/clinician` and `/clinician/participants/[id]`,
+- Routes: `/` Clerk sign-in, `/clinician` and `/clinician/participants/[id]`,
   `/me` (patients). Patients never render or request cohort-wide views.
 - Times are replay time (`as_of`), shown in UTC to match the back-end's day
   buckets. The Gluco Score is always labelled an estimate, not a diagnosis.

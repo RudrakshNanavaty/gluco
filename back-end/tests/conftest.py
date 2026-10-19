@@ -7,22 +7,21 @@ import pytest
 from agents import FunctionTool
 from agents.tool_context import ToolContext
 from fastapi.testclient import TestClient
-from support import PID
+from support import PID, SEED, authenticator_for, bearer, make_settings
 
 from agent.api.app import create_app
 from agent.auth import CLINICIAN, patient
 from agent.bootstrap import Runtime, build_runtime
 from agent.clock import ReplayClock
-from agent.config import Settings
 from agent.data.mock import MockSource
 from agent.query import QueryService
 from agent.store import WindowStore
-from agent.tools.registry import build_tools
+from agent.tools import TOOLS
 
 
 @pytest.fixture(scope="session")
 def source() -> MockSource:
-    return MockSource(seed=7)
+    return MockSource(seed=SEED)
 
 
 @pytest.fixture(scope="session")
@@ -47,7 +46,7 @@ def me(store: WindowStore, clock: ReplayClock) -> QueryService:
 
 
 def _tools(svc: QueryService) -> dict[str, FunctionTool]:
-    return {tool.name: tool for tool in build_tools(svc)}
+    return {tool.name: tool for tool in TOOLS[svc.principal.role](svc)}
 
 
 async def _invoke(tools: dict[str, FunctionTool], name: str, **args: Any) -> Any:
@@ -79,18 +78,6 @@ def invoke_patient(patient_tools) -> Callable[..., Any]:
     return lambda name, **args: _invoke(patient_tools, name, **args)
 
 
-def make_settings(tmp: Path, **overrides: Any) -> Settings:
-    values: dict[str, Any] = {
-        "agent_model": "test-model",
-        "data_backend": "mock",
-        "replay_enabled": False,
-        "session_db_path": tmp / "sessions.sqlite",
-        "trace_path": tmp / "trace.jsonl",
-        **overrides,
-    }
-    return Settings(_env_file=None, **values)  # pyright: ignore[reportCallIssue]
-
-
 @pytest.fixture
 def runtime(tmp_path: Path, source: MockSource) -> Runtime:
     return build_runtime(make_settings(tmp_path), source=source)
@@ -98,19 +85,16 @@ def runtime(tmp_path: Path, source: MockSource) -> Runtime:
 
 @pytest.fixture
 def client(runtime: Runtime) -> TestClient:
-    return TestClient(create_app(runtime))
-
-
-def auth(client: TestClient, persona_id: str) -> dict[str, str]:
-    token = client.post("/auth/login", json={"persona_id": persona_id}).json()["token"]
-    return {"Authorization": f"Bearer {token}"}
+    return TestClient(
+        create_app(runtime, authenticator_for(runtime.store.participants))
+    )
 
 
 @pytest.fixture
-def as_clinician(client: TestClient) -> dict[str, str]:
-    return auth(client, CLINICIAN.user_id)
+def as_clinician() -> dict[str, str]:
+    return bearer(CLINICIAN)
 
 
 @pytest.fixture
-def as_patient(client: TestClient) -> dict[str, str]:
-    return auth(client, f"patient:{PID}")
+def as_patient() -> dict[str, str]:
+    return bearer(patient(PID))

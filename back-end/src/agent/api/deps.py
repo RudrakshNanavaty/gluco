@@ -1,13 +1,13 @@
 """Request dependencies: the runtime, who is calling, and shared error handling."""
 
-from dataclasses import dataclass
+import logging
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from agent.auth import InvalidTokenError, Principal
+from agent.auth import Authenticator, InvalidTokenError, Principal
 from agent.bootstrap import Runtime
 from agent.domain.errors import (
     AmbiguousPersonError,
@@ -16,6 +16,8 @@ from agent.domain.errors import (
     QueryError,
 )
 from agent.query import QueryService
+
+log = logging.getLogger(__name__)
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -29,38 +31,28 @@ RuntimeDep = Annotated[Runtime, Depends(get_runtime)]
 Credentials = Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)]
 
 
-@dataclass(frozen=True)
-class ClerkCredentials:
-    credentials: str | None
-    username_hint: str | None = None
+def get_authenticator(request: Request) -> Authenticator:
+    return request.app.state.authenticator
 
 
-def bearer_credentials(
-    request: Request,
-    authorization: HTTPAuthorizationCredentials | None = Depends(_bearer),
-) -> ClerkCredentials:
-    return ClerkCredentials(
-        authorization.credentials if authorization else None,
-        request.headers.get("X-Clerk-Username"),
-    )
-
-
-ClerkCredentialsDep = Annotated[ClerkCredentials, Depends(bearer_credentials)]
-
-
-def current_principal(runtime: RuntimeDep, credentials: Credentials) -> Principal:
+def current_principal(
+    authenticator: Annotated[Authenticator, Depends(get_authenticator)],
+    credentials: Credentials,
+) -> Principal:
     if credentials is None:
         raise HTTPException(
             401,
-            "Please choose a profile to continue.",
+            "Please sign in to continue.",
             headers={"WWW-Authenticate": "Bearer"},
         )
     try:
-        return runtime.signer.verify(credentials.credentials)
+        return authenticator.authenticate(credentials.credentials)
     except InvalidTokenError as exc:
+        # The client only learns that the session ended; the cause stays here.
+        log.warning("Clerk session rejected: %s", exc)
         raise HTTPException(
             401,
-            "Your session has ended. Please choose a profile again.",
+            "Your session has ended. Please sign in again.",
             headers={"WWW-Authenticate": "Bearer"},
         ) from exc
 
@@ -69,7 +61,7 @@ CurrentPrincipal = Annotated[Principal, Depends(current_principal)]
 
 
 def query_service(runtime: RuntimeDep, principal: CurrentPrincipal) -> QueryService:
-    return runtime.queries(principal)
+    return runtime.for_principal(principal).queries
 
 
 Queries = Annotated[QueryService, Depends(query_service)]

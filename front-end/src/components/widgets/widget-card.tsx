@@ -10,7 +10,6 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
-import type { Audience } from "@/components/estimate-note"
 import { WidgetView } from "@/components/widgets/widget-view"
 import { Button } from "@/components/ui/button"
 import { friendlyError } from "@/lib/api/client"
@@ -30,7 +29,7 @@ const STAGES: Record<
 }
 
 /** The pipeline that built a widget, one line per stage. */
-export function WidgetSteps({ steps }: { steps: WidgetStep[] }) {
+function WidgetSteps({ steps }: { steps: WidgetStep[] }) {
   return (
     <ol
       className="flex flex-col gap-1.5"
@@ -73,11 +72,9 @@ export function WidgetSteps({ steps }: { steps: WidgetStep[] }) {
 export function WidgetCard({
   widget,
   chart,
-  audience,
 }: {
   widget: ChatWidget
   chart: QueryResult
-  audience: Audience
 }) {
   const pin = usePinWidget()
   const pinned = pin.isSuccess
@@ -122,7 +119,6 @@ export function WidgetCard({
       <WidgetView
         kind={widget.kind}
         result={current.data}
-        audience={audience}
       />
       <div className="border-t pt-2.5">
         <WidgetSteps steps={widget.steps} />

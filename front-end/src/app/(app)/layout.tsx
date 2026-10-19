@@ -7,26 +7,27 @@ import { useEffect } from "react"
 import { Brand } from "@/components/brand"
 import { ChatLauncher } from "@/components/chat/chat-launcher"
 import { ChatProvider } from "@/components/chat/chat-provider"
-import { PersonaMenu } from "@/components/persona-menu"
+import { AccountMenu } from "@/components/account-menu"
 import { ReplayControls } from "@/components/replay-controls"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useHydrated, useSession } from "@/lib/auth"
+import { useAppSession, type Principal } from "@/lib/app-session"
 import { ClockProvider } from "@/lib/clock"
-import { homeFor, type Principal } from "@/lib/session"
 
 function AppFrame({
   principal,
+  home,
   children,
 }: {
   principal: Principal
+  home: string
   children: React.ReactNode
 }) {
   return (
     <div className="flex h-svh flex-col">
       <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-card px-4 sm:gap-3">
-        <Link href={homeFor(principal)} aria-label="Gluco home">
+        <Link href={home} aria-label="Gluco home">
           <Brand />
         </Link>
         <Badge variant="outline" className="hidden sm:inline-flex">
@@ -34,7 +35,7 @@ function AppFrame({
         </Badge>
         <div className="ml-auto flex items-center gap-1">
           <ThemeToggle />
-          <PersonaMenu principal={principal} />
+          <AccountMenu />
         </div>
       </header>
 
@@ -46,21 +47,21 @@ function AppFrame({
         <main className="min-w-0 flex-1 overflow-y-auto pb-24">{children}</main>
       </div>
 
-      <ChatLauncher audience={principal.role} />
+      <ChatLauncher />
     </div>
   )
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const hydrated = useHydrated()
-  const session = useSession()
+  const session = useAppSession()
+  const signedOut = session.status === "signed-out"
 
   useEffect(() => {
-    if (hydrated && !session) router.replace("/")
-  }, [hydrated, session, router])
+    if (signedOut) router.replace("/")
+  }, [signedOut, router])
 
-  if (!session) {
+  if (session.status !== "signed-in") {
     return (
       <div className="flex h-svh flex-col gap-4 p-4">
         <Skeleton className="h-10 w-full" />
@@ -71,12 +72,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <ClockProvider token={session.token}>
-      <ChatProvider
-        key={session.principal.user_id}
-        principal={session.principal}
-      >
-        <AppFrame principal={session.principal}>{children}</AppFrame>
+    <ClockProvider key={session.principal.user_id}>
+      <ChatProvider>
+        <AppFrame principal={session.principal} home={session.home}>
+          {children}
+        </AppFrame>
       </ChatProvider>
     </ClockProvider>
   )

@@ -3,8 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 
-import { useSession } from "@/lib/auth"
-import { homeFor, type Principal } from "@/lib/session"
+import { useAppSession, type Role } from "@/lib/app-session"
 
 /**
  * Renders its children only for the given role and sends anyone else to their
@@ -15,16 +14,18 @@ export function RoleGate({
   role,
   children,
 }: {
-  role: Principal["role"]
+  role: Role
   children: React.ReactNode
 }) {
   const router = useRouter()
-  const session = useSession()
-  const allowed = session?.principal.role === role
+  const session = useAppSession()
+  const signedIn = session.status === "signed-in"
+  const allowed = signedIn && session.principal.role === role
+  const home = signedIn ? session.home : null
 
   useEffect(() => {
-    if (session && !allowed) router.replace(homeFor(session.principal))
-  }, [session, allowed, router])
+    if (home && !allowed) router.replace(home)
+  }, [home, allowed, router])
 
   return allowed ? children : null
 }

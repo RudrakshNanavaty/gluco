@@ -4,40 +4,6 @@
  */
 
 export interface paths {
-    "/personas": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Personas */
-        get: operations["list_personas_personas_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Login */
-        post: operations["login_auth_login_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/me": {
         parameters: {
             query?: never;
@@ -181,10 +147,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Clock State */
-        get: operations["clock_state_clock_get"];
+        get?: never;
         put?: never;
-        /** Control Clock */
+        /**
+         * Control Clock
+         * @description Move the shared replay clock; clinicians only (ADR 0002).
+         */
         post: operations["control_clock_clock_post"];
         delete?: never;
         options?: never;
@@ -259,26 +227,6 @@ export interface paths {
         };
         /** Thread */
         get: operations["thread_chat_sessions__session_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/tools": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Tools
-         * @description The tools the caller's chatbot can use, with their JSON schemas.
-         */
-        get: operations["tools_tools_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -426,13 +374,6 @@ export interface components {
              */
             note?: string;
         };
-        /** ChatMessage */
-        ChatMessage: {
-            /** Role */
-            role: string;
-            /** Text */
-            text: string;
-        };
         /** ChatRequest */
         ChatRequest: {
             /** Session Id */
@@ -532,8 +473,8 @@ export interface components {
                 [key: string]: components["schemas"]["MetricSummary"];
             };
         };
-        /** ExplainResponse */
-        ExplainResponse: {
+        /** Explanation */
+        Explanation: {
             change: components["schemas"]["ChangeReport"];
             /** Cohort Position */
             cohort_position: components["schemas"]["FeatureDeviation"][] | null;
@@ -572,25 +513,6 @@ export interface components {
             /** Participants */
             participants: number;
             clock: components["schemas"]["ClockState"] | null;
-        };
-        /** LoginRequest */
-        LoginRequest: {
-            /** Persona Id */
-            persona_id: string;
-        };
-        /** LoginResponse */
-        LoginResponse: {
-            /** Token */
-            token: string;
-            /**
-             * Token Type
-             * @default bearer
-             * @constant
-             */
-            token_type?: "bearer";
-            /** Expires In */
-            expires_in: number;
-            principal: components["schemas"]["PrincipalOut"];
         };
         /** MetricChange */
         MetricChange: {
@@ -737,6 +659,8 @@ export interface components {
             total_series: number;
             /** Truncated */
             truncated: boolean;
+            /** Audit */
+            audit?: string[];
         };
         /**
          * QuerySpec
@@ -784,12 +708,34 @@ export interface components {
         };
         /** Series */
         Series: {
-            /** Participant Id */
-            participant_id: string | null;
             /** Display Name */
             display_name: string;
             /** Points */
             points: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
+         * TranscriptMessage
+         * @description One message of a stored thread, in the same shape the stream sends.
+         *
+         *     A user message has `text`. An assistant message has `events`: the Contract
+         *     B events (`token`, `tool_start`, `tool_end`, `data`) it would have streamed,
+         *     in order, so the UI rebuilds it with the reducer it uses live.
+         */
+        TranscriptMessage: {
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /**
+             * Text
+             * @default
+             */
+            text?: string;
+            /** Events */
+            events?: {
                 [key: string]: unknown;
             }[];
         };
@@ -866,59 +812,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    list_personas_personas_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PrincipalOut"][];
-                };
-            };
-        };
-    };
-    login_auth_login_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     me_me_get: {
         parameters: {
             query?: never;
@@ -1074,7 +967,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ExplainResponse"];
+                    "application/json": components["schemas"]["Explanation"];
                 };
             };
             /** @description Validation Error */
@@ -1137,26 +1030,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CohortOverview"];
-                };
-            };
-        };
-    };
-    clock_state_clock_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ClockState"];
                 };
             };
         };
@@ -1295,7 +1168,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChatMessage"][];
+                    "application/json": components["schemas"]["TranscriptMessage"][];
                 };
             };
             /** @description Validation Error */
@@ -1305,28 +1178,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    tools_tools_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
                 };
             };
         };

@@ -13,7 +13,6 @@ dependencies = [
     "pydantic>=2.13.5",
     "pydantic-settings>=2.15.0",
     "pyjwt>=2.10",
-    "pyyaml>=6.0.3",
     "sse-starlette>=3.5.0",
     "uvicorn>=0.54.0",
 ]
@@ -28,9 +27,11 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "basedpyright>=1.40.1",
+    "faker>=40.0.0",
     "httpx>=0.28.1",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
+    "pyyaml>=6.0.3",
     "ruff>=0.16.10",
 ]
 
@@ -66,6 +67,7 @@ ignore = [
 "**/tests/**" = ["S", "T20"]
 "**/__init__.py" = ["F401"]
 "**/main.py" = ["T20"]       # CLI entrypoints may print
+"**/clerk_seed.py" = ["T20"] # seed script prints its report
 "evals/**" = ["T20"]         # eval runner prints its report
 
 [tool.ruff.format]
@@ -75,7 +77,7 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [tool.basedpyright]
-include = ["src"]
+include = ["src", "tests"]
 exclude = ["**/__pycache__", ".venv"]
 pythonVersion = "3.12"
 pythonPlatform = "Linux"

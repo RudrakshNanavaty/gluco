@@ -1,12 +1,13 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
-from support import PID, FakeTime
+from support import PID, SEED, FakeTime
 
 from agent.auth import CLINICIAN, patient
 from agent.clock import ReplayClock
 from agent.data.mock import MockSource
 from agent.domain.metrics import LIVE_METRICS
 from agent.domain.models import LiveReading
+from agent.domain.ports import PublishedWindow
 from agent.live import LiveStore
 from agent.query import QueryService, QuerySpec
 from agent.store import WindowStore
@@ -14,10 +15,15 @@ from agent.store import WindowStore
 
 class CountingSource(MockSource):
     def __init__(self, time: FakeTime) -> None:
-        super().__init__(seed=7, time_source=time)
+        super().__init__(seed=SEED, time_source=time)
         self.live_calls = 0
+        self.window_calls = 0
         self.fail = False
         self.analytics_ahead = False
+
+    def fetch_since(self, published_after: datetime | None) -> list[PublishedWindow]:
+        self.window_calls += 1
+        return super().fetch_since(published_after)
 
     def fetch_live(self) -> list[LiveReading]:
         self.live_calls += 1
@@ -34,7 +40,7 @@ class CountingSource(MockSource):
         return readings
 
 
-def setup(time: FakeTime) -> tuple[CountingSource, WindowStore, LiveStore]:
+def make_live_stores(time: FakeTime) -> tuple[CountingSource, WindowStore, LiveStore]:
     source = CountingSource(time)
     windows = WindowStore(source, refresh_s=1e9, time_source=time)
     return source, windows, LiveStore(source, windows, 1.0, time_source=time)
@@ -42,10 +48,10 @@ def setup(time: FakeTime) -> tuple[CountingSource, WindowStore, LiveStore]:
 
 def test_readings_refresh_at_most_once_per_period():
     time = FakeTime()
-    source, _, live = setup(time)
+    source, _, live = make_live_stores(time)
     first = live.reading(PID)
     assert first is not None
-    live.readings()
+    live.reading(PID)
     assert source.live_calls == 1
     time.now += 5
     later = live.reading(PID)
@@ -56,7 +62,7 @@ def test_readings_refresh_at_most_once_per_period():
 
 def test_a_failed_refresh_keeps_the_previous_readings():
     time = FakeTime()
-    source, _, live = setup(time)
+    source, _, live = make_live_stores(time)
     before = live.reading(PID)
     source.fail = True
     time.now += 2
@@ -67,19 +73,20 @@ def test_a_failed_refresh_keeps_the_previous_readings():
 
 def test_newer_analytics_make_the_window_store_refresh():
     time = FakeTime()
-    source, windows, live = setup(time)
+    source, windows, live = make_live_stores(time)
+    live.reading(PID)
     windows.participants()
-    live.readings()
-    assert windows._refreshed_at is not None  # pyright: ignore[reportPrivateUsage]
+    loads = source.window_calls
     source.analytics_ahead = True
     time.now += 2
-    live.readings()
-    assert windows._refreshed_at is None  # pyright: ignore[reportPrivateUsage]
+    live.reading(PID)
+    windows.participants()  # well inside its own refresh period
+    assert source.window_calls > loads
 
 
 def test_rows_and_queries_carry_the_live_readings():
     time = FakeTime()
-    _, windows, live = setup(time)
+    _, windows, live = make_live_stores(time)
     clock = ReplayClock(windows.data_range, enabled=False)
     svc = QueryService(windows, clock, CLINICIAN, live)
     time.now += 3
@@ -90,6 +97,8 @@ def test_rows_and_queries_carry_the_live_readings():
     assert row.live_at == reading.sensor_time
     for metric in LIVE_METRICS:
         assert row.values[metric] == reading.values[metric]
+    listed = next(r for r in svc.participants() if r.person_id == PID)
+    assert listed == row  # every read sees the same live view
     assert len(svc.live_readings()) == 17
     assert [
         r.person_id
@@ -111,7 +120,7 @@ def test_rows_and_queries_carry_the_live_readings():
 
 def test_no_live_readings_while_the_replay_is_behind():
     time = FakeTime()
-    _, windows, live = setup(time)
+    _, windows, live = make_live_stores(time)
     clock = ReplayClock(windows.data_range, seconds_per_hour=10, time_source=time)
     svc = QueryService(windows, clock, CLINICIAN, live)
     row = svc.participant(PID)
