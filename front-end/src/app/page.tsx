@@ -1,7 +1,15 @@
 "use client";
 
 import { SignIn } from "@clerk/nextjs";
-import { ActivityIcon, ArrowRightIcon, ShieldCheckIcon, SparklesIcon } from "lucide-react";
+import {
+  ActivityIcon,
+  ArrowRightIcon,
+  CheckCircle2Icon,
+  ChevronDownIcon,
+  HeartPulseIcon,
+  ShieldCheckIcon,
+  SparklesIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -16,6 +24,8 @@ export default function SignInPage() {
   const session = useAppSession();
   const home = session.status === "signed-in" ? session.home : null;
   const [preview, setPreview] = useState<"patient" | "clinician">("patient");
+  const [focus, setFocus] = useState<"score" | "trends" | "assistant">("score");
+  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     if (home) router.replace(home);
@@ -28,12 +38,22 @@ export default function SignInPage() {
           title: "A calmer view of your day",
           description: "See your score, live signals, and what changed in plain language.",
           items: ["Your Gluco Score", "Wearable trends", "Personal assistant"],
+          metric: "82",
+          metricLabel: "steady today",
         }
       : {
           title: "A sharper view of your panel",
           description: "Spot patterns across patients and move from signal to context quickly.",
           items: ["Panel overview", "Patient comparisons", "Explainable changes"],
+          metric: "17",
+          metricLabel: "patients monitored",
         };
+
+  const insight = {
+    score: "Your score is trending steadily over the last 24 hours.",
+    trends: "Small changes in movement and sleep are easy to spot here.",
+    assistant: "Ask questions about your readings and get a plain-language answer.",
+  }[focus];
 
   return (
     <main className="mx-auto grid w-full max-w-6xl flex-1 gap-12 px-4 py-10 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
@@ -53,6 +73,14 @@ export default function SignInPage() {
           The Gluco Score is an estimate based on wearable data. It is not a
           blood sugar reading or a diagnosis.
         </p>
+        <Button
+          type="button"
+          variant="outline"
+          className="group w-fit rounded-full"
+          onClick={() => document.getElementById("sign-in")?.scrollIntoView({ behavior: "smooth" })}
+        >
+          See your experience <ArrowRightIcon className="size-4 transition-transform duration-200 group-hover:translate-x-1" />
+        </Button>
         <Card className="max-w-md overflow-hidden border-primary/15 bg-card/70 backdrop-blur-sm">
           <CardHeader className="gap-3 pb-3">
             <div className="flex items-center justify-between gap-3">
@@ -84,6 +112,20 @@ export default function SignInPage() {
             </p>
           </CardHeader>
           <CardContent className="flex flex-col gap-3 pt-0">
+            <div className="flex items-center justify-between rounded-xl bg-primary/8 px-3 py-2">
+              <div className="flex items-center gap-2">
+                <div className="flex size-8 items-center justify-center rounded-full bg-primary/12 text-primary">
+                  {preview === "patient" ? <HeartPulseIcon className="size-4" /> : <ActivityIcon className="size-4" />}
+                </div>
+                <div>
+                  <p className="text-2xl font-semibold leading-none tracking-tight">{previewContent.metric}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">{previewContent.metricLabel}</p>
+                </div>
+              </div>
+              <span className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2Icon className="size-3.5" /> Live preview
+              </span>
+            </div>
             <div className="flex h-12 items-end gap-1.5 rounded-lg bg-accent/40 px-3 py-2">
               {[28, 42, 34, 56, 45, 68, 61, 78, 70, 88].map((height, index) => (
                 <span
@@ -104,6 +146,20 @@ export default function SignInPage() {
                 );
               })}
             </div>
+            <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted/70 p-1">
+              {(["score", "trends", "assistant"] as const).map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  aria-pressed={focus === item}
+                  onClick={() => setFocus(item)}
+                  className={`rounded-md px-2 py-1.5 text-[11px] capitalize transition-all duration-200 ${focus === item ? "bg-background font-medium text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+            <p className="min-h-8 text-xs leading-relaxed text-muted-foreground transition-all duration-200">{insight}</p>
             <Button
               type="button"
               variant="ghost"
@@ -112,11 +168,30 @@ export default function SignInPage() {
             >
               Switch preview <ArrowRightIcon className="size-3.5 transition-transform duration-200 group-hover:translate-x-1" />
             </Button>
+            <button
+              type="button"
+              onClick={() => setShowDetails((current) => !current)}
+              aria-expanded={showDetails}
+              className="flex items-center justify-between border-t border-border/60 pt-3 text-left text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              How Gluco turns signals into clarity
+              <ChevronDownIcon className={`size-4 transition-transform duration-200 ${showDetails ? "rotate-180" : ""}`} />
+            </button>
+            {showDetails ? (
+              <div className="grid gap-2 text-xs text-muted-foreground">
+                {["Collect wearable signals", "Explain meaningful changes", "Surface the next best question"].map((step, index) => (
+                  <div key={step} className="flex items-center gap-2">
+                    <span className="flex size-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">{index + 1}</span>
+                    {step}
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       </header>
 
-      <div className="flex flex-col items-start gap-6">
+      <div id="sign-in" className="scroll-mt-8 flex flex-col items-start gap-6">
         <div className="flex flex-col gap-1">
           <h2 className="text-xl font-semibold tracking-tight">Sign in</h2>
           <p className="text-sm text-muted-foreground">
