@@ -88,7 +88,12 @@ jobs:
         run: test -n "$PGHOST" -a -n "$PGUSER" -a -n "$PGPASSWORD" || { echo "::error::PG* secrets are not configured for this repository"; exit 1; }
 
       - name: Live database tests
-        run: uv run pytest tests/test_postgres_live.py tests/test_window_source.py -rs --junitxml=live.xml
+        run: |
+          # A secret that was never set arrives empty; unset it so the default applies.
+          for v in PGPORT PGDATABASE PGSSLMODE DASHBOARD_SESSION_ID; do
+            [ -n "${!v}" ] || unset "$v"
+          done
+          uv run pytest tests/test_postgres_live.py tests/test_window_source.py -rs --junitxml=live.xml
 
       # A skipped live test would mean nothing was checked against the database.
       - name: No live test was skipped
