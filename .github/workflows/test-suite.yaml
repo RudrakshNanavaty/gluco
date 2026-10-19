@@ -51,6 +51,57 @@ jobs:
         if: (success() || failure()) && steps.install.outcome == 'success'
         run: uv run basedpyright
 
+  # The same adapter contract and panel checks, against the real Tiger database.
+  # Needs read-only PG* secrets, which GitHub withholds from PRs out of forks.
+  back-end-live:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: back-end
+    env:
+      LIVE_DB: "1"
+      PGHOST: ${{ secrets.PGHOST }}
+      PGPORT: ${{ secrets.PGPORT }}
+      PGDATABASE: ${{ secrets.PGDATABASE }}
+      PGUSER: ${{ secrets.PGUSER }}
+      PGPASSWORD: ${{ secrets.PGPASSWORD }}
+      PGSSLMODE: ${{ secrets.PGSSLMODE }}
+      DASHBOARD_SESSION_ID: ${{ secrets.DASHBOARD_SESSION_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Check the database secrets are set
+        run: test -n "$PGHOST" -a -n "$PGUSER" -a -n "$PGPASSWORD" || { echo "::error::PG* secrets are not configured for this repository"; exit 1; }
+
+      - name: Live database tests
+        run: uv run pytest tests/test_postgres_live.py tests/test_window_source.py -rs --junitxml=live.xml
+
+      # A skipped live test would mean nothing was checked against the database.
+      - name: No live test was skipped
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          suite = ET.parse("live.xml").getroot()
+          suite = suite.find("testsuite") if suite.tag == "testsuites" else suite
+          tests, skipped = int(suite.get("tests")), int(suite.get("skipped"))
+          print(f"{tests} tests, {skipped} skipped")
+          raise SystemExit(1 if skipped or not tests else 0)
+          PY
+
   front-end:
     runs-on: ubuntu-latest
     timeout-minutes: 15
