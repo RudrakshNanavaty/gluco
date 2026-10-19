@@ -52,23 +52,25 @@ jobs:
         run: uv run basedpyright
 
   # The same adapter contract and panel checks, against the real Tiger database.
-  # Needs read-only PG* secrets, which GitHub withholds from PRs out of forks.
+  # Reads the "gluco-back-end" environment: connection details are variables, the
+  # login is a read-only secret. GitHub withholds secrets from PRs out of forks.
   back-end-live:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    environment: gluco-back-end
     timeout-minutes: 15
     defaults:
       run:
         working-directory: back-end
     env:
       LIVE_DB: "1"
-      PGHOST: ${{ secrets.PGHOST }}
-      PGPORT: ${{ secrets.PGPORT }}
-      PGDATABASE: ${{ secrets.PGDATABASE }}
+      PGHOST: ${{ vars.PGHOST }}
+      PGPORT: ${{ vars.PGPORT }}
+      PGDATABASE: ${{ vars.PGDATABASE }}
+      PGSSLMODE: ${{ vars.PGSSLMODE }}
+      DASHBOARD_SESSION_ID: ${{ vars.DASHBOARD_SESSION_ID }}
       PGUSER: ${{ secrets.PGUSER }}
       PGPASSWORD: ${{ secrets.PGPASSWORD }}
-      PGSSLMODE: ${{ secrets.PGSSLMODE }}
-      DASHBOARD_SESSION_ID: ${{ secrets.DASHBOARD_SESSION_ID }}
 
     steps:
       - uses: actions/checkout@v4
@@ -84,8 +86,8 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked
 
-      - name: Check the database secrets are set
-        run: test -n "$PGHOST" -a -n "$PGUSER" -a -n "$PGPASSWORD" || { echo "::error::PG* secrets are not configured for this repository"; exit 1; }
+      - name: Check the database settings are set
+        run: test -n "$PGHOST" -a -n "$PGUSER" -a -n "$PGPASSWORD" || { echo "::error::PGHOST (variable) and PGUSER, PGPASSWORD (secrets) must be set on the gluco-back-end environment"; exit 1; }
 
       - name: Live database tests
         run: |
