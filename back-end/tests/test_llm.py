@@ -1,4 +1,7 @@
+import asyncio
+
 import pytest
+from agents import OpenAIChatCompletionsModel
 from agents.models import _openai_shared
 from openai.types.chat import ChatCompletionChunk
 from pydantic import SecretStr
@@ -33,83 +36,86 @@ def test_configure_without_key_installs_no_client():
     assert _openai_shared.get_default_openai_client() is None
 
 
-def test_tool_call_index_fix_assigns_distinct_indexes_and_preserves_stream_attrs():
-    chunk = ChatCompletionChunk.model_validate(
+def test_model_settings_carry_the_provider_routing_preferences():
+    default = LlmConnection(SecretStr("k"), BASE).model_settings()
+    assert default.extra_body == {
+        "provider": {"require_parameters": True, "data_collection": "deny"}
+    }
+    relaxed = LlmConnection(SecretStr("k"), BASE, False, "allow").model_settings()
+    assert relaxed.extra_body == {
+        "provider": {"require_parameters": False, "data_collection": "allow"}
+    }
+
+
+def test_settings_default_to_openrouter_and_ignore_gemini_variables(monkeypatch):
+    monkeypatch.setenv("AGENT_MODEL", "z-ai/glm-4.7-flash:floor")
+    monkeypatch.setenv("GEMINI_API_KEY", "old-gemini-key")
+    monkeypatch.setenv("GEMINI_BASE_URL", "https://gemini.test/")
+    settings = Settings(_env_file=None)  # pyright: ignore[reportCallIssue]
+    assert settings.llm_api_key is None
+    assert settings.llm_base_url == "https://openrouter.ai/api/v1"
+    connection = LlmConnection.from_settings(settings)
+    assert connection.is_ready() is False
+
+
+def test_settings_read_the_llm_variables(monkeypatch):
+    monkeypatch.setenv("AGENT_MODEL", "m")
+    monkeypatch.setenv("LLM_API_KEY", "k")
+    monkeypatch.setenv("LLM_DATA_COLLECTION", "allow")
+    settings = Settings(_env_file=None)  # pyright: ignore[reportCallIssue]
+    assert LlmConnection.from_settings(settings).is_ready() is True
+    assert settings.llm_data_collection == "allow"
+
+
+def test_model_wraps_a_vendor_slug_around_the_providers_client():
+    connection = LlmConnection(SecretStr("k"), BASE)
+    assert connection.model("z-ai/glm-4.7-flash:floor") == "z-ai/glm-4.7-flash:floor"
+    connection.configure()
+    model = connection.model("z-ai/glm-4.7-flash:floor")
+    assert isinstance(model, OpenAIChatCompletionsModel)
+    assert model.model == "z-ai/glm-4.7-flash:floor"
+
+
+def _chunk(*calls: dict) -> ChatCompletionChunk:
+    return ChatCompletionChunk.model_validate(
         {
             "id": "chunk",
             "created": 0,
             "model": "test",
             "object": "chat.completion.chunk",
             "choices": [
-                {
-                    "index": 0,
-                    "delta": {
-                        "tool_calls": [
-                            {
-                                "index": 99,
-                                "id": "call-a",
-                                "type": "function",
-                                "function": {},
-                            },
-                            {"index": 99, "type": "function", "function": {}},
-                            {
-                                "index": 99,
-                                "id": "call-b",
-                                "type": "function",
-                                "function": {},
-                            },
-                        ]
-                    },
-                    "finish_reason": None,
-                }
+                {"index": 0, "delta": {"tool_calls": calls}, "finish_reason": None}
             ],
         }
     )
-    stream = object()
-    fixer = ToolCallIndexFix(stream)
+
+
+def test_tool_call_index_fix_assigns_distinct_indexes():
+    chunk = _chunk(
+        {"index": 99, "id": "call-a", "type": "function", "function": {}},
+        {"index": 99, "type": "function", "function": {}},
+        {"index": 99, "id": "call-b", "type": "function", "function": {}},
+    )
+    fixer = ToolCallIndexFix(object())
 
     assert fixer.fix(chunk) is chunk
     assert [call.index for call in chunk.choices[0].delta.tool_calls or []] == [0, 0, 1]
 
 
-def test_tool_call_index_fix_forwards_async_chunks():
+def test_tool_call_index_fix_forwards_async_chunks_and_stream_attrs():
     class Stream:
-        def __init__(self):
-            self.value = "stream-value"
+        value = "stream-value"
 
         def __aiter__(self):
             async def iterate():
-                yield ChatCompletionChunk.model_validate(
-                    {
-                        "id": "chunk",
-                        "created": 0,
-                        "model": "test",
-                        "object": "chat.completion.chunk",
-                        "choices": [
-                            {
-                                "index": 0,
-                                "delta": {
-                                    "tool_calls": [
-                                        {
-                                            "index": 9,
-                                            "id": "call",
-                                            "type": "function",
-                                            "function": {},
-                                        }
-                                    ]
-                                },
-                                "finish_reason": None,
-                            }
-                        ],
-                    }
+                yield _chunk(
+                    {"index": 9, "id": "call", "type": "function", "function": {}}
                 )
 
             return iterate()
 
     async def collect():
         return [chunk async for chunk in ToolCallIndexFix(Stream())]
-
-    import asyncio
 
     chunks = asyncio.run(collect())
     calls = chunks[0].choices[0].delta.tool_calls
