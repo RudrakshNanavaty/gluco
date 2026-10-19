@@ -133,6 +133,17 @@ describe("Clinician Dashboard Components", () => {
       },
     ]
 
+    it("shows an empty state instead of a blank table", async () => {
+      fakeApi({ "GET /catalog": catalog, "GET /participants": [] })
+
+      renderWithProviders(<ParticipantTable />, { role: "clinician" })
+
+      expect(await screen.findByRole("status")).toHaveTextContent(
+        "No patients to show yet."
+      )
+      expect(screen.queryByRole("table")).not.toBeInTheDocument()
+    })
+
     // Verifies that table skeletons render when participants data is pending.
     it("renders skeleton rows when participants query is pending", () => {
       fakeApi({ "GET /catalog": catalog, "GET /participants": PENDING })
