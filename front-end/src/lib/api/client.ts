@@ -87,8 +87,9 @@ function authorized(
   if (input instanceof Request) {
     // A copy, so the original (and its body) can be sent again on a retry.
     const request = input.clone()
-    request.headers.set("Authorization", value)
-    return [request, init]
+    const headers = new Headers(init?.headers ?? request.headers)
+    headers.set("Authorization", value)
+    return [request, { ...init, headers }]
   }
   const headers = new Headers(init?.headers)
   headers.set("Authorization", value)
