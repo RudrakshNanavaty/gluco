@@ -116,7 +116,9 @@ raw = (
     .withColumn("eda", F.expr("try_cast(eda_raw AS DOUBLE)"))
 )
 valid = (F.col("eda") >= 0) & ~F.isnan("eda") & (F.abs("eda") < F.lit(float("inf")))
-minute_base = (
+# Aggregate once in Spark; retain only bounded minute summaries in driver memory.
+# No DataFrame cache API is required (compatible with serverless compute).
+summary = (
     raw.withColumn("minute_ts", F.date_trunc("minute", "event_ts"))
     .groupBy("participant_key", "minute_ts")
     .agg(
@@ -126,34 +128,28 @@ minute_base = (
         F.count(F.when(valid, 1)).alias("valid_samples"),
         F.avg(F.when(valid, F.col("eda"))).alias("eda_mean"),
     )
-).cache()
-if minute_base.where(F.col("minute_ts").isNull()).limit(1).count():
-    raise ValueError("Unparseable EDA timestamps; preserve source and investigate")
-clock_resolution = {
-    row.participant_key: int(row.coarse_minutes)
-    for row in minute_base.groupBy("participant_key")
-    .agg(F.count(F.when(F.col("coarse_only") == 1, 1)).alias("coarse_minutes"))
-    .collect()
-}
-minute = minute_base.where(
-    F.col("valid_samples").between(192, 240)
-    & (F.col("rows") == F.col("valid_samples"))
-    & ((F.col("coarse_only") == 1) | (F.col("rows") == F.col("unique_times")))
-)
-eda_minutes = (
-    minute.select(
-        "participant_key",
-        F.expr(
-            "timestampdiff(MINUTE,TIMESTAMP_NTZ '1970-01-01 00:00:00',minute_ts)"
-        ).alias("minute_index"),
-        "eda_mean",
+    .withColumn(
+        "minute_index",
+        F.expr("timestampdiff(MINUTE,TIMESTAMP_NTZ '1970-01-01 00:00:00',minute_ts)"),
     )
+    .drop("minute_ts")
     .limit(300001)
     .toPandas()
 )
-minute_base.unpersist()
-if len(eda_minutes) > 300000 or set(eda_minutes.participant_key) != expected:
-    raise ValueError("Unexpected usable EDA roster or minute volume")
+if len(summary) > 300000 or summary.minute_index.isna().any():
+    raise ValueError("EDA minute volume or timestamp parse check failed")
+clock_resolution = {
+    str(key): int((part.coarse_only == 1).sum())
+    for key, part in summary.groupby("participant_key")
+}
+mask = (
+    summary.valid_samples.between(192, 240)
+    & (summary.rows == summary.valid_samples)
+    & ((summary.coarse_only == 1) | (summary.rows == summary.unique_times))
+)
+eda_minutes = summary.loc[mask, ["participant_key", "minute_index", "eda_mean"]].copy()
+if set(eda_minutes.participant_key) != expected:
+    raise ValueError("Unexpected usable EDA roster")
 minute_arrays = {
     key: (
         part.sort_values("minute_index").minute_index.to_numpy(),
