@@ -84,7 +84,7 @@ function ThreadMenu() {
             </DropdownMenuItem>
           ) : threads.isError ? (
             <DropdownMenuItem onSelect={() => void threads.refetch()}>
-              Couldn't load conversations. Retry
+              {"Couldn't load conversations. Retry"}
             </DropdownMenuItem>
           ) : threads.data?.length ? (
             threads.data.map((thread) => (
