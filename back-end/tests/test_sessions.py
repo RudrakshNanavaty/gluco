@@ -1,11 +1,10 @@
-from agent.api.sessions import ChatSessions, to_messages
+from agent.api.sessions import ChatSessions, transcript
 
 
-def test_to_messages_filters_tool_items_and_supports_content_parts():
-    messages = to_messages(
+def test_transcript_filters_non_messages_and_supports_content_parts():
+    messages = transcript(
         [
             {"role": "system", "content": "ignored"},
-            {"role": "assistant", "type": "function_call", "content": "ignored"},
             {
                 "role": "user",
                 "content": [{"text": "hello"}, {"text": " world"}, "ignored"],
@@ -15,10 +14,11 @@ def test_to_messages_filters_tool_items_and_supports_content_parts():
             "not a message",
         ]
     )
-    assert [message.model_dump() for message in messages] == [
-        {"role": "user", "text": "hello world"},
-        {"role": "assistant", "text": "answer"},
+    assert [(message.role, message.text) for message in messages] == [
+        ("user", "hello world"),
+        ("assistant", ""),
     ]
+    assert messages[1].events == [{"type": "token", "text": "answer"}]
 
 
 def test_chat_sessions_index_activity_and_ownership(tmp_path):
@@ -44,4 +44,4 @@ def test_chat_sessions_index_activity_and_ownership(tmp_path):
 
 async def test_empty_session_has_no_messages(tmp_path):
     sessions = ChatSessions(tmp_path / "sessions.sqlite")
-    assert await sessions.messages("user", "new") == []
+    assert await sessions.transcript("user", "new") == []

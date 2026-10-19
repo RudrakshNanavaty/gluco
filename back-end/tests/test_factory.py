@@ -7,7 +7,6 @@ from agent.data.mock import MockSource
 
 def test_build_source_uses_mock_backend(tmp_path):
     settings = Settings(
-        _env_file=None,
         agent_model="test",
         data_backend="mock",
         session_db_path=tmp_path / "s.sqlite",
@@ -18,9 +17,10 @@ def test_build_source_uses_mock_backend(tmp_path):
 
 def test_build_source_rejects_postgres_without_connection_info(tmp_path):
     settings = Settings(
-        _env_file=None,
         agent_model="test",
         data_backend="postgres",
+        database_url=None,
+        pghost=None,
         session_db_path=tmp_path / "s.sqlite",
     )
     with pytest.raises(ValueError, match="requires DATABASE_URL"):

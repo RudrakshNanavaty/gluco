@@ -1,7 +1,6 @@
-from types import SimpleNamespace
-
 import pytest
 from agents.models import _openai_shared
+from openai.types.chat import ChatCompletionChunk
 from pydantic import SecretStr
 
 from agent.config import Settings
@@ -35,16 +34,42 @@ def test_configure_without_key_installs_no_client():
 
 
 def test_tool_call_index_fix_assigns_distinct_indexes_and_preserves_stream_attrs():
-    first = SimpleNamespace(id="call-a", index=99)
-    continuation = SimpleNamespace(id=None, index=99)
-    second = SimpleNamespace(id="call-b", index=99)
-    delta = SimpleNamespace(tool_calls=[first, continuation, second])
-    chunk = SimpleNamespace(choices=[SimpleNamespace(delta=delta)])
+    chunk = ChatCompletionChunk.model_validate(
+        {
+            "id": "chunk",
+            "created": 0,
+            "model": "test",
+            "object": "chat.completion.chunk",
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": {
+                        "tool_calls": [
+                            {
+                                "index": 99,
+                                "id": "call-a",
+                                "type": "function",
+                                "function": {},
+                            },
+                            {"index": 99, "type": "function", "function": {}},
+                            {
+                                "index": 99,
+                                "id": "call-b",
+                                "type": "function",
+                                "function": {},
+                            },
+                        ]
+                    },
+                    "finish_reason": None,
+                }
+            ],
+        }
+    )
     stream = object()
     fixer = ToolCallIndexFix(stream)
 
     assert fixer.fix(chunk) is chunk
-    assert [first.index, continuation.index, second.index] == [0, 0, 1]
+    assert [call.index for call in chunk.choices[0].delta.tool_calls or []] == [0, 0, 1]
 
 
 def test_tool_call_index_fix_forwards_async_chunks():
@@ -54,9 +79,30 @@ def test_tool_call_index_fix_forwards_async_chunks():
 
         def __aiter__(self):
             async def iterate():
-                call = SimpleNamespace(id="call", index=9)
-                delta = SimpleNamespace(tool_calls=[call])
-                yield SimpleNamespace(choices=[SimpleNamespace(delta=delta)])
+                yield ChatCompletionChunk.model_validate(
+                    {
+                        "id": "chunk",
+                        "created": 0,
+                        "model": "test",
+                        "object": "chat.completion.chunk",
+                        "choices": [
+                            {
+                                "index": 0,
+                                "delta": {
+                                    "tool_calls": [
+                                        {
+                                            "index": 9,
+                                            "id": "call",
+                                            "type": "function",
+                                            "function": {},
+                                        }
+                                    ]
+                                },
+                                "finish_reason": None,
+                            }
+                        ],
+                    }
+                )
 
             return iterate()
 
@@ -66,13 +112,14 @@ def test_tool_call_index_fix_forwards_async_chunks():
     import asyncio
 
     chunks = asyncio.run(collect())
-    assert chunks[0].choices[0].delta.tool_calls[0].index == 0
+    calls = chunks[0].choices[0].delta.tool_calls
+    assert calls is not None
+    assert calls[0].index == 0
     assert ToolCallIndexFix(Stream()).value == "stream-value"
 
 
 def test_settings_build_conninfo_and_choose_explicit_backend():
     settings = Settings(
-        _env_file=None,
         agent_model="test",
         data_backend="postgres",
         pghost="db.example",
@@ -82,7 +129,9 @@ def test_settings_build_conninfo_and_choose_explicit_backend():
         pgpassword=SecretStr("secret"),
         pgsslmode="require",
     )
-    assert "host=db.example" in settings.database_conninfo
-    assert "dbname=gluco" in settings.database_conninfo
+    conninfo = settings.database_conninfo
+    assert conninfo is not None
+    assert "host=db.example" in conninfo
+    assert "dbname=gluco" in conninfo
     assert settings.effective_backend == "postgres"
     assert settings.effective_guardrail_model == "test"
