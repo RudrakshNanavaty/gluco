@@ -5,6 +5,7 @@ import {
   ApiError,
   friendlyError,
   OFFLINE_MESSAGE,
+  send,
   setTokenSource,
   setTransport,
   unwrap,
@@ -199,6 +200,25 @@ describe("send", () => {
     expect(seen).toEqual(["Bearer cached", "Bearer fresh"])
     expect(response.status).toBe(200)
     expect(rejected).not.toHaveBeenCalled()
+  })
+
+  it("keeps bearer tokens when Request and init headers are both supplied", async () => {
+    const seen = serve(401, 200)
+    setTokenSource({
+      token: async (fresh) => (fresh ? "fresh" : "cached"),
+      rejected: vi.fn(),
+    })
+    const request = new Request("http://localhost:8000/catalog", {
+      headers: { "X-Original": "value" },
+    })
+
+    const response = await send(request, {
+      headers: { "X-Override": "value" },
+    })
+
+    expect(response.status).toBe(200)
+    expect(seen).toEqual(["Bearer cached", "Bearer fresh"])
+    expect(request.headers.get("authorization")).toBeNull()
   })
 
   // Verifies a refused fresh token ends the session
