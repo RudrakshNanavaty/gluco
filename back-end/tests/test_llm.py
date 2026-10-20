@@ -1,10 +1,13 @@
+import asyncio
+
 import pytest
 from agents import OpenAIChatCompletionsModel
 from agents.models import _openai_shared
+from openai.types.chat import ChatCompletionChunk
 from pydantic import SecretStr
 
 from agent.config import Settings
-from agent.llm import LlmConnection
+from agent.llm import LlmConnection, ToolCallIndexFix
 
 BASE = "https://example.test/v1/"
 
@@ -71,3 +74,70 @@ def test_model_wraps_a_vendor_slug_around_the_providers_client():
     model = connection.model("z-ai/glm-4.7-flash:floor")
     assert isinstance(model, OpenAIChatCompletionsModel)
     assert model.model == "z-ai/glm-4.7-flash:floor"
+
+
+def _chunk(*calls: dict) -> ChatCompletionChunk:
+    return ChatCompletionChunk.model_validate(
+        {
+            "id": "chunk",
+            "created": 0,
+            "model": "test",
+            "object": "chat.completion.chunk",
+            "choices": [
+                {"index": 0, "delta": {"tool_calls": calls}, "finish_reason": None}
+            ],
+        }
+    )
+
+
+def test_tool_call_index_fix_assigns_distinct_indexes():
+    chunk = _chunk(
+        {"index": 99, "id": "call-a", "type": "function", "function": {}},
+        {"index": 99, "type": "function", "function": {}},
+        {"index": 99, "id": "call-b", "type": "function", "function": {}},
+    )
+    fixer = ToolCallIndexFix(object())
+
+    assert fixer.fix(chunk) is chunk
+    assert [call.index for call in chunk.choices[0].delta.tool_calls or []] == [0, 0, 1]
+
+
+def test_tool_call_index_fix_forwards_async_chunks_and_stream_attrs():
+    class Stream:
+        value = "stream-value"
+
+        def __aiter__(self):
+            async def iterate():
+                yield _chunk(
+                    {"index": 9, "id": "call", "type": "function", "function": {}}
+                )
+
+            return iterate()
+
+    async def collect():
+        return [chunk async for chunk in ToolCallIndexFix(Stream())]
+
+    chunks = asyncio.run(collect())
+    calls = chunks[0].choices[0].delta.tool_calls
+    assert calls is not None
+    assert calls[0].index == 0
+    assert ToolCallIndexFix(Stream()).value == "stream-value"
+
+
+def test_settings_build_conninfo_and_choose_explicit_backend():
+    settings = Settings(
+        agent_model="test",
+        data_backend="postgres",
+        pghost="db.example",
+        pgport=5432,
+        pgdatabase="gluco",
+        pguser="reader",
+        pgpassword=SecretStr("secret"),
+        pgsslmode="require",
+    )
+    conninfo = settings.database_conninfo
+    assert conninfo is not None
+    assert "host=db.example" in conninfo
+    assert "dbname=gluco" in conninfo
+    assert settings.effective_backend == "postgres"
+    assert settings.effective_guardrail_model == "test"
