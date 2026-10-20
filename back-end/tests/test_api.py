@@ -1,4 +1,5 @@
 import json
+import threading
 from dataclasses import replace
 
 from fastapi.testclient import TestClient
@@ -132,6 +133,25 @@ def test_clock_control(client, as_clinician):
     paused = client.post("/clock", headers=as_clinician, json={"action": "pause"})
     assert paused.json()["playing"] is False
     assert paused.json()["enabled"] is False  # tests run with the replay disabled
+    played = client.post("/clock", headers=as_clinician, json={"action": "play"})
+    # Disabled replay remains at the newest row.
+    assert played.json()["playing"] is False
+    sped = client.post(
+        "/clock",
+        headers=as_clinician,
+        json={"action": "speed", "seconds_per_hour": 2},
+    )
+    assert sped.json()["seconds_per_hour"] == 2
+    missing_seek_target = client.post(
+        "/clock", headers=as_clinician, json={"action": "seek"}
+    )
+    assert missing_seek_target.status_code == 422
+    seek = client.post(
+        "/clock",
+        headers=as_clinician,
+        json={"action": "seek", "to": "2026-10-01T00:00:00Z"},
+    )
+    assert seek.status_code == 200
 
 
 def test_only_clinicians_move_the_shared_clock(client, as_patient, runtime):
@@ -248,3 +268,43 @@ def test_cors_allows_only_the_configured_origins(client):
         headers={"Origin": ALLOWED, "Access-Control-Request-Method": "POST"},
     )
     assert preflight.headers["access-control-allow-origin"] == ALLOWED
+
+
+# --- startup warm-up ------------------------------------------------------------
+
+
+class CountingSource(EmptySource):
+    def __init__(self, fail: bool = False) -> None:
+        self.loads = 0
+        self.fail = fail
+        self.loaded = threading.Event()
+
+    def fetch_since(self, published_after):
+        self.loads += 1
+        self.loaded.set()
+        if self.fail:
+            raise RuntimeError("database unavailable")
+        return []
+
+
+def _app_on(runtime, source):
+    store = WindowStore(source)
+    return create_app(
+        replace(runtime, source=source, store=store),
+        authenticator_for(store.participants),
+    )
+
+
+def test_startup_loads_the_store_before_anyone_logs_in(runtime):
+    source = CountingSource()
+    with TestClient(_app_on(runtime, source)):
+        assert source.loaded.wait(timeout=5)
+    assert source.loads == 1
+
+
+def test_a_failed_warm_up_is_logged_and_the_app_still_serves(runtime, caplog):
+    source = CountingSource(fail=True)
+    with TestClient(_app_on(runtime, source)) as client:
+        assert source.loaded.wait(timeout=5)
+        assert client.get("/health").status_code == 200
+    assert "store warm-up failed" in caplog.text

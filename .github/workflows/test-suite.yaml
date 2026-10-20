@@ -51,6 +51,64 @@ jobs:
         if: (success() || failure()) && steps.install.outcome == 'success'
         run: uv run basedpyright
 
+  # The same adapter contract and panel checks, against the real Tiger database.
+  # Reads the "gluco-back-end" environment: connection details are variables, the
+  # login is a read-only secret. GitHub withholds secrets from PRs out of forks.
+  back-end-live:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment: gluco-back-end
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: back-end
+    env:
+      LIVE_DB: "1"
+      PGHOST: ${{ vars.PGHOST }}
+      PGPORT: ${{ vars.PGPORT }}
+      PGDATABASE: ${{ vars.PGDATABASE }}
+      PGSSLMODE: ${{ vars.PGSSLMODE }}
+      DASHBOARD_SESSION_ID: ${{ vars.DASHBOARD_SESSION_ID }}
+      PGUSER: ${{ secrets.PGUSER }}
+      PGPASSWORD: ${{ secrets.PGPASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Check the database settings are set
+        run: test -n "$PGHOST" -a -n "$PGUSER" -a -n "$PGPASSWORD" || { echo "::error::PGHOST (variable) and PGUSER, PGPASSWORD (secrets) must be set on the gluco-back-end environment"; exit 1; }
+
+      - name: Live database tests
+        run: |
+          # A secret that was never set arrives empty; unset it so the default applies.
+          for v in PGPORT PGDATABASE PGSSLMODE DASHBOARD_SESSION_ID; do
+            [ -n "${!v}" ] || unset "$v"
+          done
+          uv run pytest tests/test_postgres_live.py tests/test_window_source.py -rs --junitxml=live.xml
+
+      # A skipped live test would mean nothing was checked against the database.
+      - name: No live test was skipped
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          suite = ET.parse("live.xml").getroot()
+          suite = suite.find("testsuite") if suite.tag == "testsuites" else suite
+          tests, skipped = int(suite.get("tests")), int(suite.get("skipped"))
+          print(f"{tests} tests, {skipped} skipped")
+          raise SystemExit(1 if skipped or not tests else 0)
+          PY
+
   front-end:
     runs-on: ubuntu-latest
     timeout-minutes: 15

@@ -1,20 +1,24 @@
-// Every time on screen is replay time (`as_of`, window ends), shown in UTC so
-// days line up with the back-end's UTC day buckets. Nothing here reads the
-// wall clock.
+// Times of day are shown in the viewer's local timezone. Day-level labels
+// (`formatReplayDay`, daily axis ticks) stay in UTC so they match the
+// back-end's UTC day buckets.
 
-const parts = new Intl.DateTimeFormat("en-US", {
-  timeZone: "UTC",
+const options: Intl.DateTimeFormatOptions = {
   weekday: "short",
   day: "numeric",
   month: "short",
   hour: "2-digit",
   minute: "2-digit",
   hourCycle: "h23",
+}
+const localParts = new Intl.DateTimeFormat("en-US", options)
+const utcParts = new Intl.DateTimeFormat("en-US", {
+  ...options,
+  timeZone: "UTC",
 })
 
-function pieces(iso: string) {
+function pieces(iso: string, utc = false) {
   const out: Record<string, string> = {}
-  for (const part of parts.formatToParts(new Date(iso)))
+  for (const part of (utc ? utcParts : localParts).formatToParts(new Date(iso)))
     out[part.type] = part.value
   return out
 }
@@ -30,20 +34,20 @@ export function formatReplayTime(iso: string | null | undefined): string {
 export function formatClockTime(iso: string | null | undefined): string {
   if (!iso) return "—"
   const p = pieces(iso)
-  const seconds = String(new Date(iso).getUTCSeconds()).padStart(2, "0")
+  const seconds = String(new Date(iso).getSeconds()).padStart(2, "0")
   return `${p.hour}:${p.minute}:${seconds}`
 }
 
 /** "Tue 29 Sep" */
 export function formatReplayDay(iso: string | null | undefined): string {
   if (!iso) return "—"
-  const p = pieces(iso)
+  const p = pieces(iso, true)
   return `${p.weekday} ${p.day} ${p.month}`
 }
 
 /** Axis tick for a point time, by the query's bucket. */
 export function formatTick(iso: string, bucket: string): string {
-  const p = pieces(iso)
+  const p = pieces(iso, bucket === "day")
   if (bucket === "day") return `${p.weekday} ${p.day}`
   return `${p.weekday} ${p.hour}:${p.minute}`
 }
