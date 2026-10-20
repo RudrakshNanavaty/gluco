@@ -31,8 +31,8 @@ Use the bounded controller actions rather than an unbounded background sender.
 Record run IDs, terminal result, exact expected participant/window/event counts,
 model pin and cursor. A snapshot can be healthy while the job is stopped; check
 both. Verify the expected new cursor only follows successful refresh/publication.
-Re-run session health. Compare exact dashboard keys and numeric values between
-Delta and Tiger when validating cross-system publication; session health alone
+Re-run session health. Use the bounded command in `PUBLICATION_PARITY.md` to compare exact dashboard
+keys and numeric values between Delta and Tiger when validating publication; session health alone
 queries Delta and cannot certify Tiger parity. See REPLAY_VERIFICATION_RESULTS.md
 and RUNTIME_SAFETY_RESULTS.md for previously exercised procedures and limits.
 
