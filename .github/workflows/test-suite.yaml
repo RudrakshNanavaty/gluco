@@ -156,3 +156,27 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - name: Verify rolling feature and scoring contracts
         run: uv run --no-project --with-requirements databricks/requirements-test.txt python -m pytest databricks/tests -q
+
+  model-evaluation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v5
+      - name: Evaluate synthetic signal against participant-held-out baseline
+        run: uv run --no-project --with-requirements databricks/requirements-eval.txt python databricks/tiger/evaluate_m0.py --output /tmp/m0/signal.json
+      - name: Verify evaluation rejects a missing signal
+        run: |
+          set +e
+          uv run --no-project --with-requirements databricks/requirements-eval.txt python databricks/tiger/evaluate_m0.py --no-signal --output /tmp/m0/no-signal.json
+          status=$?
+          set -e
+          test "$status" -eq 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: synthetic-model-evaluation
+          path: /tmp/m0/*.json
+          if-no-files-found: error
