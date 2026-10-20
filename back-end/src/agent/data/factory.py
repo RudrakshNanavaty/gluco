@@ -3,6 +3,7 @@
 from agent.config import Settings
 from agent.data.mock import MockSource
 from agent.data.postgres import PostgresSource
+from agent.data.simulated_live import SimulatedLiveSource
 from agent.domain.ports import WindowSource
 
 
@@ -14,8 +15,11 @@ def build_source(settings: Settings) -> WindowSource:
                 "DATA_BACKEND=postgres requires DATABASE_URL or the PG* variables"
             )
         source = PostgresSource(
-            conninfo, settings.dashboard_session_id, settings.statement_timeout_ms
+            conninfo,
+            settings.dashboard_session_id,
+            settings.statement_timeout_ms,
+            settings.store_batch_size,
         )
         source.check_read_only()
-        return source
+        return SimulatedLiveSource(source) if settings.simulate_live else source
     return MockSource(seed=settings.mock_seed)
