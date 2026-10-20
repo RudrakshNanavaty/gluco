@@ -44,7 +44,7 @@ multi-chunk SQL responses fail rather than passing an incomplete comparison.
 
 Run session health as well: equality does not independently validate every
 feature, numeric range, eligibility flag, model artifact, payload field or
-active feed. This does not prove that a selected job produced these rows;
+active feed. Without the optional publisher receipt, this does not link a selected task to publication;
 record the publisher run/session association separately. No writes, DDL,
 notifications, recurring schedules, model promotion or service restart occurs.
 
@@ -55,3 +55,18 @@ windows, exact microsecond keys match, all model identities match the expected
 release, and all four metric differences are zero. Databricks statement:
 `01f1cc38-fb62-12bb-b1f4-30752642b838`. This is a historical snapshot verification,
 not a claim of active ingestion or publication freshness.
+
+## Link a completed publisher task
+
+Add `--publication-task-run-id TASK_RUN_ID` to require the selected task's Jobs
+API metadata to show terminal SUCCESS and its notebook output to name the same
+session, model, dashboard row count and scored row count. Only publishing modes
+prepare/refresh/score_existing are accepted; emit-only results, truncated output,
+wrong sessions/releases/counts and unfinished or failed tasks cannot pass.
+Use the publisher task run ID within the parent job, not the parent job run ID.
+This verifies the retained receipt plus the current selected-field parity;
+it is not an immutable audit of all subsequent database changes.
+
+Recovery-session receipt verification also passed with task run
+`566609052467682` from parent run `604495051079293`: 11,154 exact matching
+windows and the expected model, statement `01f1cc39-5469-1812-8c34-710f1d308b0b`.

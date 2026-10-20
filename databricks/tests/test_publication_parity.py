@@ -131,3 +131,47 @@ def test_tiny_serialization_difference_within_tolerance_passes():
     changed = row()
     changed[3] += 1e-12
     assert compare([row()], [changed], 1, MODEL)["status"] == "pass"
+
+
+def test_publisher_receipt_matches_selected_task_and_publication():
+    import json
+
+    from publication_parity import verify_receipt
+
+    metadata = {
+        "run_id": 10,
+        "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+    }
+    receipt = {
+        "session_id": "demo",
+        "mode": "refresh",
+        "risk_model_version": MODEL,
+        "dashboard_rows": 1,
+        "scored_windows": 1,
+    }
+    output = {"notebook_output": {"result": json.dumps(receipt)}}
+    assert verify_receipt(metadata, output, 10, "demo", MODEL, 1)["status"] == "pass"
+    for field, wrong in [
+        ("session_id", "other"),
+        ("mode", "emit"),
+        ("risk_model_version", "b" * 32),
+        ("dashboard_rows", 2),
+        ("scored_windows", 0),
+    ]:
+        output["notebook_output"]["result"] = json.dumps({**receipt, field: wrong})
+        with pytest.raises(ParityError, match="invalid_publisher_receipt"):
+            verify_receipt(metadata, output, 10, "demo", MODEL, 1)
+
+
+def test_truncated_and_failed_receipts_cannot_pass():
+    from publication_parity import verify_receipt
+
+    with pytest.raises(ParityError):
+        verify_receipt(
+            {"run_id": 10, "state": {}},
+            {"notebook_output": {"result": "{}", "truncated": True}},
+            10,
+            "demo",
+            MODEL,
+            1,
+        )

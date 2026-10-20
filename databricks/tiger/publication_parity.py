@@ -70,6 +70,8 @@ def compare(delta, tiger, expected_windows, expected_model, tolerance=1e-9):
     for key in left.keys() & right.keys():
         for name, a, b in zip(METRICS, left[key][1], right[key][1]):
             difference = abs(a - b)
+            if not math.isfinite(difference):
+                raise ParityError("numeric_difference_overflow")
             max_errors[name] = max(max_errors[name], difference)
             mismatches[name] += difference > tolerance
     if any(mismatches.values()):
@@ -127,6 +129,35 @@ def delta_rows(api, warehouse, session):
     return identifier, result["result"]["data_array"]
 
 
+def verify_receipt(metadata, output, run_id, session, model, windows):
+    """Link an API-selected successful publisher task to its notebook receipt."""
+    try:
+        state = metadata["state"]
+        notebook = output["notebook_output"]
+        receipt = json.loads(notebook["result"])
+        if (
+            metadata["run_id"] != run_id
+            or state["life_cycle_state"] != "TERMINATED"
+            or state.get("result_state") != "SUCCESS"
+            or notebook.get("truncated", False)
+            or receipt["session_id"] != session
+            or receipt["mode"] not in ("prepare", "refresh", "score_existing")
+            or receipt["risk_model_version"] != model
+            or receipt["dashboard_rows"] != windows
+            or receipt["scored_windows"] != windows
+        ):
+            raise ValueError()
+    except (KeyError, TypeError, ValueError) as error:
+        raise ParityError("invalid_publisher_receipt") from error
+    return {
+        "task_run_id": run_id,
+        "session": session,
+        "model": model,
+        "windows": windows,
+        "status": "pass",
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--session", required=True)
@@ -135,7 +166,10 @@ def main():
     parser.add_argument("--expected-model", required=True)
     parser.add_argument("--profile", default="se-project-2")
     parser.add_argument("--cli", default="databricks")
+    parser.add_argument("--publication-task-run-id", type=int)
     args = parser.parse_args()
+    if args.publication_task_run_id is not None and args.publication_task_run_id <= 0:
+        parser.error("Publication task run ID must be positive")
     if not re.fullmatch(r"[a-z0-9-]{1,50}", args.session):
         parser.error("Invalid session")
     if not re.fullmatch(r"[a-f0-9]{16}", args.warehouse):
@@ -175,12 +209,22 @@ def main():
                 (args.session,),
             ).fetchall()
         report = compare(delta, tiger, args.expected_windows, args.expected_model)
+        if args.publication_task_run_id is not None:
+            run_id = args.publication_task_run_id
+            report["publisher_receipt"] = verify_receipt(
+                api("get", f"/api/2.1/jobs/runs/get?run_id={run_id}", None),
+                api("get", f"/api/2.1/jobs/runs/get-output?run_id={run_id}", None),
+                run_id,
+                args.session,
+                args.expected_model,
+                args.expected_windows,
+            )
         report.update(
             session=args.session,
             statement_id=statement,
             limitations=[
                 "Separate snapshots; pause replay to avoid concurrent-publication races",
-                "Compares four metrics and keys/model, not every payload field or job lineage",
+                "Compares four metrics and keys/model, not all payload fields or an immutable audit",
             ],
         )
     except Exception as error:  # noqa: BLE001 - CLI boundary must redact DB/CLI secrets
