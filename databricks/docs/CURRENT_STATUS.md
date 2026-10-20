@@ -1,4 +1,41 @@
-# Databricks baseline audit
+# Databricks status and audit history
+
+## Current repository status — October 18, 2026
+
+- Refreshed all remote branches; local main fast-forwarded to `38d1c50`.
+  This feature branch starts from that revision. No environment/secret files
+  were pulled or overwritten during the repository refresh.
+- Native GitHub stack #104 is fully merged: #89 (tests/CI), #90 (coverage and
+  robust-feature study), #91 (configurable replay/recovery), #100 (regularization
+  experiment). There are no pending prerequisite merges in that stack.
+- Issues #85, #86 and #87 are closed. The final #88 provenance investigation
+  is now complete: the exact three incomplete minutes have no temperature
+  samples in source CSVs or Bronze, and small valid ACC tails are preserved
+  by the full outer join. All three fail the unchanged training prefilter.
+  See `INCOMPLETE_MINUTE_FINDINGS.md`; documentation review is pending.
+- All 65 Databricks tests pass on refreshed main. Main CI run `39157694766`
+  passed backend, frontend and Databricks. Historical test counts below refer
+  to their original implementation points.
+- Reference model accuracy is 60.42%; the 62.11% regularization result is
+  reused-cohort development evidence, not a promoted or independently validated
+  model. No candidate model artifact or application pin was changed.
+- Bounded cloud replay, exact Delta/Tiger parity, five sensor ticks and canceled
+  batch recovery were verified in separate sessions (see the linked result
+  documents). This repository refresh did not rerun those cloud experiments,
+  restart application services, or verify a currently running sensor feed.
+- GitHub issue/PR descriptions have been reconciled with merged/closed state;
+  old progress comments are marked as historical. Local environment settings
+  and Clerk sign-in remain separate from this pipeline audit.
+
+## Reading the history
+
+The sections below are dated progress snapshots. Earlier statements such as
+“next work,” “not reconstructed,” or hardcoded replay refer to the state at
+that point, not current outstanding work. Later findings and the snapshot
+above supersede them. See `ACCURACY_EXPERIMENT_RESULTS.md`,
+`REPLAY_VERIFICATION_RESULTS.md` and `RUNTIME_SAFETY_RESULTS.md` for evidence.
+
+## Baseline audit — October 17, 2026
 
 Verified on 2026-10-17 through the Databricks CLI/SQL Statement API and a
 read-only Tiger PostgreSQL connection. No training, ingestion, replay, or
@@ -61,8 +98,6 @@ assuming they are defects or filling them.
 Clerk sign-in is a separate application concern and does not block this work.
 Credentials remain in ignored local configuration or managed secrets, never here.
 
-Suggested commit for this document:
-`docs(databricks): record verified pipeline baseline and remaining gaps`
 
 ## Coverage follow-up
 
@@ -209,3 +244,29 @@ reused-cohort development evidence only. No model or session was promoted.
 See [plan](ACCURACY_EXPERIMENT_PLAN.md) and
 [full results](ACCURACY_EXPERIMENT_RESULTS.md), including paired participant
 outcomes and the independent-validation requirement.
+
+## Exact incomplete-minute follow-up — October 18, 2026
+
+Read-only statements identified the three rows as participants 012/013/016,
+each with a short accelerometer tail extending into a minute without any
+source temperature samples. Direct staged temperature reads and Bronze agree
+on counts and boundary timestamps, with zero temperature rows in those
+minutes. Silver's full outer join preserves these partial minutes correctly;
+the training prefilter rejects all three. This resolves the specific data-path
+question in #88 without explaining the physical recording pauses or changing
+any processing/model policy. See `INCOMPLETE_MINUTE_FINDINGS.md` for exact keys,
+counts, query identifiers and limitations.
+
+## Sensor-group investigation — executed October 18, 2026
+
+The predeclared `FEATURE_GROUP_COMPARISON_PLAN.md` study completed successfully
+in Databricks run `603498498602491`; implementation/results are in PR #116,
+tracked by issue #115. Combined reproduced 62.11%, temperature-only achieved
+65.33%, and movement-only 26.04% participant-weighted held-out window accuracy.
+The original baseline/prior predictions and Combined metrics/fold selections
+were reproduced. Temperature-only improves four people, worsens two and leaves
+nine unchanged relative to Combined. The development branch has 70 passing
+Databricks tests. This is reused-cohort descriptive evidence; no model/group
+was selected for deployment or promoted. Full results, limitations and paired
+outcomes are in #116's `SENSOR_GROUP_RESULTS.md`. New independently labeled
+participants remain necessary for stronger validation.
