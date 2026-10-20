@@ -30,7 +30,7 @@ function AsOf() {
     <span className="flex items-center gap-1.5 text-sm whitespace-nowrap">
       <span className="text-muted-foreground">Data as of</span>
       <time dateTime={clock.now} className="font-medium tabular-nums">
-        {formatReplayTime(clock.now)} UTC
+        {formatReplayTime(clock.now)}
       </time>
       <Tooltip>
         <TooltipTrigger asChild>

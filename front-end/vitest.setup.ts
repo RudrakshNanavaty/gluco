@@ -1,3 +1,6 @@
+// Times render in the local timezone; pin it so tests do not depend on the machine.
+process.env.TZ = "UTC"
+
 import "@testing-library/jest-dom/vitest"
 import { afterEach, vi } from "vitest"
 
