@@ -23,13 +23,18 @@ Use `--profile se-project-2` on every CLI command (or
 - Secret scope `se-project-2` with keys `tiger-user` and `tiger-password`
 - Repo present at `/Workspace/Shared/gluco`
 
-### Still needed
+### Initial bootstrap (for a new workspace)
 
 1. Run `setup_databricks.sql` in the SQL editor (creates `gluco_*` schemas).
 2. Sync/pull the Git folder so notebooks pick up these renames.
 3. Run `check_tiger` with your Tiger host/port and `secret_scope=se-project-2`.
 4. Set `tiger_host` (and port if not 5432) in `tiger_to_bronze.job.json`, then
    create/run that job.
+
+For current evaluation and release boundaries, see
+[M0 evaluation](../docs/M0_EVALUATION.md) and the
+[operations runbook](../docs/OPERATIONS_RUNBOOK.md). The bootstrap steps above
+are not a claim that the existing workspace is unconfigured.
 
 ## Architecture
 
