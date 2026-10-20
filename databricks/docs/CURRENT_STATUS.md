@@ -1,6 +1,28 @@
 # Databricks status and audit history
 
-## Current repository status — October 18, 2026
+## Current repository status — October 19, 2026 (America/New_York)
+
+- Main `53d82ff` includes merged follow-ups #114, #116, #118, #120, #122,
+  #124 and #161. Main CI `39358494469` passes; its Databricks suite has
+  122 tests. Earlier pending-review statements below are historical.
+- Model studies and negative results are consolidated in
+  `MODEL_EXPERIMENT_LEDGER.md`. Best observed reused-cohort development
+  accuracy is 66.86%; 70% remains unmet. No model promotion.
+- Credential-free synthetic evaluation runs in CI and verifies a failing
+  no-signal control. Synthetic accuracy is not real-data model evidence.
+  See `M0_EVALUATION.md` and `OPERATIONS_RUNBOOK.md`.
+- Current read-only original-session health check passes: 11,088 unique
+  windows, 66 participants and expected model pin. Statement
+  `01f1cc36-daac-1b8c-9c05-bfa17167d0c4`. This checks historical Delta data,
+  not Tiger parity or an active physical feed.
+- PR #163 adds optional selected-run identity/completion/freshness checking.
+  Local suite: 136 tests. A separate EDA research run was confirmed terminal
+  SUCCESS; that is not the original session's publication lineage.
+- Remaining: review run-health extension, agree recurring-operation frequency,
+  cost budget and alert destination, and establish an independent compatible
+  cohort with a frozen model-evaluation protocol. No recurring schedule enabled.
+
+## Historical repository status — October 18, 2026
 
 - Refreshed all remote branches; local main fast-forwarded to `38d1c50`.
   This feature branch starts from that revision. No environment/secret files
