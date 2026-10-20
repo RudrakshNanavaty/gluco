@@ -184,6 +184,58 @@ def query_snapshot(
         raise HealthError("invalid_statement_result") from error
 
 
+def evaluate_run(response, run_id, expected_job_id, max_age_hours=None, now=None):
+    """Check one completed run; expose no cloud error bodies or parameters."""
+    if not isinstance(response, dict):
+        raise HealthError("invalid_run_response")
+    try:
+        actual_run = response["run_id"]
+        job = response["job_id"]
+        state = response["state"]
+        lifecycle = state["life_cycle_state"]
+        result = state.get("result_state")
+        end = response.get("end_time", 0)
+        if (
+            type(actual_run) is not int
+            or type(job) is not int
+            or not isinstance(lifecycle, str)
+            or type(end) is not int
+            or end < 0
+        ):
+            raise ValueError()
+    except (KeyError, TypeError, ValueError) as error:
+        raise HealthError("invalid_run_response") from error
+    failures = []
+    if actual_run != run_id:
+        failures.append("unexpected_run_id")
+    if job != expected_job_id:
+        failures.append("unexpected_job_id")
+    if lifecycle != "TERMINATED" or result != "SUCCESS":
+        failures.append("run_not_successful")
+    if not end:
+        failures.append("missing_run_end_time")
+    age = None
+    if max_age_hours is not None:
+        now = time.time() if now is None else now
+        age = (now - end / 1000) / 3600
+        if age < 0 or age > max_age_hours:
+            failures.append("run_outside_freshness_limit")
+    return {
+        "status": "fail" if failures else "pass",
+        "failures": failures,
+        "run_id": actual_run,
+        "job_id": job,
+        "life_cycle_state": lifecycle,
+        "result_state": result,
+        "end_time_ms": end,
+        "age_hours": age,
+        "limitations": [
+            "Selected run only; does not establish recurrence or absence of newer failures",
+            "Caller supplies run/session association; not verified publication lineage",
+        ],
+    }
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--session", required=True)
@@ -195,7 +247,18 @@ def main(argv=None):
     parser.add_argument("--expected-windows", type=int)
     parser.add_argument("--expected-model")
     parser.add_argument("--expected-bronze-events", type=int)
+    parser.add_argument("--run-id", type=int)
+    parser.add_argument("--expected-job-id", type=int)
+    parser.add_argument("--max-run-age-hours", type=float)
     args = parser.parse_args(argv)
+    if (args.run_id is None) != (args.expected_job_id is None):
+        parser.error("Supply run ID and expected job ID together")
+    if any(v is not None and v <= 0 for v in (args.run_id, args.expected_job_id)):
+        parser.error("Run and job IDs must be positive")
+    if args.max_run_age_hours is not None and (
+        args.run_id is None or not 0 < args.max_run_age_hours < float("inf")
+    ):
+        parser.error("A finite positive run age requires run and job IDs")
     if any(
         v is not None and v <= 0
         for v in (args.expected_participants, args.expected_windows)
@@ -232,6 +295,17 @@ def main(argv=None):
             args.expected_bronze_events,
         )
         report.update(session=args.session, statement_id=statement_id)
+        if args.run_id is not None:
+            run = evaluate_run(
+                api("get", f"/api/2.1/jobs/runs/get?run_id={args.run_id}", None),
+                args.run_id,
+                args.expected_job_id,
+                args.max_run_age_hours,
+            )
+            report["run"] = run
+            if run["status"] != "pass":
+                report["status"] = "fail"
+                report["failures"].extend(run["failures"])
     except HealthError as error:
         print(json.dumps({"status": "error", "error": str(error)}))
         return 2
