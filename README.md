@@ -10,18 +10,14 @@ clinicians.
 
 [![Research prototype](https://img.shields.io/badge/status-research_prototype-19A99A?style=for-the-badge)](#responsible-use)
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-663399?style=for-the-badge)](LICENSE)
-[![Next.js](https://img.shields.io/badge/frontend-Next.js-111827?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![FastAPI](https://img.shields.io/badge/API-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Databricks](https://img.shields.io/badge/analytics-Databricks-FF6F00?style=for-the-badge&logo=databricks&logoColor=white)](https://www.databricks.com/)
-[![Tiger Data](https://img.shields.io/badge/live_data-Tiger_Data-FDB515?style=for-the-badge)](https://www.tigerdata.com/)
 [![AI use disclosed](https://img.shields.io/badge/AI_use-disclosed-8B5CF6?style=for-the-badge)](#ai-use-and-attribution)
 [![Test Suite](https://img.shields.io/github/actions/workflow/status/RudrakshNanavaty/gluco/test-suite.yaml?branch=main&style=for-the-badge&label=TEST%20SUITE)](https://github.com/RudrakshNanavaty/gluco/actions/workflows/test-suite.yaml)
-[![Ruff lint + format](https://img.shields.io/badge/Python-Ruff_lint_%2B_format-D7FF64?style=flat-square&logo=ruff&logoColor=111827)](back-end/pyproject.toml)
+[![Ruff lint](https://img.shields.io/badge/Python-Ruff_lint-D7FF64?style=flat-square&logo=ruff&logoColor=111827)](back-end/pyproject.toml)
+[![Ruff format](https://img.shields.io/badge/Python-Ruff_format-D7FF64?style=flat-square&logo=ruff&logoColor=111827)](back-end/pyproject.toml)
 [![basedpyright](https://img.shields.io/badge/Python-basedpyright_types-3178C6?style=flat-square&logo=python&logoColor=white)](back-end/pyproject.toml)
 [![ESLint](https://img.shields.io/badge/Frontend-ESLint-4B32C3?style=flat-square&logo=eslint&logoColor=white)](front-end/eslint.config.mjs)
 [![TypeScript](https://img.shields.io/badge/Frontend-TypeScript_types-3178C6?style=flat-square&logo=typescript&logoColor=white)](front-end/tsconfig.json)
 
-<!-- Metric endpoints initialize on the first merged main coverage run. -->
 [![Backend line coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FRudrakshNanavaty%2Fgluco%2Fcoverage-badges%2Fbackend.json)](https://github.com/RudrakshNanavaty/gluco/tree/coverage-badges)
 [![Frontend line coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FRudrakshNanavaty%2Fgluco%2Fcoverage-badges%2Ffrontend.json)](https://github.com/RudrakshNanavaty/gluco/tree/coverage-badges)
 [![Databricks line coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FRudrakshNanavaty%2Fgluco%2Fcoverage-badges%2Fdatabricks.json)](https://github.com/RudrakshNanavaty/gluco/tree/coverage-badges)
@@ -331,6 +327,12 @@ make its corresponding source available under the same license. Third-party
 dependencies and cited datasets remain subject to their own licenses and terms.
 
 This summary is informational; the full license text controls.
+
+## Citing Gluco
+
+[`CITATION.cff`](CITATION.cff) holds the citation metadata; GitHub's "Cite this
+repository" button reads it. Archived releases and their DOI are described in
+[Releasing and archiving](CONTRIBUTING.md#releasing-and-archiving).
 
 ## Responsible use
 
