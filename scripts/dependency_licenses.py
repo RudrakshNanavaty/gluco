@@ -36,7 +36,10 @@ class Package:
 
 
 def digest(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    # Git may check text files out as CRLF on Windows and LF in CI. Hash the
+    # logical lockfile content so the same commit has one portable digest.
+    content = path.read_text(encoding="utf-8").replace("\r\n", "\n")
+    return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
 
 def parse_python_packages(text: str) -> set[Package]:

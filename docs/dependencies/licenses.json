@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "generated_from": {
-    "back-end/uv.lock": "03a7506caa86b0e3eb8cfb96d9c924cf26bcb6c84e2543438229359c89780bdf",
-    "front-end/bun.lock": "2dc5c0ca5823c48b94940cadc2f6e4479c6ab20089e5ef69cd53ca6e1172ce4d"
+    "back-end/uv.lock": "ed315c1ac95e8b0e36f1cfc8bca2e8da097356c1470621478d2a367a508c3c21",
+    "front-end/bun.lock": "0e241b16ccf1e2656f44d42e83f038d85757c78779f21a88f0fa809f0c550325"
   },
   "package_count": 1086,
   "unresolved_count": 0,
