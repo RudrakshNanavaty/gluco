@@ -8,9 +8,9 @@ abstract: >-
   score for patients and clinicians, with role-scoped, read-only explanations.
 authors:
   - family-names: "Nanavaty"
-    given-names: "Rudraksh"
+    given-names: "Rudraksh Nehal"
   - family-names: "Soni"
-    given-names: "Aavritti"
+    given-names: "Avritti"
   - family-names: "Patel"
     given-names: "Parth"
   - family-names: "Rankins"
