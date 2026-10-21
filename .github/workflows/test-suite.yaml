@@ -1,7 +1,7 @@
 name: "test suite"
 on:
-  push:
-    branches: [main]
+  # Exercise every commit pushed to this repository, not only main.
+  push: {}
   pull_request:
 
 permissions:
@@ -188,6 +188,18 @@ jobs:
         run: python -m unittest scripts/tests/test_generate_reference_docs.py
       - name: Verify generated reference is current
         run: python scripts/generate_reference_docs.py --check
+
+  dependency-licenses:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test inventory tooling
+        run: python -m unittest scripts/tests/test_dependency_licenses.py
+      - name: Verify every resolved dependency has license evidence
+        run: python scripts/dependency_licenses.py
 
   model-evaluation:
     runs-on: ubuntu-latest
