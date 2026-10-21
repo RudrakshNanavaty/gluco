@@ -6,22 +6,22 @@ Generated from FastAPI route decorators. Authentication and role constraints are
 
 | Method | Path | Handler | Description | Source |
 |---|---|---|---|---|
-| `GET` | `/catalog` | `catalog` | No public description is available yet. | [source](../../back-end/src/agent/api/dashboard.py#L39) |
-| `POST` | `/chat` | `chat_turn` | No public description is available yet. | [source](../../back-end/src/agent/api/chat.py#L16) |
-| `GET` | `/chat/sessions` | `threads` | No public description is available yet. | [source](../../back-end/src/agent/api/chat.py#L29) |
-| `GET` | `/chat/sessions/{session_id}` | `thread` | No public description is available yet. | [source](../../back-end/src/agent/api/chat.py#L34) |
-| `POST` | `/clock` | `control_clock` | Move the shared replay clock; clinicians only (ADR 0002). | [source](../../back-end/src/agent/api/dashboard.py#L80) |
-| `GET` | `/cohort` | `cohort` | No public description is available yet. | [source](../../back-end/src/agent/api/dashboard.py#L75) |
-| `GET` | `/health` | `health` | No public description is available yet. | [source](../../back-end/src/agent/api/app.py#L72) |
-| `GET` | `/me` | `me` | No public description is available yet. | [source](../../back-end/src/agent/api/me.py#L12) |
-| `GET` | `/participants` | `participants` | No public description is available yet. | [source](../../back-end/src/agent/api/dashboard.py#L49) |
-| `GET` | `/participants/{person_id}` | `participant` | No public description is available yet. | [source](../../back-end/src/agent/api/dashboard.py#L56) |
-| `GET` | `/participants/{person_id}/compare` | `compare` | No public description is available yet. | [source](../../back-end/src/agent/api/dashboard.py#L70) |
-| `GET` | `/participants/{person_id}/explain` | `explain` | No public description is available yet. | [source](../../back-end/src/agent/api/dashboard.py#L61) |
-| `POST` | `/query` | `run_query` | No public description is available yet. | [source](../../back-end/src/agent/api/dashboard.py#L44) |
-| `GET` | `/stream` | `stream` | Push a `tick` whenever the clock moves or the live readings change. | [source](../../back-end/src/agent/api/dashboard.py#L101) |
-| `GET` | `/widgets` | `list_widgets` | No public description is available yet. | [source](../../back-end/src/agent/api/widgets.py#L33) |
-| `POST` | `/widgets` | `pin_widget` | No public description is available yet. | [source](../../back-end/src/agent/api/widgets.py#L47) |
-| `POST` | `/widgets/preview` | `preview_widget` | Rebuild a widget from its spec without pinning it (keeps chat widgets live). | [source](../../back-end/src/agent/api/widgets.py#L40) |
-| `DELETE` | `/widgets/{widget_id}` | `unpin_widget` | No public description is available yet. | [source](../../back-end/src/agent/api/widgets.py#L64) |
-| `GET` | `/widgets/{widget_id}/data` | `widget_data` | No public description is available yet. | [source](../../back-end/src/agent/api/widgets.py#L55) |
+| `GET` | `/catalog` | `catalog` | The metrics, visible participants and query options (`GET /catalog`). | [source](../../back-end/src/agent/api/dashboard.py#L39) |
+| `POST` | `/chat` | `chat_turn` | Stream one assistant turn as server-sent events (`POST /chat`), in the caller's scope. | [source](../../back-end/src/agent/api/chat.py#L16) |
+| `GET` | `/chat/sessions` | `threads` | The caller's chat threads, most recently active first (`GET /chat/sessions`). | [source](../../back-end/src/agent/api/chat.py#L33) |
+| `GET` | `/chat/sessions/{session_id}` | `thread` | One of the caller's threads as stored messages (`GET /chat/sessions/{session_id}`). 404 when the thread is not theirs. | [source](../../back-end/src/agent/api/chat.py#L39) |
+| `POST` | `/clock` | `control_clock` | Move the shared replay clock; clinicians only (ADR 0002). | [source](../../back-end/src/agent/api/dashboard.py#L97) |
+| `GET` | `/cohort` | `cohort` | Panel overview: summaries per metric, the lowest Gluco Scores and the biggest 24-hour drops and gains. Clinicians only. | [source](../../back-end/src/agent/api/dashboard.py#L89) |
+| `GET` | `/health` | `health` | Whether the database and LLM are ready, and how much data is loaded. | [source](../../back-end/src/agent/api/app.py#L78) |
+| `GET` | `/me` | `me` | The signed-in user's id, role, display name and participant (`GET /me`). | [source](../../back-end/src/agent/api/me.py#L12) |
+| `GET` | `/participants` | `participants` | Each visible participant's newest window, sorted by a metric or `person_id` (`GET /participants`). | [source](../../back-end/src/agent/api/dashboard.py#L51) |
+| `GET` | `/participants/{person_id}` | `participant` | One participant's newest window (`GET /participants/{person_id}`). A patient can only ask for themselves. | [source](../../back-end/src/agent/api/dashboard.py#L61) |
+| `GET` | `/participants/{person_id}/compare` | `compare` | One participant's newest value of `metric` against everyone's newest windows. Clinicians only. | [source](../../back-end/src/agent/api/dashboard.py#L81) |
+| `GET` | `/participants/{person_id}/explain` | `explain` | What changed for one participant over the last `hours` (up to 168) and, for clinicians, where they sit in the cohort. | [source](../../back-end/src/agent/api/dashboard.py#L69) |
+| `POST` | `/query` | `run_query` | Run a generic QuerySpec (`POST /query`), limited to what the caller may see. | [source](../../back-end/src/agent/api/dashboard.py#L45) |
+| `GET` | `/stream` | `stream` | Push a `tick` whenever the clock moves or the live readings change. | [source](../../back-end/src/agent/api/dashboard.py#L118) |
+| `GET` | `/widgets` | `list_widgets` | The caller's pinned widgets, oldest first (`GET /widgets`). | [source](../../back-end/src/agent/api/widgets.py#L37) |
+| `POST` | `/widgets` | `pin_widget` | Pin a widget (`POST /widgets`). Its query is run first, so a spec the caller may not see or that is invalid is rejected (403/400) before anything is saved. | [source](../../back-end/src/agent/api/widgets.py#L52) |
+| `POST` | `/widgets/preview` | `preview_widget` | Rebuild a widget from its spec without pinning it (keeps chat widgets live). | [source](../../back-end/src/agent/api/widgets.py#L45) |
+| `DELETE` | `/widgets/{widget_id}` | `unpin_widget` | Remove a pinned widget (`DELETE /widgets/{widget_id}`). 404 when the caller has no such pin. | [source](../../back-end/src/agent/api/widgets.py#L75) |
+| `GET` | `/widgets/{widget_id}/data` | `widget_data` | Rebuild a pinned widget against the current clock and the caller's scope (`GET /widgets/{widget_id}/data`). 404 when it is not pinned. | [source](../../back-end/src/agent/api/widgets.py#L63) |

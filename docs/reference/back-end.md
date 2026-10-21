@@ -20,7 +20,7 @@ The series with only what may be shown, plus one audit line per rule.
 
 `FeatureDeviation`
 
-No public description is available yet.
+How one metric's value compares with a group: z-score, percentile and which side of the median it is on.
 
 [View source](../../back-end/src/agent/analysis/deviation.py#L19)
 
@@ -28,9 +28,9 @@ No public description is available yet.
 
 `z_score(value: float, stat: FeatureStat) -> value`
 
-No public description is available yet.
+Standard score of `value` against `stat`; None when the group has no spread (stddev is zero).
 
-[View source](../../back-end/src/agent/analysis/deviation.py#L28)
+[View source](../../back-end/src/agent/analysis/deviation.py#L32)
 
 ### Function: `percentile_from_z`
 
@@ -38,15 +38,15 @@ No public description is available yet.
 
 Percentile under a normal approximation (the stats carry no full CDF).
 
-[View source](../../back-end/src/agent/analysis/deviation.py#L34)
+[View source](../../back-end/src/agent/analysis/deviation.py#L41)
 
 ### Function: `describe_feature`
 
 `describe_feature(name: str, value: float, stat: FeatureStat) -> value`
 
-No public description is available yet.
+A FeatureDeviation for `value` against `stat`, or None when the group has no spread. `direction` compares with the median (`p50`), not the mean.
 
-[View source](../../back-end/src/agent/analysis/deviation.py#L39)
+[View source](../../back-end/src/agent/analysis/deviation.py#L46)
 
 ### Function: `top_deviations`
 
@@ -54,7 +54,7 @@ No public description is available yet.
 
 The `n` metrics furthest from the group, by absolute z-score.
 
-[View source](../../back-end/src/agent/analysis/deviation.py#L57)
+[View source](../../back-end/src/agent/analysis/deviation.py#L67)
 
 ## `back-end/src/agent/analysis/grounding.py`
 
@@ -72,7 +72,7 @@ Numbers in `answer` that no source supports, in order of appearance.
 
 `display_name(person_id: str) -> str`
 
-No public description is available yet.
+The name the UI shows for a participant key, e.g. "Patient 013", or "Patient IMU-13" for an IMU50 participant.
 
 [View source](../../back-end/src/agent/analysis/ids.py#L26)
 
@@ -82,7 +82,7 @@ No public description is available yet.
 
 The one known key `ref` names.
 
-[View source](../../back-end/src/agent/analysis/ids.py#L37)
+[View source](../../back-end/src/agent/analysis/ids.py#L40)
 
 ## `back-end/src/agent/analysis/query.py`
 
@@ -158,7 +158,7 @@ The production Authenticator: Clerk's keys, from the settings.
 
 `create_app(runtime: Runtime, authenticator: value = ...) -> FastAPI`
 
-No public description is available yet.
+Build the FastAPI app for a Runtime: CORS, error handlers, the routers and `/health`. The window store is warmed on a background thread at startup. Without an `authenticator` the Clerk one is built from the settings, which raises ValueError when they are missing.
 
 [View source](../../back-end/src/agent/api/app.py#L46)
 
@@ -168,7 +168,7 @@ No public description is available yet.
 
 Factory for uvicorn: `uvicorn agent.api.app:create_default_app --factory`.
 
-[View source](../../back-end/src/agent/api/app.py#L91)
+[View source](../../back-end/src/agent/api/app.py#L98)
 
 ## `back-end/src/agent/api/chat.py`
 
@@ -176,7 +176,7 @@ Factory for uvicorn: `uvicorn agent.api.app:create_default_app --factory`.
 
 `chat_turn(request: ChatRequest, runtime: RuntimeDep, principal: CurrentPrincipal) -> EventSourceResponse`
 
-No public description is available yet.
+Stream one assistant turn as server-sent events (`POST /chat`), in the caller's scope.
 
 [View source](../../back-end/src/agent/api/chat.py#L16)
 
@@ -184,17 +184,17 @@ No public description is available yet.
 
 `threads(runtime: RuntimeDep, principal: CurrentPrincipal) -> list`
 
-No public description is available yet.
+The caller's chat threads, most recently active first (`GET /chat/sessions`).
 
-[View source](../../back-end/src/agent/api/chat.py#L29)
+[View source](../../back-end/src/agent/api/chat.py#L33)
 
 ### Function: `thread`
 
 `thread(session_id: SessionId, runtime: RuntimeDep, principal: CurrentPrincipal) -> list`
 
-No public description is available yet.
+One of the caller's threads as stored messages (`GET /chat/sessions/{session_id}`). 404 when the thread is not theirs.
 
-[View source](../../back-end/src/agent/api/chat.py#L34)
+[View source](../../back-end/src/agent/api/chat.py#L39)
 
 ## `back-end/src/agent/api/chat_service.py`
 
@@ -220,7 +220,7 @@ Streams one user's turn through the agent built for their role.
 
 `catalog(svc: Queries) -> Catalog`
 
-No public description is available yet.
+The metrics, visible participants and query options (`GET /catalog`).
 
 [View source](../../back-end/src/agent/api/dashboard.py#L39)
 
@@ -228,49 +228,49 @@ No public description is available yet.
 
 `run_query(spec: QuerySpec, svc: Queries) -> QueryResult`
 
-No public description is available yet.
+Run a generic QuerySpec (`POST /query`), limited to what the caller may see.
 
-[View source](../../back-end/src/agent/api/dashboard.py#L44)
+[View source](../../back-end/src/agent/api/dashboard.py#L45)
 
 ### Function: `participants`
 
 `participants(svc: Queries, sort_by: str = ..., order: Order = ...) -> list`
 
-No public description is available yet.
+Each visible participant's newest window, sorted by a metric or `person_id` (`GET /participants`).
 
-[View source](../../back-end/src/agent/api/dashboard.py#L49)
+[View source](../../back-end/src/agent/api/dashboard.py#L51)
 
 ### Function: `participant`
 
 `participant(person_id: str, svc: Queries) -> ParticipantRow`
 
-No public description is available yet.
+One participant's newest window (`GET /participants/{person_id}`). A patient can only ask for themselves.
 
-[View source](../../back-end/src/agent/api/dashboard.py#L56)
+[View source](../../back-end/src/agent/api/dashboard.py#L61)
 
 ### Function: `explain`
 
 `explain(person_id: str, svc: Queries, hours: Annotated = ...) -> Explanation`
 
-No public description is available yet.
+What changed for one participant over the last `hours` (up to 168) and, for clinicians, where they sit in the cohort.
 
-[View source](../../back-end/src/agent/api/dashboard.py#L61)
+[View source](../../back-end/src/agent/api/dashboard.py#L69)
 
 ### Function: `compare`
 
 `compare(person_id: str, metric: str, svc: Queries) -> CohortComparison`
 
-No public description is available yet.
+One participant's newest value of `metric` against everyone's newest windows. Clinicians only.
 
-[View source](../../back-end/src/agent/api/dashboard.py#L70)
+[View source](../../back-end/src/agent/api/dashboard.py#L81)
 
 ### Function: `cohort`
 
 `cohort(svc: Queries) -> CohortOverview`
 
-No public description is available yet.
+Panel overview: summaries per metric, the lowest Gluco Scores and the biggest 24-hour drops and gains. Clinicians only.
 
-[View source](../../back-end/src/agent/api/dashboard.py#L75)
+[View source](../../back-end/src/agent/api/dashboard.py#L89)
 
 ### Function: `control_clock`
 
@@ -278,7 +278,7 @@ No public description is available yet.
 
 Move the shared replay clock; clinicians only (ADR 0002).
 
-[View source](../../back-end/src/agent/api/dashboard.py#L80)
+[View source](../../back-end/src/agent/api/dashboard.py#L97)
 
 ### Function: `stream`
 
@@ -286,7 +286,7 @@ Move the shared replay clock; clinicians only (ADR 0002).
 
 Push a `tick` whenever the clock moves or the live readings change.
 
-[View source](../../back-end/src/agent/api/dashboard.py#L101)
+[View source](../../back-end/src/agent/api/dashboard.py#L118)
 
 ## `back-end/src/agent/api/deps.py`
 
@@ -294,7 +294,7 @@ Push a `tick` whenever the clock moves or the live readings change.
 
 `get_runtime(request: Request) -> Runtime`
 
-No public description is available yet.
+The Runtime that `create_app` stored on the app.
 
 [View source](../../back-end/src/agent/api/deps.py#L25)
 
@@ -302,25 +302,25 @@ No public description is available yet.
 
 `get_authenticator(request: Request) -> Authenticator`
 
-No public description is available yet.
+The Authenticator that `create_app` stored on the app.
 
-[View source](../../back-end/src/agent/api/deps.py#L34)
+[View source](../../back-end/src/agent/api/deps.py#L35)
 
 ### Function: `current_principal`
 
 `current_principal(authenticator: Annotated, credentials: Credentials) -> Principal`
 
-No public description is available yet.
+Who is calling, from the bearer token. Raises 401 when the header is missing or the token is rejected; the reason for a rejection is logged, not sent to the client.
 
-[View source](../../back-end/src/agent/api/deps.py#L38)
+[View source](../../back-end/src/agent/api/deps.py#L40)
 
 ### Function: `query_service`
 
 `query_service(runtime: RuntimeDep, principal: CurrentPrincipal) -> QueryService`
 
-No public description is available yet.
+A QueryService bound to the caller's scope and the shared replay clock.
 
-[View source](../../back-end/src/agent/api/deps.py#L63)
+[View source](../../back-end/src/agent/api/deps.py#L68)
 
 ### Function: `install_error_handlers`
 
@@ -328,7 +328,7 @@ No public description is available yet.
 
 Domain errors become JSON with a stable `code` the UI can switch on.
 
-[View source](../../back-end/src/agent/api/deps.py#L70)
+[View source](../../back-end/src/agent/api/deps.py#L76)
 
 ## `back-end/src/agent/api/me.py`
 
@@ -336,7 +336,7 @@ Domain errors become JSON with a stable `code` the UI can switch on.
 
 `me(principal: CurrentPrincipal) -> PrincipalOut`
 
-No public description is available yet.
+The signed-in user's id, role, display name and participant (`GET /me`).
 
 [View source](../../back-end/src/agent/api/me.py#L12)
 
@@ -346,7 +346,7 @@ No public description is available yet.
 
 `PrincipalOut`
 
-No public description is available yet.
+The caller as `GET /me` returns them.
 
 [View source](../../back-end/src/agent/api/schemas.py#L15)
 
@@ -354,25 +354,25 @@ No public description is available yet.
 
 `ClockCommand`
 
-No public description is available yet.
+A request to move the replay clock. `speed` needs `seconds_per_hour`; `seek` needs `to`.
 
-[View source](../../back-end/src/agent/api/schemas.py#L31)
+[View source](../../back-end/src/agent/api/schemas.py#L33)
 
 ### Class: `ChatRequest`
 
 `ChatRequest`
 
-No public description is available yet.
+One chat message and the thread (session id) it belongs to.
 
-[View source](../../back-end/src/agent/api/schemas.py#L37)
+[View source](../../back-end/src/agent/api/schemas.py#L43)
 
 ### Class: `Health`
 
 `Health`
 
-No public description is available yet.
+Service status for `GET /health`: database and LLM readiness, how many windows and participants are loaded, and the replay clock.
 
-[View source](../../back-end/src/agent/api/schemas.py#L42)
+[View source](../../back-end/src/agent/api/schemas.py#L50)
 
 ## `back-end/src/agent/api/sessions.py`
 
@@ -380,7 +380,7 @@ No public description is available yet.
 
 `ChatThread`
 
-No public description is available yet.
+One entry in a user's thread list: the session id, a title taken from the first message, and when it was created and last used.
 
 [View source](../../back-end/src/agent/api/sessions.py#L25)
 
@@ -390,7 +390,7 @@ No public description is available yet.
 
 One message of a stored thread, in the same shape the stream sends.
 
-[View source](../../back-end/src/agent/api/sessions.py#L32)
+[View source](../../back-end/src/agent/api/sessions.py#L36)
 
 ### Function: `transcript`
 
@@ -398,15 +398,15 @@ One message of a stored thread, in the same shape the stream sends.
 
 Session items as messages; each turn's tool results stay in that turn.
 
-[View source](../../back-end/src/agent/api/sessions.py#L68)
+[View source](../../back-end/src/agent/api/sessions.py#L72)
 
 ### Class: `ChatSessions`
 
 `ChatSessions`
 
-No public description is available yet.
+A user's chat threads: SQLite conversation memory keyed by user and session id, plus an index table for listing them.
 
-[View source](../../back-end/src/agent/api/sessions.py#L102)
+[View source](../../back-end/src/agent/api/sessions.py#L106)
 
 ## `back-end/src/agent/api/sqlite.py`
 
@@ -422,7 +422,7 @@ A connection that commits (or rolls back) and is closed afterwards.
 
 `create_table(path: Path, ddl: str) -> None`
 
-No public description is available yet.
+Run `ddl` (a CREATE TABLE IF NOT EXISTS statement) on the SQLite file, creating its parent directory first.
 
 [View source](../../back-end/src/agent/api/sqlite.py#L23)
 
@@ -448,7 +448,7 @@ Stateful per request: the one place that pairs a tool call with its result.
 
 `tool_start(call_id: str, tool: str, arguments: Any) -> SseEvent`
 
-No public description is available yet.
+A `tool_start` event for a tool call. `arguments` may be a dict or a JSON string; anything unparseable becomes `{}`.
 
 [View source](../../back-end/src/agent/api/sse.py#L89)
 
@@ -456,9 +456,9 @@ No public description is available yet.
 
 `tool_end(call_id: str, tool: str, output: Any) -> SseEvent`
 
-No public description is available yet.
+A `tool_end` event with the tool's summary (or error message), cut to 300 characters, and its row count. A result that is not a dict is summarised by its string form with zero rows.
 
-[View source](../../back-end/src/agent/api/sse.py#L96)
+[View source](../../back-end/src/agent/api/sse.py#L99)
 
 ### Function: `chart`
 
@@ -466,7 +466,7 @@ No public description is available yet.
 
 A `data` event when the tool returned series to draw.
 
-[View source](../../back-end/src/agent/api/sse.py#L113)
+[View source](../../back-end/src/agent/api/sse.py#L120)
 
 ## `back-end/src/agent/api/widget_store.py`
 
@@ -474,7 +474,7 @@ A `data` event when the tool returned series to draw.
 
 `PinnedWidget`
 
-No public description is available yet.
+A pinned widget: its stored spec with an id and the time it was pinned. No data is stored.
 
 [View source](../../back-end/src/agent/api/widget_store.py#L18)
 
@@ -482,9 +482,9 @@ No public description is available yet.
 
 `WidgetStore`
 
-No public description is available yet.
+A user's pinned widgets, in SQLite. Only specs are saved; the data is rebuilt whenever a widget is shown.
 
-[View source](../../back-end/src/agent/api/widget_store.py#L29)
+[View source](../../back-end/src/agent/api/widget_store.py#L33)
 
 ## `back-end/src/agent/api/widgets.py`
 
@@ -492,7 +492,7 @@ No public description is available yet.
 
 `WidgetData`
 
-No public description is available yet.
+A pinned widget with freshly built data and pipeline steps.
 
 [View source](../../back-end/src/agent/api/widgets.py#L15)
 
@@ -500,17 +500,17 @@ No public description is available yet.
 
 `WidgetPreview`
 
-No public description is available yet.
+Freshly built data and pipeline steps for a widget spec that is not pinned.
 
-[View source](../../back-end/src/agent/api/widgets.py#L20)
+[View source](../../back-end/src/agent/api/widgets.py#L22)
 
 ### Function: `list_widgets`
 
 `list_widgets(runtime: RuntimeDep, principal: CurrentPrincipal) -> list`
 
-No public description is available yet.
+The caller's pinned widgets, oldest first (`GET /widgets`).
 
-[View source](../../back-end/src/agent/api/widgets.py#L33)
+[View source](../../back-end/src/agent/api/widgets.py#L37)
 
 ### Function: `preview_widget`
 
@@ -518,31 +518,31 @@ No public description is available yet.
 
 Rebuild a widget from its spec without pinning it (keeps chat widgets live).
 
-[View source](../../back-end/src/agent/api/widgets.py#L40)
+[View source](../../back-end/src/agent/api/widgets.py#L45)
 
 ### Function: `pin_widget`
 
 `pin_widget(spec: WidgetSpec, runtime: RuntimeDep, principal: CurrentPrincipal, svc: Queries) -> PinnedWidget`
 
-No public description is available yet.
+Pin a widget (`POST /widgets`). Its query is run first, so a spec the caller may not see or that is invalid is rejected (403/400) before anything is saved.
 
-[View source](../../back-end/src/agent/api/widgets.py#L47)
+[View source](../../back-end/src/agent/api/widgets.py#L52)
 
 ### Function: `widget_data`
 
 `widget_data(widget_id: str, runtime: RuntimeDep, principal: CurrentPrincipal, svc: Queries) -> WidgetData`
 
-No public description is available yet.
+Rebuild a pinned widget against the current clock and the caller's scope (`GET /widgets/{widget_id}/data`). 404 when it is not pinned.
 
-[View source](../../back-end/src/agent/api/widgets.py#L55)
+[View source](../../back-end/src/agent/api/widgets.py#L63)
 
 ### Function: `unpin_widget`
 
 `unpin_widget(widget_id: str, runtime: RuntimeDep, principal: CurrentPrincipal) -> Response`
 
-No public description is available yet.
+Remove a pinned widget (`DELETE /widgets/{widget_id}`). 404 when the caller has no such pin.
 
-[View source](../../back-end/src/agent/api/widgets.py#L64)
+[View source](../../back-end/src/agent/api/widgets.py#L75)
 
 ## `back-end/src/agent/auth.py`
 
@@ -550,7 +550,7 @@ No public description is available yet.
 
 `Principal`
 
-No public description is available yet.
+The signed-in user: id, role, display name and, for patients, the participant they are. Every data read is scoped from it.
 
 [View source](../../back-end/src/agent/auth.py#L30)
 
@@ -558,17 +558,17 @@ No public description is available yet.
 
 `patient(person_id: str) -> Principal`
 
-No public description is available yet.
+The Principal of the patient who is participant `person_id`.
 
-[View source](../../back-end/src/agent/auth.py#L43)
+[View source](../../back-end/src/agent/auth.py#L47)
 
 ### Class: `InvalidTokenError`
 
 `InvalidTokenError`
 
-No public description is available yet.
+A Clerk session token that cannot be accepted: bad or expired, no valid metadata, an unknown signing key, or an account not linked to a known participant.
 
-[View source](../../back-end/src/agent/auth.py#L49)
+[View source](../../back-end/src/agent/auth.py#L54)
 
 ### Class: `ClerkMetadata`
 
@@ -576,7 +576,7 @@ No public description is available yet.
 
 What a Clerk user's `public_metadata` holds.
 
-[View source](../../back-end/src/agent/auth.py#L53)
+[View source](../../back-end/src/agent/auth.py#L62)
 
 ### Function: `jwks_keys`
 
@@ -584,7 +584,7 @@ What a Clerk user's `public_metadata` holds.
 
 Clerk's signing keys, fetched from its JWKS endpoint and cached.
 
-[View source](../../back-end/src/agent/auth.py#L85)
+[View source](../../back-end/src/agent/auth.py#L94)
 
 ### Class: `Authenticator`
 
@@ -592,7 +592,7 @@ Clerk's signing keys, fetched from its JWKS endpoint and cached.
 
 Turns a request's Clerk session token into a Principal.
 
-[View source](../../back-end/src/agent/auth.py#L99)
+[View source](../../back-end/src/agent/auth.py#L108)
 
 ## `back-end/src/agent/bootstrap.py`
 
@@ -600,7 +600,7 @@ Turns a request's Clerk session token into a Principal.
 
 `Runtime`
 
-No public description is available yet.
+What the app shares across requests: settings, LLM connection, data source and stores, replay clock, guardrails, chat sessions, pinned widgets and the chat service.
 
 [View source](../../back-end/src/agent/bootstrap.py#L33)
 
@@ -610,15 +610,15 @@ No public description is available yet.
 
 Everything one Principal's requests get, bound to their scope.
 
-[View source](../../back-end/src/agent/bootstrap.py#L49)
+[View source](../../back-end/src/agent/bootstrap.py#L54)
 
 ### Function: `build_runtime`
 
 `build_runtime(settings: value = ..., source: value = ..., time_source: Callable = ...) -> Runtime`
 
-No public description is available yet.
+Wire a Runtime from `settings` (read from the environment when None). Also points the Agents SDK at the LLM provider. `source` and `time_source` can be replaced, for tests.
 
-[View source](../../back-end/src/agent/bootstrap.py#L85)
+[View source](../../back-end/src/agent/bootstrap.py#L90)
 
 ## `back-end/src/agent/clerk_seed.py`
 
@@ -626,7 +626,7 @@ No public description is available yet.
 
 `Account`
 
-No public description is available yet.
+One account the seed script manages: a stable uuid, role, linked participant, generated name and username.
 
 [View source](../../back-end/src/agent/clerk_seed.py#L37)
 
@@ -636,7 +636,7 @@ No public description is available yet.
 
 The 66-person `continuous-oct4-v1` cohort: 16 BIG IDEAs plus 50 IMU50.
 
-[View source](../../back-end/src/agent/clerk_seed.py#L60)
+[View source](../../back-end/src/agent/clerk_seed.py#L64)
 
 ### Function: `plan_accounts`
 
@@ -644,15 +644,15 @@ The 66-person `continuous-oct4-v1` cohort: 16 BIG IDEAs plus 50 IMU50.
 
 Every account the demo should have, in a stable order.
 
-[View source](../../back-end/src/agent/clerk_seed.py#L83)
+[View source](../../back-end/src/agent/clerk_seed.py#L87)
 
 ### Class: `ClerkClient`
 
 `ClerkClient`
 
-No public description is available yet.
+A minimal client for Clerk's Backend API: list users, create a user and update a user's public metadata.
 
-[View source](../../back-end/src/agent/clerk_seed.py#L119)
+[View source](../../back-end/src/agent/clerk_seed.py#L123)
 
 ### Function: `sync`
 
@@ -660,23 +660,23 @@ No public description is available yet.
 
 Create missing accounts and fix drifted metadata; returns every account.
 
-[View source](../../back-end/src/agent/clerk_seed.py#L164)
+[View source](../../back-end/src/agent/clerk_seed.py#L172)
 
 ### Function: `write_csv`
 
 `write_csv(path: Path, accounts: Iterable) -> None`
 
-No public description is available yet.
+Write the accounts (username, role, uuid, participant id, display name) to a CSV file, creating its parent directory. No passwords are written.
 
-[View source](../../back-end/src/agent/clerk_seed.py#L203)
+[View source](../../back-end/src/agent/clerk_seed.py#L211)
 
 ### Function: `main`
 
 `main(argv: value = ...) -> int`
 
-No public description is available yet.
+CLI entry point: plan the accounts for the participants the data source has published (all 66 with `--full-roster`) and create or update them in Clerk, or only report with `--dry-run`. Returns 1 when a required secret is not set.
 
-[View source](../../back-end/src/agent/clerk_seed.py#L214)
+[View source](../../back-end/src/agent/clerk_seed.py#L225)
 
 ## `back-end/src/agent/clock.py`
 
@@ -684,7 +684,7 @@ No public description is available yet.
 
 `ClockState`
 
-No public description is available yet.
+A snapshot of the replay clock: the simulated now, whether it is playing and how fast, and the range of data it can reach.
 
 [View source](../../back-end/src/agent/clock.py#L18)
 
@@ -694,7 +694,7 @@ No public description is available yet.
 
 `now = anchor + real seconds elapsed / seconds_per_hour` simulated hours.
 
-[View source](../../back-end/src/agent/clock.py#L28)
+[View source](../../back-end/src/agent/clock.py#L32)
 
 ## `back-end/src/agent/config.py`
 
@@ -702,7 +702,7 @@ No public description is available yet.
 
 `Settings`
 
-No public description is available yet.
+Runtime settings, read from environment variables and `.env`.
 
 [View source](../../back-end/src/agent/config.py#L12)
 
@@ -712,7 +712,7 @@ No public description is available yet.
 
 `build_source(settings: Settings) -> WindowSource`
 
-No public description is available yet.
+The window source the settings select: Postgres (checked to be read-only, and wrapped to simulate live readings when asked) or the mock. Raises ValueError when Postgres is chosen without a database URL or PG* variables.
 
 [View source](../../back-end/src/agent/data/factory.py#L10)
 
@@ -732,7 +732,7 @@ Implements WindowSource in memory.
 
 `Profile`
 
-No public description is available yet.
+How a mock participant's Gluco Score behaves: a baseline, an optional linear trend over the most recent hours, and whether the device has a heart-rate sensor.
 
 [View source](../../back-end/src/agent/data/mock_fixtures.py#L12)
 
@@ -778,7 +778,7 @@ Implements WindowSource; windows pass through, live readings are simulated.
 
 `PersonNotFoundError`
 
-No public description is available yet.
+No participant matches the reference. `suggestions` holds the closest keys.
 
 [View source](../../back-end/src/agent/domain/errors.py#L4)
 
@@ -786,9 +786,9 @@ No public description is available yet.
 
 `AmbiguousPersonError`
 
-No public description is available yet.
+The reference matches more than one participant. `candidates` lists them.
 
-[View source](../../back-end/src/agent/domain/errors.py#L11)
+[View source](../../back-end/src/agent/domain/errors.py#L13)
 
 ### Class: `ForbiddenError`
 
@@ -796,7 +796,7 @@ No public description is available yet.
 
 The signed-in user may not see this data.
 
-[View source](../../back-end/src/agent/domain/errors.py#L18)
+[View source](../../back-end/src/agent/domain/errors.py#L22)
 
 ### Class: `QueryError`
 
@@ -804,7 +804,7 @@ The signed-in user may not see this data.
 
 A request the data cannot answer as asked (unknown metric, bad range...).
 
-[View source](../../back-end/src/agent/domain/errors.py#L22)
+[View source](../../back-end/src/agent/domain/errors.py#L26)
 
 ## `back-end/src/agent/domain/events.py`
 
@@ -812,7 +812,7 @@ A request the data cannot answer as asked (unknown metric, bad range...).
 
 `SseEvent`
 
-No public description is available yet.
+One Contract B event: a name and its JSON-able data.
 
 [View source](../../back-end/src/agent/domain/events.py#L10)
 
@@ -822,7 +822,7 @@ No public description is available yet.
 
 Consumes Contract B events. Override the `on_*` hooks you care about.
 
-[View source](../../back-end/src/agent/domain/events.py#L15)
+[View source](../../back-end/src/agent/domain/events.py#L17)
 
 ## `back-end/src/agent/domain/metrics.py`
 
@@ -830,7 +830,7 @@ Consumes Contract B events. Override the `on_*` hooks you care about.
 
 `MetricSpec`
 
-No public description is available yet.
+How to read one metric: label, unit, description, which direction is higher or lower, and whether it is a live reading.
 
 [View source](../../back-end/src/agent/domain/metrics.py#L11)
 
@@ -838,9 +838,9 @@ No public description is available yet.
 
 `unit_of(metric: str) -> str`
 
-No public description is available yet.
+The unit of a metric, e.g. "points out of 100". Raises KeyError for an unknown metric.
 
-[View source](../../back-end/src/agent/domain/metrics.py#L129)
+[View source](../../back-end/src/agent/domain/metrics.py#L133)
 
 ### Function: `metric_label`
 
@@ -848,7 +848,7 @@ No public description is available yet.
 
 The readable name for a metric key; an unknown key is returned as given.
 
-[View source](../../back-end/src/agent/domain/metrics.py#L133)
+[View source](../../back-end/src/agent/domain/metrics.py#L140)
 
 ## `back-end/src/agent/domain/models.py`
 
@@ -882,7 +882,7 @@ One participant's newest sensor readings, refreshed every second.
 
 `PublishedWindow`
 
-No public description is available yet.
+A window with the time it was published, used to refresh incrementally.
 
 [View source](../../back-end/src/agent/domain/ports.py#L11)
 
@@ -890,9 +890,9 @@ No public description is available yet.
 
 `WindowSource`
 
-No public description is available yet.
+The read-only source of published windows and live readings.
 
-[View source](../../back-end/src/agent/domain/ports.py#L16)
+[View source](../../back-end/src/agent/domain/ports.py#L18)
 
 ## `back-end/src/agent/factory.py`
 
@@ -900,7 +900,7 @@ No public description is available yet.
 
 `metrics_table() -> str`
 
-No public description is available yet.
+The metric catalog as a markdown list for the agent's prompt.
 
 [View source](../../back-end/src/agent/factory.py#L14)
 
@@ -908,17 +908,17 @@ No public description is available yet.
 
 `instructions(principal: Principal, now: value) -> str`
 
-No public description is available yet.
+The system prompt for the principal's role: its template with the metric list, the user's name and the clock's now (UTC) filled in.
 
-[View source](../../back-end/src/agent/factory.py#L21)
+[View source](../../back-end/src/agent/factory.py#L22)
 
 ### Function: `build_agent`
 
 `build_agent(principal: Principal, now: value, model: value, model_settings: ModelSettings, tools: list, input_guardrails: list) -> Agent`
 
-No public description is available yet.
+The role's Agent, named `<role>_assistant`, with its model, tools and input guardrails.
 
-[View source](../../back-end/src/agent/factory.py#L30)
+[View source](../../back-end/src/agent/factory.py#L34)
 
 ## `back-end/src/agent/guardrails.py`
 
@@ -926,7 +926,7 @@ No public description is available yet.
 
 `RolePolicy`
 
-No public description is available yet.
+A role's classifier prompt and the reply for each category it declines.
 
 [View source](../../back-end/src/agent/guardrails.py#L35)
 
@@ -934,9 +934,9 @@ No public description is available yet.
 
 `GuardrailVerdict`
 
-No public description is available yet.
+The classifier's single category for a message.
 
-[View source](../../back-end/src/agent/guardrails.py#L106)
+[View source](../../back-end/src/agent/guardrails.py#L108)
 
 ### Function: `decline_message`
 
@@ -944,15 +944,15 @@ No public description is available yet.
 
 The reply for a tripped guardrail.
 
-[View source](../../back-end/src/agent/guardrails.py#L110)
+[View source](../../back-end/src/agent/guardrails.py#L114)
 
 ### Function: `build_input_guardrails`
 
 `build_input_guardrails(model: value, role: Role, model_settings: value = ...) -> list`
 
-No public description is available yet.
+The role's input guardrail: a classifier agent runs first, and the request is blocked when its category is one the role's policy declines.
 
-[View source](../../back-end/src/agent/guardrails.py#L124)
+[View source](../../back-end/src/agent/guardrails.py#L128)
 
 ## `back-end/src/agent/live.py`
 
@@ -960,7 +960,7 @@ No public description is available yet.
 
 `LiveStore`
 
-No public description is available yet.
+In-memory copy of each participant's newest live readings, re-read when a reader finds it older than `refresh_s`. When the readings show analytics newer than the window store holds, that store is told to refresh.
 
 [View source](../../back-end/src/agent/live.py#L19)
 
@@ -986,7 +986,7 @@ AsyncOpenAI with the tool-call index fix applied to streamed completions.
 
 `LlmConnection`
 
-No public description is available yet.
+The connection to the OpenAI-compatible provider: builds models, the per-call routing settings and configures the Agents SDK once at startup.
 
 [View source](../../back-end/src/agent/llm.py#L88)
 
@@ -996,7 +996,7 @@ No public description is available yet.
 
 `main(argv: value = ...) -> None`
 
-No public description is available yet.
+CLI entry point: `serve` runs the HTTP API with uvicorn, `ask` answers one question and prints the reply.
 
 [View source](../../back-end/src/agent/main.py#L55)
 
@@ -1006,7 +1006,7 @@ No public description is available yet.
 
 `TurnRecorder`
 
-No public description is available yet.
+Collects the events of one chat turn and records the turn when it finishes.
 
 [View source](../../back-end/src/agent/observability/trace.py#L20)
 
@@ -1014,25 +1014,25 @@ No public description is available yet.
 
 `Tracer`
 
-No public description is available yet.
+Starts a TurnRecorder for each chat turn.
 
-[View source](../../back-end/src/agent/observability/trace.py#L31)
+[View source](../../back-end/src/agent/observability/trace.py#L33)
 
 ### Class: `NullTracer`
 
 `NullTracer`
 
-No public description is available yet.
+A Tracer that records nothing.
 
-[View source](../../back-end/src/agent/observability/trace.py#L48)
+[View source](../../back-end/src/agent/observability/trace.py#L52)
 
 ### Class: `JsonlTracer`
 
 `JsonlTracer`
 
-No public description is available yet.
+A Tracer that appends one JSON line per turn to a file.
 
-[View source](../../back-end/src/agent/observability/trace.py#L105)
+[View source](../../back-end/src/agent/observability/trace.py#L111)
 
 ## `back-end/src/agent/query.py`
 
@@ -1048,7 +1048,7 @@ A generic question to the data: which metrics, whose, when, how reduced.
 
 `Series`
 
-No public description is available yet.
+One series of a result: a display name (never an internal key) and its points.
 
 [View source](../../back-end/src/agent/query.py#L80)
 
@@ -1056,105 +1056,105 @@ No public description is available yet.
 
 `QueryResult`
 
-No public description is available yet.
+The answer to a QuerySpec: the resolved range, units and series, how many series there were before any cut-off, whether the result was truncated, and one audit line per disclosure rule applied.
 
-[View source](../../back-end/src/agent/query.py#L85)
+[View source](../../back-end/src/agent/query.py#L87)
 
 ### Class: `ParticipantRow`
 
 `ParticipantRow`
 
-No public description is available yet.
+A participant's newest window with values rounded; `live_at` is set when live readings were applied.
 
-[View source](../../back-end/src/agent/query.py#L101)
+[View source](../../back-end/src/agent/query.py#L108)
 
 ### Class: `MetricChange`
 
 `MetricChange`
 
-No public description is available yet.
+One metric's newest value, its value `hours` earlier and the difference, and how far the newest value is from the person's own last 7 days (`z_vs_baseline`).
 
-[View source](../../back-end/src/agent/query.py#L111)
+[View source](../../back-end/src/agent/query.py#L122)
 
 ### Class: `ChangeReport`
 
 `ChangeReport`
 
-No public description is available yet.
+How a participant's metrics changed between their newest window and the one `hours` earlier, with the sensor metrics furthest from their own last 7 days.
 
-[View source](../../back-end/src/agent/query.py#L122)
+[View source](../../back-end/src/agent/query.py#L137)
 
 ### Class: `Explanation`
 
 `Explanation`
 
-No public description is available yet.
+A ChangeReport and, for clinicians, where the person sits against everyone's newest windows.
 
-[View source](../../back-end/src/agent/query.py#L134)
+[View source](../../back-end/src/agent/query.py#L153)
 
 ### Class: `CohortComparison`
 
 `CohortComparison`
 
-No public description is available yet.
+A participant's value on one metric against everyone's newest windows: z-score, percentile (normal approximation) and direction relative to the median.
 
-[View source](../../back-end/src/agent/query.py#L140)
+[View source](../../back-end/src/agent/query.py#L163)
 
 ### Class: `MetricSummary`
 
 `MetricSummary`
 
-No public description is available yet.
+Mean, median, standard deviation, minimum, maximum and count of one metric.
 
-[View source](../../back-end/src/agent/query.py#L154)
+[View source](../../back-end/src/agent/query.py#L181)
 
 ### Class: `CohortOverview`
 
 `CohortOverview`
 
-No public description is available yet.
+A summary of everyone's newest windows: per-metric summaries, the lowest Gluco Scores and the biggest 24-hour drops and gains.
 
-[View source](../../back-end/src/agent/query.py#L163)
+[View source](../../back-end/src/agent/query.py#L192)
 
 ### Class: `MetricInfo`
 
 `MetricInfo`
 
-No public description is available yet.
+The catalog entry for one metric.
 
-[View source](../../back-end/src/agent/query.py#L173)
+[View source](../../back-end/src/agent/query.py#L206)
 
 ### Class: `ParticipantInfo`
 
 `ParticipantInfo`
 
-No public description is available yet.
+The catalog entry for one visible participant.
 
-[View source](../../back-end/src/agent/query.py#L182)
+[View source](../../back-end/src/agent/query.py#L217)
 
 ### Class: `Catalog`
 
 `Catalog`
 
-No public description is available yet.
+What can be queried: the metrics, the participants the user may see, the data range and the allowed buckets, aggregations and groupings.
 
-[View source](../../back-end/src/agent/query.py#L188)
+[View source](../../back-end/src/agent/query.py#L225)
 
 ### Function: `check_metrics`
 
 `check_metrics(metrics: Sequence) -> None`
 
-No public description is available yet.
+Raise QueryError, listing the available metrics and close matches, when a name is not a known metric.
 
-[View source](../../back-end/src/agent/query.py#L224)
+[View source](../../back-end/src/agent/query.py#L265)
 
 ### Class: `QueryService`
 
 `QueryService`
 
-No public description is available yet.
+Answers every data question for one signed-in user, applying scope, the replay clock and the disclosure rule. See the module description.
 
-[View source](../../back-end/src/agent/query.py#L236)
+[View source](../../back-end/src/agent/query.py#L280)
 
 ## `back-end/src/agent/refresher.py`
 
@@ -1172,7 +1172,7 @@ Runs `pull` when the data is older than `period_s`, one thread at a time.
 
 `WindowStore`
 
-No public description is available yet.
+In-memory copy of every published window, refreshed incrementally. The first read loads it and raises if that fails; a later refresh that fails keeps the previous data.
 
 [View source](../../back-end/src/agent/store.py#L30)
 
@@ -1182,7 +1182,7 @@ No public description is available yet.
 
 `dump(model: BaseModel) -> dict`
 
-No public description is available yet.
+A pydantic model as a JSON-able dict.
 
 [View source](../../back-end/src/agent/tools/base.py#L38)
 
@@ -1192,7 +1192,7 @@ No public description is available yet.
 
 A query result trimmed to a size the LLM can read.
 
-[View source](../../back-end/src/agent/tools/base.py#L42)
+[View source](../../back-end/src/agent/tools/base.py#L43)
 
 ### Function: `require_points`
 
@@ -1200,7 +1200,7 @@ A query result trimmed to a size the LLM can read.
 
 Raise when a query found nothing, so the agent hears why and can retry.
 
-[View source](../../back-end/src/agent/tools/base.py#L62)
+[View source](../../back-end/src/agent/tools/base.py#L63)
 
 ### Function: `parse_time`
 
@@ -1208,23 +1208,23 @@ Raise when a query found nothing, so the agent hears why and can retry.
 
 None or "" -> None; otherwise an ISO-8601 time (UTC if no zone given).
 
-[View source](../../back-end/src/agent/tools/base.py#L73)
+[View source](../../back-end/src/agent/tools/base.py#L74)
 
 ### Function: `result`
 
 `result(summary: str, rows: int, as_of: value, **data) -> dict`
 
-No public description is available yet.
+A successful tool payload: summary, row count and the clock's `as_of`, plus any tool-specific data.
 
-[View source](../../back-end/src/agent/tools/base.py#L81)
+[View source](../../back-end/src/agent/tools/base.py#L82)
 
 ### Function: `error`
 
 `error(code: str, message: str, **extra) -> dict`
 
-No public description is available yet.
+A failed tool payload the agent can explain: a message, a stable `code` and zero rows.
 
-[View source](../../back-end/src/agent/tools/base.py#L92)
+[View source](../../back-end/src/agent/tools/base.py#L96)
 
 ### Function: `safe_tool`
 
@@ -1232,7 +1232,7 @@ No public description is available yet.
 
 Turn any exception into a structured error payload.
 
-[View source](../../back-end/src/agent/tools/base.py#L96)
+[View source](../../back-end/src/agent/tools/base.py#L103)
 
 ### Function: `grouping_phrase`
 
@@ -1240,7 +1240,7 @@ Turn any exception into a structured error payload.
 
 "mean per day", "latest value" ... for a tool summary.
 
-[View source](../../back-end/src/agent/tools/base.py#L137)
+[View source](../../back-end/src/agent/tools/base.py#L144)
 
 ### Function: `week_summary`
 
@@ -1248,7 +1248,7 @@ Turn any exception into a structured error payload.
 
 First, newest, min, max and mean of one metric over a single-series result.
 
-[View source](../../back-end/src/agent/tools/base.py#L146)
+[View source](../../back-end/src/agent/tools/base.py#L153)
 
 ### Function: `status`
 
@@ -1256,7 +1256,7 @@ First, newest, min, max and mean of one metric over a single-series result.
 
 Newest values and the Gluco Score over the last 7 days.
 
-[View source](../../back-end/src/agent/tools/base.py#L179)
+[View source](../../back-end/src/agent/tools/base.py#L186)
 
 ### Function: `explain`
 
@@ -1264,7 +1264,7 @@ Newest values and the Gluco Score over the last 7 days.
 
 What changed with the Gluco Score, the trend of the biggest shift, and, for clinicians, where the person sits in the cohort.
 
-[View source](../../back-end/src/agent/tools/base.py#L198)
+[View source](../../back-end/src/agent/tools/base.py#L205)
 
 ### Function: `answer`
 
@@ -1272,7 +1272,7 @@ What changed with the Gluco Score, the trend of the biggest shift, and, for clin
 
 Any structured query, as a chart the LLM can read.
 
-[View source](../../back-end/src/agent/tools/base.py#L226)
+[View source](../../back-end/src/agent/tools/base.py#L233)
 
 ## `back-end/src/agent/tools/clinician.py`
 
@@ -1280,7 +1280,7 @@ Any structured query, as a chart the LLM can read.
 
 `build(svc: QueryService) -> list`
 
-No public description is available yet.
+The clinician's tools, bound to this QueryService.
 
 [View source](../../back-end/src/agent/tools/clinician.py#L27)
 
@@ -1290,7 +1290,7 @@ No public description is available yet.
 
 `build(svc: QueryService) -> list`
 
-No public description is available yet.
+The patient's tools, bound to this QueryService. Raises ValueError when the principal is not linked to a participant.
 
 [View source](../../back-end/src/agent/tools/patient.py#L26)
 
@@ -1300,7 +1300,7 @@ No public description is available yet.
 
 `build_widget_tool(svc: QueryService) -> FunctionTool`
 
-No public description is available yet.
+The clinician's `build_widget` tool: any widget kind, for any patients they may see.
 
 [View source](../../back-end/src/agent/tools/widgets.py#L33)
 
@@ -1308,9 +1308,9 @@ No public description is available yet.
 
 `build_my_widget_tool(svc: QueryService) -> FunctionTool`
 
-No public description is available yet.
+The patient's `build_my_widget` tool: a widget of their own readings only.
 
-[View source](../../back-end/src/agent/tools/widgets.py#L85)
+[View source](../../back-end/src/agent/tools/widgets.py#L89)
 
 ## `back-end/src/agent/widgets.py`
 
@@ -1326,7 +1326,7 @@ What a pin stores: enough to rebuild the widget at any later time.
 
 `WidgetStep`
 
-No public description is available yet.
+One step of the widget pipeline as shown in the UI: its stage and what it did.
 
 [View source](../../back-end/src/agent/widgets.py#L45)
 
@@ -1334,9 +1334,9 @@ No public description is available yet.
 
 `BuiltWidget`
 
-No public description is available yet.
+A widget spec with the data it produced and the pipeline steps that built it.
 
-[View source](../../back-end/src/agent/widgets.py#L50)
+[View source](../../back-end/src/agent/widgets.py#L52)
 
 ### Function: `design`
 
@@ -1344,7 +1344,7 @@ No public description is available yet.
 
 The query that draws `kind` well.
 
-[View source](../../back-end/src/agent/widgets.py#L56)
+[View source](../../back-end/src/agent/widgets.py#L60)
 
 ### Function: `build`
 
@@ -1352,4 +1352,4 @@ The query that draws `kind` well.
 
 Run the fetch, compliance and bind stages for an already designed spec.
 
-[View source](../../back-end/src/agent/widgets.py#L104)
+[View source](../../back-end/src/agent/widgets.py#L108)
