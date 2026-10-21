@@ -87,6 +87,9 @@ class StreamTranslator:
 
 
 def tool_start(call_id: str, tool: str, arguments: Any) -> SseEvent:
+    """A `tool_start` event for a tool call. `arguments` may be a dict or a JSON string;
+    anything unparseable becomes `{}`.
+    """
     return SseEvent(
         "tool_start",
         {"call_id": call_id, "tool": tool, "args": _parse_args(arguments)},
@@ -94,6 +97,10 @@ def tool_start(call_id: str, tool: str, arguments: Any) -> SseEvent:
 
 
 def tool_end(call_id: str, tool: str, output: Any) -> SseEvent:
+    """A `tool_end` event with the tool's summary (or error message), cut to 300
+    characters, and its row count. A result that is not a dict is summarised by its
+    string form with zero rows.
+    """
     if isinstance(output, dict):
         summary = output.get("summary") or output.get("error") or ""
         rows = output.get("rows", 0)

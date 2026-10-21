@@ -2,6 +2,8 @@
 
 
 class PersonNotFoundError(LookupError):
+    """No participant matches the reference. `suggestions` holds the closest keys."""
+
     def __init__(self, ref: str, suggestions: list[str] | None = None) -> None:
         super().__init__(ref)
         self.ref = ref
@@ -9,6 +11,8 @@ class PersonNotFoundError(LookupError):
 
 
 class AmbiguousPersonError(LookupError):
+    """The reference matches more than one participant. `candidates` lists them."""
+
     def __init__(self, ref: str, candidates: list[str]) -> None:
         super().__init__(ref)
         self.ref = ref

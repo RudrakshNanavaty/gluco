@@ -43,11 +43,15 @@ class WidgetSpec(BaseModel):
 
 
 class WidgetStep(BaseModel):
+    """One step of the widget pipeline as shown in the UI: its stage and what it did."""
+
     stage: Stage
     text: str
 
 
 class BuiltWidget(BaseModel):
+    """A widget spec with the data it produced and the pipeline steps that built it."""
+
     spec: WidgetSpec
     result: QueryResult
     steps: list[WidgetStep]

@@ -16,6 +16,10 @@ from agent.widgets import WidgetKind, WidgetSpec
 
 
 class PinnedWidget(BaseModel):
+    """A pinned widget: its stored spec with an id and the time it was pinned. No data
+    is stored.
+    """
+
     id: str
     title: str
     kind: WidgetKind
@@ -27,6 +31,10 @@ class PinnedWidget(BaseModel):
 
 
 class WidgetStore:
+    """A user's pinned widgets, in SQLite. Only specs are saved; the data is rebuilt
+    whenever a widget is shown.
+    """
+
     def __init__(self, db_path: Path) -> None:
         self._path = db_path
         create_table(

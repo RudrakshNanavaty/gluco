@@ -25,6 +25,8 @@ from agent.tools.widgets import build_widget_tool
 
 
 def build(svc: QueryService) -> list[FunctionTool]:
+    """The clinician's tools, bound to this QueryService."""
+
     @function_tool
     @safe_tool
     def list_participants(

@@ -86,6 +86,10 @@ class ChatCompletionsClient(AsyncOpenAI):
 
 
 class LlmConnection:
+    """The connection to the OpenAI-compatible provider: builds models, the per-call
+    routing settings and configures the Agents SDK once at startup.
+    """
+
     def __init__(
         self,
         api_key: SecretStr | None,

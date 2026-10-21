@@ -53,6 +53,9 @@ async def _ask(question: str, session_id: str, who: str) -> None:
 
 
 def main(argv: list[str] | None = None) -> None:
+    """CLI entry point: `serve` runs the HTTP API with uvicorn, `ask` answers one
+    question and prints the reply.
+    """
     parser = argparse.ArgumentParser(prog="agent")
     commands = parser.add_subparsers(dest="command", required=True)
 

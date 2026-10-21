@@ -10,6 +10,10 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class Profile:
+    """How a mock participant's Gluco Score behaves: a baseline, an optional linear
+    trend over the most recent hours, and whether the device has a heart-rate sensor.
+    """
+
     baseline: float  # typical Gluco Score
     # Gluco Score points added per hour over the last `trend_hours` hours.
     trend_per_hour: float = 0.0

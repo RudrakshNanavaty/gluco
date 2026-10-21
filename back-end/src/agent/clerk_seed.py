@@ -35,6 +35,10 @@ DEFAULT_CSV = Path("var/clerk-seed.csv")
 
 @dataclass(frozen=True)
 class Account:
+    """One account the seed script manages: a stable uuid, role, linked participant,
+    generated name and username.
+    """
+
     uuid: str
     role: Role
     participant_id: str | None
@@ -117,6 +121,10 @@ def plan_accounts(
 
 
 class ClerkClient:
+    """A minimal client for Clerk's Backend API: list users, create a user and update a
+    user's public metadata.
+    """
+
     def __init__(self, secret_key: str, http: httpx.Client | None = None) -> None:
         self._http = http or httpx.Client(
             base_url=CLERK_API,
@@ -201,6 +209,9 @@ def sync(
 
 
 def write_csv(path: Path, accounts: Iterable[Account]) -> None:
+    """Write the accounts (username, role, uuid, participant id, display name) to a CSV
+    file, creating its parent directory. No passwords are written.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="") as handle:
         out = csv.writer(handle)
@@ -212,6 +223,10 @@ def write_csv(path: Path, accounts: Iterable[Account]) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """CLI entry point: plan the accounts for the participants the data source has
+    published (all 66 with `--full-roster`) and create or update them in Clerk, or only
+    report with `--dry-run`. Returns 1 when a required secret is not set.
+    """
     parser = argparse.ArgumentParser(
         description="Seed Clerk with one account per demo participant."
     )

@@ -21,6 +21,9 @@ def connect(path: Path) -> Iterator[sqlite3.Connection]:
 
 
 def create_table(path: Path, ddl: str) -> None:
+    """Run `ddl` (a CREATE TABLE IF NOT EXISTS statement) on the SQLite file, creating
+    its parent directory first.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     with connect(path) as conn:
         conn.execute(ddl)

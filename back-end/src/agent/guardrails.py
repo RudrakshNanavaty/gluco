@@ -33,6 +33,8 @@ Category = Literal["diagnosis", "treatment", "identification", "other_people", "
 
 @dataclass(frozen=True)
 class RolePolicy:
+    """A role's classifier prompt and the reply for each category it declines."""
+
     instructions: str
     declines: dict[str, str]  # category -> reply; any category listed here blocks
     fallback: str  # the category used for an unrecognised verdict
@@ -104,6 +106,8 @@ POLICIES: dict[Role, RolePolicy] = {"clinician": CLINICIAN, "patient": PATIENT}
 
 
 class GuardrailVerdict(BaseModel):
+    """The classifier's single category for a message."""
+
     category: Category
 
 
@@ -124,6 +128,9 @@ def decline_message(tripwire: InputGuardrailTripwireTriggered, role: Role) -> st
 def build_input_guardrails(
     model: Model | str, role: Role, model_settings: ModelSettings | None = None
 ) -> list[InputGuardrail]:
+    """The role's input guardrail: a classifier agent runs first, and the request is
+    blocked when its category is one the role's policy declines.
+    """
     policy = POLICIES[role]
     classifier = Agent(
         name=f"{role}_request_classifier",

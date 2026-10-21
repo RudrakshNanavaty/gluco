@@ -78,11 +78,18 @@ class QuerySpec(BaseModel):
 
 
 class Series(BaseModel):
+    """One series of a result: a display name (never an internal key) and its points."""
+
     display_name: str  # never an internal participant key
     points: list[dict[str, Any]]
 
 
 class QueryResult(BaseModel):
+    """The answer to a QuerySpec: the resolved range, units and series, how many series
+    there were before any cut-off, whether the result was truncated, and one audit line
+    per disclosure rule applied.
+    """
+
     as_of: datetime | None
     start: datetime | None
     end: datetime | None
@@ -99,6 +106,10 @@ class QueryResult(BaseModel):
 
 
 class ParticipantRow(BaseModel):
+    """A participant's newest window with values rounded; `live_at` is set when live
+    readings were applied.
+    """
+
     person_id: str
     display_name: str
     source_dataset: str
@@ -109,6 +120,10 @@ class ParticipantRow(BaseModel):
 
 
 class MetricChange(BaseModel):
+    """One metric's newest value, its value `hours` earlier and the difference, and how
+    far the newest value is from the person's own last 7 days (`z_vs_baseline`).
+    """
+
     metric: str
     label: str
     unit: str
@@ -120,6 +135,10 @@ class MetricChange(BaseModel):
 
 
 class ChangeReport(BaseModel):
+    """How a participant's metrics changed between their newest window and the one
+    `hours` earlier, with the sensor metrics furthest from their own last 7 days.
+    """
+
     person_id: str
     display_name: str
     as_of: datetime | None
@@ -132,12 +151,20 @@ class ChangeReport(BaseModel):
 
 
 class Explanation(BaseModel):
+    """A ChangeReport and, for clinicians, where the person sits against everyone's
+    newest windows.
+    """
+
     change: ChangeReport
     # Where the person sits against everyone's newest windows; clinicians only.
     cohort_position: list[FeatureDeviation] | None
 
 
 class CohortComparison(BaseModel):
+    """A participant's value on one metric against everyone's newest windows: z-score,
+    percentile (normal approximation) and direction relative to the median.
+    """
+
     person_id: str
     metric: str
     unit: str
@@ -152,6 +179,8 @@ class CohortComparison(BaseModel):
 
 
 class MetricSummary(BaseModel):
+    """Mean, median, standard deviation, minimum, maximum and count of one metric."""
+
     mean: float
     median: float
     stddev: float
@@ -161,6 +190,10 @@ class MetricSummary(BaseModel):
 
 
 class CohortOverview(BaseModel):
+    """A summary of everyone's newest windows: per-metric summaries, the lowest Gluco
+    Scores and the biggest 24-hour drops and gains.
+    """
+
     as_of: datetime | None
     participants: int
     gluco_score: MetricSummary | None
@@ -171,6 +204,8 @@ class CohortOverview(BaseModel):
 
 
 class MetricInfo(BaseModel):
+    """The catalog entry for one metric."""
+
     name: str
     label: str
     unit: str
@@ -180,12 +215,18 @@ class MetricInfo(BaseModel):
 
 
 class ParticipantInfo(BaseModel):
+    """The catalog entry for one visible participant."""
+
     person_id: str
     display_name: str
     source_dataset: str
 
 
 class Catalog(BaseModel):
+    """What can be queried: the metrics, the participants the user may see, the data
+    range and the allowed buckets, aggregations and groupings.
+    """
+
     as_of: datetime | None
     data_start: datetime | None
     data_end: datetime | None
@@ -222,6 +263,9 @@ def _summary(values: Sequence[float | None]) -> MetricSummary | None:
 
 
 def check_metrics(metrics: Sequence[str]) -> None:
+    """Raise QueryError, listing the available metrics and close matches, when a name is
+    not a known metric.
+    """
     for metric in metrics:
         if metric not in METRICS:
             raise QueryError(
@@ -234,6 +278,10 @@ def check_metrics(metrics: Sequence[str]) -> None:
 
 
 class QueryService:
+    """Answers every data question for one signed-in user, applying scope, the replay
+    clock and the disclosure rule. See the module description.
+    """
+
     def __init__(
         self,
         store: WindowStore,

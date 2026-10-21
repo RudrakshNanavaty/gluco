@@ -17,6 +17,10 @@ Direction = Literal["above", "below", "at"]
 
 
 class FeatureDeviation(BaseModel):
+    """How one metric's value compares with a group: z-score, percentile and which side
+    of the median it is on.
+    """
+
     feature: str
     value: float
     median: float
@@ -26,6 +30,9 @@ class FeatureDeviation(BaseModel):
 
 
 def z_score(value: float, stat: FeatureStat) -> float | None:
+    """Standard score of `value` against `stat`; None when the group has no spread
+    (stddev is zero).
+    """
     if stat.stddev <= 0:
         return None
     return (value - stat.mean) / stat.stddev
@@ -39,6 +46,9 @@ def percentile_from_z(z: float) -> float:
 def describe_feature(
     name: str, value: float, stat: FeatureStat
 ) -> FeatureDeviation | None:
+    """A FeatureDeviation for `value` against `stat`, or None when the group has no
+    spread. `direction` compares with the median (`p50`), not the mean.
+    """
     z = z_score(value, stat)
     if z is None:
         return None

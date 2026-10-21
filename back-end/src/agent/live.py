@@ -17,6 +17,11 @@ from agent.store import WindowStore
 
 
 class LiveStore:
+    """In-memory copy of each participant's newest live readings, re-read when a reader
+    finds it older than `refresh_s`. When the readings show analytics newer than the
+    window store holds, that store is told to refresh.
+    """
+
     def __init__(
         self,
         source: WindowSource,

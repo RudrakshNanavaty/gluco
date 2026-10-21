@@ -44,6 +44,12 @@ def _warm_store(runtime: Runtime) -> None:
 
 
 def create_app(runtime: Runtime, authenticator: Authenticator | None = None) -> FastAPI:
+    """Build the FastAPI app for a Runtime: CORS, error handlers, the routers and
+    `/health`. The window store is warmed on a background thread at startup. Without an
+    `authenticator` the Clerk one is built from the settings, which raises ValueError
+    when they are missing.
+    """
+
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         # Off the event loop and not awaited: the server accepts requests at once,
@@ -70,6 +76,7 @@ def create_app(runtime: Runtime, authenticator: Authenticator | None = None) -> 
 
     @app.get("/health", tags=["health"])
     def health() -> Health:
+        """Whether the database and LLM are ready, and how much data is loaded."""
         db = runtime.source.ping()
         try:
             windows, people = runtime.store.size(), len(runtime.store.participants())

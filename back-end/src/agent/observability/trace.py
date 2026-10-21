@@ -18,6 +18,8 @@ Outcome = Literal["ok", "declined", "max_turns", "error", "cancelled"]
 
 
 class TurnRecorder(Protocol):
+    """Collects the events of one chat turn and records the turn when it finishes."""
+
     def record(self, event: SseEvent) -> None: ...
 
     def finish(
@@ -29,6 +31,8 @@ class TurnRecorder(Protocol):
 
 
 class Tracer(Protocol):
+    """Starts a TurnRecorder for each chat turn."""
+
     def start(self, session_id: str, message: str) -> TurnRecorder: ...
 
 
@@ -46,6 +50,8 @@ class _NullRecorder:
 
 
 class NullTracer:
+    """A Tracer that records nothing."""
+
     def start(self, session_id: str, message: str) -> TurnRecorder:
         return _NullRecorder()
 
@@ -103,6 +109,8 @@ class _JsonlRecorder(EventHandler):
 
 
 class JsonlTracer:
+    """A Tracer that appends one JSON line per turn to a file."""
+
     def __init__(self, path: Path) -> None:
         self._path = path
 
