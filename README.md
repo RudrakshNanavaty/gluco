@@ -205,7 +205,7 @@ gluco/
 ├── databricks/
 │   ├── tiger/              # Ingestion, Lakeflow, modeling, replay, and SQL contracts
 │   └── DATA_FLOW.md        # End-to-end architecture and backend contract
-├── LICENSE                 # GNU Affero General Public License v3.0
+├── LICENSE.md              # GNU Affero General Public License v3.0
 └── README.md
 ```
 
@@ -323,7 +323,7 @@ Suggested citations for the AI tools and documentation:
 ## License
 
 Gluco is open source under the
-[GNU Affero General Public License v3.0 only](LICENSE) (`AGPL-3.0-only`). You may
+[GNU Affero General Public License v3.0 only](LICENSE.md) (`AGPL-3.0-only`). You may
 use, study, modify, and redistribute the project. If you distribute a modified
 version—or let users interact with a modified version over a network—you must
 make its corresponding source available under the same license. Third-party
