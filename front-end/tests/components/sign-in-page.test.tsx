@@ -64,21 +64,25 @@ describe("SignInPage", () => {
     expect(clerk.signOut).toHaveBeenCalledWith({ redirectUrl: "/" })
   })
 
-  it("redirects a signed-in user to their role home", async () => {
-    clerk.isSignedIn = true
-    fakeApi({
-      "GET /me": {
-        user_id: "0b0b8a9e-4d3c-5f6a-8b7c-9d0e1f2a3b4c",
-        display_name: "Dr. Priya Shah",
-        role: "clinician",
-        participant_id: null,
-      },
-    })
+  it.each([
+    { role: "clinician" as const, participant: null, home: "/clinician" },
+    { role: "patient" as const, participant: "pat-1", home: "/me" },
+  ])(
+    "redirects a signed-in $role to their role home",
+    async ({ role, participant, home }) => {
+      clerk.isSignedIn = true
+      fakeApi({
+        "GET /me": {
+          user_id: "0b0b8a9e-4d3c-5f6a-8b7c-9d0e1f2a3b4c",
+          display_name: "Dr. Priya Shah",
+          role,
+          participant_id: participant,
+        },
+      })
 
-    renderPage()
+      renderPage()
 
-    await waitFor(() =>
-      expect(mockRouter.replace).toHaveBeenCalledWith("/clinician")
-    )
-  })
+      await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith(home))
+    }
+  )
 })

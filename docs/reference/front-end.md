@@ -72,6 +72,26 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 [View source](../../front-end/src/app/page.tsx#L88)
 
+## `front-end/src/app/sign-in/[[...sign-in]]/page.tsx`
+
+### Export: `SignInRoute`
+
+`export default function SignInRoute() {`
+
+Public TypeScript/React export. Follow the source link for its implementation and usage.
+
+[View source](../../front-end/src/app/sign-in/[[...sign-in]]/page.tsx#L8)
+
+## `front-end/src/app/sign-up/[[...sign-up]]/page.tsx`
+
+### Export: `SignUpRoute`
+
+`export default function SignUpRoute() {`
+
+Public TypeScript/React export. Follow the source link for its implementation and usage.
+
+[View source](../../front-end/src/app/sign-up/[[...sign-up]]/page.tsx#L8)
+
 ## `front-end/src/components/account-menu.tsx`
 
 ### Export: `AccountMenu`
