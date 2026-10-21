@@ -10,6 +10,7 @@ clinicians.
 
 [![Research prototype](https://img.shields.io/badge/status-research_prototype-19A99A?style=for-the-badge)](#responsible-use)
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-663399?style=for-the-badge)](LICENSE)
+[![DOI](https://zenodo.org/badge/1421549557.svg)](https://doi.org/10.5281/zenodo.23545007)
 [![AI use disclosed](https://img.shields.io/badge/AI_use-disclosed-8B5CF6?style=for-the-badge)](#ai-use-and-attribution)
 [![Test Suite](https://img.shields.io/github/actions/workflow/status/RudrakshNanavaty/gluco/test-suite.yaml?branch=main&style=for-the-badge&label=TEST%20SUITE)](https://github.com/RudrakshNanavaty/gluco/actions/workflows/test-suite.yaml)
 [![Ruff lint](https://img.shields.io/badge/Python-Ruff_lint-D7FF64?style=flat-square&logo=ruff&logoColor=111827)](back-end/pyproject.toml)
@@ -333,7 +334,9 @@ This summary is informational; the full license text controls.
 ## Citing Gluco
 
 [`CITATION.cff`](CITATION.cff) holds the citation metadata; GitHub's "Cite this
-repository" button reads it. Archived releases and their DOI are described in
+repository" button reads it. Each release is archived on Zenodo; the concept DOI
+[10.5281/zenodo.23545007](https://doi.org/10.5281/zenodo.23545007) always resolves
+to the latest version, and the steps are in
 [Releasing and archiving](CONTRIBUTING.md#releasing-and-archiving).
 
 ## Responsible use
