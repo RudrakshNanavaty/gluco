@@ -344,6 +344,14 @@ explanations traceable to exact source windows.
 
 ## Documentation
 
+- [Installation guide](INSTALL.md) - clean setup, verification, and common
+  configuration problems
+- [Contribution guide](CONTRIBUTING.md) - workflow, quality checks, review
+  expectations, and safe extension patterns
+- [Code of conduct](CODE_OF_CONDUCT.md) - community standards and private
+  reporting guidance
+- [Third-party licenses](THIRD_PARTY_LIBRARIES.md) - dependency inventory and
+  license-review procedure
 - [Data flow](databricks/DATA_FLOW.md) — system architecture and dashboard data
   contract
 - [Pipeline setup](databricks/tiger/README.md) — reproducible Databricks and
