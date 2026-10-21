@@ -81,3 +81,25 @@ output as evidence by itself.
 By participating, you agree to follow the
 [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). Contributions are licensed under the
 repository's [GNU AGPL v3](LICENSE).
+
+## Releasing and archiving
+
+Each tagged release is archived on [Zenodo](https://zenodo.org/), which issues a
+DOI. A maintainer does this; contributors do not need to.
+
+1. Sign in to Zenodo with GitHub, open the
+   [GitHub integration page](https://zenodo.org/account/settings/github/), and
+   switch on `RudrakshNanavaty/gluco`.
+2. Keep `version` in `CITATION.cff` in step with the release, merge the change,
+   and wait for the `test suite` run on `main` to pass.
+3. Publish a GitHub release with a matching tag, for example `v0.1.0`. Zenodo
+   archives it automatically and builds the record from `CITATION.cff`.
+4. On the Zenodo record, copy the concept DOI (it resolves to the latest
+   version). Add it to `CITATION.cff` under `identifiers` and add the DOI badge
+   to the top of `README.md`:
+
+   ```markdown
+   [![DOI](https://zenodo.org/badge/1421549557.svg)](https://doi.org/10.5281/zenodo.<concept-record-id>)
+   ```
+
+Do not add the badge before the record exists; it would show a broken image.

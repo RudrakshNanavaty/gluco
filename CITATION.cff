@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use Gluco, please cite it using the metadata in this file."
+title: "Gluco"
+type: software
+abstract: >-
+  Gluco is a research prototype, not a medical device. It connects wearable
+  history, a live sensor-style feed, and an experimental metabolic-pattern
+  score for patients and clinicians, with role-scoped, read-only explanations.
+authors:
+  - family-names: "Nanavaty"
+    given-names: "Rudraksh"
+  - family-names: "Soni"
+    given-names: "Aavritti"
+  - alias: "pdpate22"
+  - alias: "Lliam-Rankins"
+repository-code: "https://github.com/RudrakshNanavaty/gluco"
+url: "https://github.com/RudrakshNanavaty/gluco"
+license: AGPL-3.0-only
+version: 0.1.0
+keywords:
+  - wearables
+  - metabolic health
+  - explainable AI
+  - research prototype
