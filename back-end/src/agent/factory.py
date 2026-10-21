@@ -12,6 +12,7 @@ PROMPTS = Path(__file__).parent / "prompts"
 
 
 def metrics_table() -> str:
+    """The metric catalog as a markdown list for the agent's prompt."""
     return "\n".join(
         f"- `{name}` ({spec.label}, {spec.unit}): {spec.description}"
         for name, spec in METRICS.items()
@@ -19,6 +20,9 @@ def metrics_table() -> str:
 
 
 def instructions(principal: Principal, now: datetime | None) -> str:
+    """The system prompt for the principal's role: its template with the metric list,
+    the user's name and the clock's now (UTC) filled in.
+    """
     template = (PROMPTS / f"{principal.role}.md").read_text(encoding="utf-8")
     return (
         template.replace("{{METRICS}}", metrics_table())
@@ -36,6 +40,9 @@ def build_agent(
     tools: list[FunctionTool],
     input_guardrails: list[InputGuardrail],
 ) -> Agent:
+    """The role's Agent, named `<role>_assistant`, with its model, tools and input
+    guardrails.
+    """
     return Agent(
         name=f"{principal.role}_assistant",
         instructions=instructions(principal, now),

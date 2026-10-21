@@ -28,6 +28,11 @@ class _Snapshot:
 
 
 class WindowStore:
+    """In-memory copy of every published window, refreshed incrementally. The first read
+    loads it and raises if that fails; a later refresh that fails keeps the previous
+    data.
+    """
+
     def __init__(
         self,
         source: WindowSource,

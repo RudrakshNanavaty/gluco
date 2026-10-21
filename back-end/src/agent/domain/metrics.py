@@ -9,6 +9,10 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class MetricSpec:
+    """How to read one metric: label, unit, description, which direction is higher or
+    lower, and whether it is a live reading.
+    """
+
     label: str
     unit: str
     description: str
@@ -127,6 +131,9 @@ WINDOW_METRICS: tuple[str, ...] = SENSOR_METRICS + LIVE_METRICS
 
 
 def unit_of(metric: str) -> str:
+    """The unit of a metric, e.g. "points out of 100". Raises KeyError for an unknown
+    metric.
+    """
     return METRICS[metric].unit
 
 

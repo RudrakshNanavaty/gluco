@@ -24,6 +24,9 @@ def _parts(person_id: str) -> tuple[str, str]:
 
 
 def display_name(person_id: str) -> str:
+    """The name the UI shows for a participant key, e.g. "Patient 013", or "Patient
+    IMU-13" for an IMU50 participant.
+    """
     dataset, number = _parts(person_id)
     if dataset.startswith("imu"):
         return f"Patient IMU-{number}"

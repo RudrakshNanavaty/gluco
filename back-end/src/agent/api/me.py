@@ -10,4 +10,5 @@ router = APIRouter(tags=["auth"])
 
 @router.get("/me")
 def me(principal: CurrentPrincipal) -> PrincipalOut:
+    """The signed-in user's id, role, display name and participant (`GET /me`)."""
     return PrincipalOut.of(principal)

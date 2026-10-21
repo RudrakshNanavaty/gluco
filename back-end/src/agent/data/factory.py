@@ -8,6 +8,10 @@ from agent.domain.ports import WindowSource
 
 
 def build_source(settings: Settings) -> WindowSource:
+    """The window source the settings select: Postgres (checked to be read-only, and
+    wrapped to simulate live readings when asked) or the mock. Raises ValueError when
+    Postgres is chosen without a database URL or PG* variables.
+    """
     if settings.effective_backend == "postgres":
         conninfo = settings.database_conninfo
         if conninfo is None:

@@ -23,6 +23,7 @@ _bearer = HTTPBearer(auto_error=False)
 
 
 def get_runtime(request: Request) -> Runtime:
+    """The Runtime that `create_app` stored on the app."""
     return request.app.state.runtime
 
 
@@ -32,6 +33,7 @@ Credentials = Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)]
 
 
 def get_authenticator(request: Request) -> Authenticator:
+    """The Authenticator that `create_app` stored on the app."""
     return request.app.state.authenticator
 
 
@@ -39,6 +41,9 @@ def current_principal(
     authenticator: Annotated[Authenticator, Depends(get_authenticator)],
     credentials: Credentials,
 ) -> Principal:
+    """Who is calling, from the bearer token. Raises 401 when the header is missing or
+    the token is rejected; the reason for a rejection is logged, not sent to the client.
+    """
     if credentials is None:
         raise HTTPException(
             401,
@@ -61,6 +66,7 @@ CurrentPrincipal = Annotated[Principal, Depends(current_principal)]
 
 
 def query_service(runtime: RuntimeDep, principal: CurrentPrincipal) -> QueryService:
+    """A QueryService bound to the caller's scope and the shared replay clock."""
     return runtime.for_principal(principal).queries
 
 

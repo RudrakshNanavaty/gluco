@@ -13,6 +13,8 @@ Message = Annotated[str, StringConstraints(min_length=1, max_length=4000)]
 
 
 class PrincipalOut(BaseModel):
+    """The caller as `GET /me` returns them."""
+
     user_id: str
     role: Role
     display_name: str
@@ -29,17 +31,27 @@ class PrincipalOut(BaseModel):
 
 
 class ClockCommand(BaseModel):
+    """A request to move the replay clock. `speed` needs `seconds_per_hour`; `seek`
+    needs `to`.
+    """
+
     action: Literal["play", "pause", "speed", "seek"]
     seconds_per_hour: float | None = Field(default=None, gt=0)  # for "speed"
     to: datetime | None = None  # for "seek"
 
 
 class ChatRequest(BaseModel):
+    """One chat message and the thread (session id) it belongs to."""
+
     session_id: SessionId
     message: Message
 
 
 class Health(BaseModel):
+    """Service status for `GET /health`: database and LLM readiness, how many windows
+    and participants are loaded, and the replay clock.
+    """
+
     db: bool
     llm: bool
     windows: int

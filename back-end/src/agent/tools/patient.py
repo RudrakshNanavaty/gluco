@@ -24,6 +24,9 @@ from agent.tools.widgets import build_my_widget_tool
 
 
 def build(svc: QueryService) -> list[FunctionTool]:
+    """The patient's tools, bound to this QueryService. Raises ValueError when the
+    principal is not linked to a participant.
+    """
     me = svc.principal.participant_id
     if me is None:
         raise ValueError("patient tools need a patient principal")

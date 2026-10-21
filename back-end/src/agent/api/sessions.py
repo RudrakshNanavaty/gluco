@@ -23,6 +23,10 @@ TITLE_LENGTH = 80
 
 
 class ChatThread(BaseModel):
+    """One entry in a user's thread list: the session id, a title taken from the first
+    message, and when it was created and last used.
+    """
+
     session_id: str
     title: str
     created_at: datetime
@@ -100,6 +104,10 @@ def transcript(items: list[Any]) -> list[TranscriptMessage]:
 
 
 class ChatSessions:
+    """A user's chat threads: SQLite conversation memory keyed by user and session id,
+    plus an index table for listing them.
+    """
+
     def __init__(self, db_path: Path) -> None:
         self._path = db_path
         create_table(

@@ -9,11 +9,15 @@ from agent.domain.models import LiveReading, Window
 
 @dataclass(frozen=True)
 class PublishedWindow:
+    """A window with the time it was published, used to refresh incrementally."""
+
     window: Window
     published_at: datetime
 
 
 class WindowSource(Protocol):
+    """The read-only source of published windows and live readings."""
+
     def fetch_since(self, published_after: datetime | None) -> list[PublishedWindow]:
         """Every window published at or after `published_after` (all if None).
 

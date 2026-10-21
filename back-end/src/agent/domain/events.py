@@ -8,6 +8,8 @@ EventName = Literal["token", "tool_start", "tool_end", "data", "done", "error"]
 
 @dataclass(frozen=True)
 class SseEvent:
+    """One Contract B event: a name and its JSON-able data."""
+
     name: EventName
     data: dict[str, Any] = field(default_factory=dict)
 

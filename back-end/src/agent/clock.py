@@ -16,6 +16,10 @@ HOUR = timedelta(hours=1)
 
 
 class ClockState(BaseModel):
+    """A snapshot of the replay clock: the simulated now, whether it is playing and how
+    fast, and the range of data it can reach.
+    """
+
     now: datetime | None
     playing: bool
     seconds_per_hour: float

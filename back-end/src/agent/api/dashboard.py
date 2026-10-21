@@ -37,11 +37,13 @@ router = APIRouter(tags=["dashboard"])
 
 @router.get("/catalog")
 def catalog(svc: Queries) -> Catalog:
+    """The metrics, visible participants and query options (`GET /catalog`)."""
     return svc.catalog()
 
 
 @router.post("/query")
 def run_query(spec: QuerySpec, svc: Queries) -> QueryResult:
+    """Run a generic QuerySpec (`POST /query`), limited to what the caller may see."""
     return svc.query(spec)
 
 
@@ -49,11 +51,17 @@ def run_query(spec: QuerySpec, svc: Queries) -> QueryResult:
 def participants(
     svc: Queries, sort_by: str = GLUCO_SCORE, order: Order = "asc"
 ) -> list[ParticipantRow]:
+    """Each visible participant's newest window, sorted by a metric or `person_id` (`GET
+    /participants`).
+    """
     return svc.participants(sort_by, order)
 
 
 @router.get("/participants/{person_id}")
 def participant(person_id: str, svc: Queries) -> ParticipantRow:
+    """One participant's newest window (`GET /participants/{person_id}`). A patient can
+    only ask for themselves.
+    """
     return svc.participant(person_id)
 
 
@@ -63,16 +71,25 @@ def explain(
     svc: Queries,
     hours: Annotated[float, Query(gt=0, le=168)] = 24,
 ) -> Explanation:
+    """What changed for one participant over the last `hours` (up to 168) and, for
+    clinicians, where they sit in the cohort.
+    """
     return svc.explain(person_id, hours)
 
 
 @router.get("/participants/{person_id}/compare")
 def compare(person_id: str, metric: str, svc: Queries) -> CohortComparison:
+    """One participant's newest value of `metric` against everyone's newest windows.
+    Clinicians only.
+    """
     return svc.compare_to_cohort(person_id, metric)
 
 
 @router.get("/cohort")
 def cohort(svc: Queries) -> CohortOverview:
+    """Panel overview: summaries per metric, the lowest Gluco Scores and the biggest
+    24-hour drops and gains. Clinicians only.
+    """
     return svc.cohort_overview()
 
 

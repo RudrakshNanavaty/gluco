@@ -36,6 +36,7 @@ LLM_POINT_BUDGET = 240  # across all series of one tool result
 
 
 def dump(model: BaseModel) -> dict[str, Any]:
+    """A pydantic model as a JSON-able dict."""
     return model.model_dump(mode="json")
 
 
@@ -81,6 +82,9 @@ def parse_time(value: str | None) -> datetime | None:
 def result(
     *, summary: str, rows: int, as_of: datetime | None, **data: Any
 ) -> dict[str, Any]:
+    """A successful tool payload: summary, row count and the clock's `as_of`, plus any
+    tool-specific data.
+    """
     return {
         "summary": summary,
         "rows": rows,
@@ -90,6 +94,9 @@ def result(
 
 
 def error(code: str, message: str, **extra: Any) -> dict[str, Any]:
+    """A failed tool payload the agent can explain: a message, a stable `code` and zero
+    rows.
+    """
     return {"error": message, "code": code, "rows": 0, "summary": message, **extra}
 
 

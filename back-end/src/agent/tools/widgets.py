@@ -31,6 +31,10 @@ def _widget_result(svc: QueryService, spec: widgets.WidgetSpec) -> dict[str, Any
 
 
 def build_widget_tool(svc: QueryService) -> FunctionTool:
+    """The clinician's `build_widget` tool: any widget kind, for any patients they may
+    see.
+    """
+
     @function_tool
     @safe_tool
     def build_widget(
@@ -83,6 +87,8 @@ def build_widget_tool(svc: QueryService) -> FunctionTool:
 
 
 def build_my_widget_tool(svc: QueryService) -> FunctionTool:
+    """The patient's `build_my_widget` tool: a widget of their own readings only."""
+
     @function_tool
     @safe_tool
     def build_my_widget(

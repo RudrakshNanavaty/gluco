@@ -31,6 +31,11 @@ log = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class Runtime:
+    """What the app shares across requests: settings, LLM connection, data source and
+    stores, replay clock, guardrails, chat sessions, pinned widgets and the chat
+    service.
+    """
+
     settings: Settings
     llm: LlmConnection
     source: WindowSource
@@ -87,6 +92,10 @@ def build_runtime(
     source: WindowSource | None = None,
     time_source: Callable[[], float] = time.monotonic,
 ) -> Runtime:
+    """Wire a Runtime from `settings` (read from the environment when None). Also points
+    the Agents SDK at the LLM provider. `source` and `time_source` can be replaced, for
+    tests.
+    """
     settings = settings or Settings()  # pyright: ignore[reportCallIssue]
     llm = LlmConnection.from_settings(settings)
     llm.configure()

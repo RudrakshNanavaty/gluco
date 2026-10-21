@@ -28,6 +28,10 @@ METADATA_CLAIM = "metadata"
 
 @dataclass(frozen=True)
 class Principal:
+    """The signed-in user: id, role, display name and, for patients, the participant
+    they are. Every data read is scoped from it.
+    """
+
     user_id: str
     role: Role
     display_name: str
@@ -41,12 +45,17 @@ CLINICIAN = Principal(CLINICIAN_ID, "clinician", "Dr. Demo")
 
 
 def patient(person_id: str) -> Principal:
+    """The Principal of the patient who is participant `person_id`."""
     return Principal(
         f"{PATIENT_PREFIX}{person_id}", "patient", display_name(person_id), person_id
     )
 
 
 class InvalidTokenError(Exception):
+    """A Clerk session token that cannot be accepted: bad or expired, no valid metadata,
+    an unknown signing key, or an account not linked to a known participant.
+    """
+
     pass
 
 
