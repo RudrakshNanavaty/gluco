@@ -383,3 +383,9 @@ storytelling.
 Use the [team rehearsal guide](docs/TEAM_REHEARSAL.md) and record each member’s
 actual run. See [coverage scope and publishing](docs/COVERAGE.md) for badge
 denominators, report artifacts and first-run initialization.
+
+## Cite the software
+
+Use [CITATION.cff](CITATION.cff) and include the exact commit used. The software
+citation is separate from the dataset references above. For an archived release,
+follow the [reviewed release handoff](docs/RELEASE_HANDOFF.md).

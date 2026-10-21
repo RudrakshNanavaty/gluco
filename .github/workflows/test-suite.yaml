@@ -289,3 +289,14 @@ jobs:
           git add README.md backend.json frontend.json databricks.json tests.json
           git commit -m "chore(metrics): publish measured coverage for $GITHUB_SHA"
           git push origin HEAD:coverage-badges
+
+  citation-metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v5
+      - name: Validate software citation schema
+        run: uv run --no-project --with cffconvert==2.0.0 cffconvert --validate --infile CITATION.cff

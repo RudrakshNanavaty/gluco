@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: >-
+  If you use Gluco, please cite this software. For reproducibility, include
+  the exact commit or a reviewed archived release when one is available.
+type: software
+title: 'Gluco: wearable signals and daily metabolic context'
+authors:
+  - name: Gluco contributors
+    website: https://github.com/RudrakshNanavaty/gluco/graphs/contributors
+repository-code: https://github.com/RudrakshNanavaty/gluco
+url: https://github.com/RudrakshNanavaty/gluco
+license: AGPL-3.0-only
+abstract: >-
+  Gluco is a research prototype combining wearable-data analytics,
+  experimental metabolic-pattern scoring, a role-aware dashboard, and
+  grounded contextual explanations. It is not a medical device, glucose
+  measurement, diagnosis, or calibrated disease-risk estimate.
+keywords:
+  - research software
+  - wearable data
+  - data engineering
+  - reproducible evaluation
