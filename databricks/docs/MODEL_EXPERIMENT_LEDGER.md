@@ -31,7 +31,7 @@ than treating this dated ledger as a deployment status monitor.
 | Additional HR information | Predeclared primary Temperature vs Temperature+HR selection | 64.70% | #122, HEART_RATE_RESULTS.md |
 | Additional EDA information | Predeclared primary Temperature vs Temperature+EDA selection | 65.33% | #124, EDA_RESULTS.md |
 
-Some result documents live on their respective PR branches until merged.
+All listed study reports are now merged into main as of revision `53d82ff`.
 The prior classifier's participant-weighted accuracy is 53.33%; its cross-fold
 AUC is omitted because fold-specific class balance makes that comparison
 misleading. Accuracy is the average of per-person window accuracies, not the

@@ -110,3 +110,19 @@ cases. Pending model-study PRs have their own additional tests. New checks cover
 invariant failures, empty/malformed responses, bound session parameters, pending
 polling, timeout cancellation, truncation, sanitized cloud errors and CLI option
 propagation. Ruff checks and formatting pass for the new Python files.
+
+## Optional completed-job and freshness checks
+
+Add `--run-id RUN_ID --expected-job-id JOB_ID` to check a particular run alongside
+session data. Both IDs are required together. Only `TERMINATED` / `SUCCESS`
+passes; active, failed, canceled and missing-end-time runs fail. Optional
+`--max-run-age-hours HOURS` rejects completion times in the future or older than
+the explicit limit. It uses job completion time, not historical sensor time.
+
+This is a one-shot check. A scheduler may invoke it and alert on nonzero status;
+this tool does not create a recurring job, pick a budget or send notifications.
+The operator must record which run belongs to which session: the Jobs API
+identity check does not establish publication lineage. A selected old successful
+run does not rule out later failures. Existing snapshot-only commands retain
+their behavior. Cloud error messages, task parameters and authentication details
+are not printed.
