@@ -124,7 +124,9 @@ def test_tool_call_index_fix_forwards_async_chunks_and_stream_attrs():
     assert ToolCallIndexFix(Stream()).value == "stream-value"
 
 
-def test_settings_build_conninfo_and_choose_explicit_backend():
+def test_settings_build_conninfo_and_choose_explicit_backend(monkeypatch, tmp_path):
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.chdir(tmp_path)  # Never read a developer's .env in this unit test.
     settings = Settings(
         agent_model="test",
         data_backend="postgres",

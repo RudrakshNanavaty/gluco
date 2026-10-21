@@ -29,6 +29,10 @@ seed-clerk *args:
 test:
     uv run pytest
 
+# Measured line coverage over all agent source, including untouched files.
+coverage:
+    uv run pytest --cov=src/agent --cov-report=term-missing --cov-report=json:coverage/coverage.json --cov-report=html:coverage/html --junitxml=coverage/junit.xml
+
 # Read-only checks against the real database configured in .env
 test-live:
     LIVE_DB=1 uv run pytest tests/test_postgres_live.py tests/test_window_source.py -v

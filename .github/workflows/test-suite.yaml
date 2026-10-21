@@ -37,7 +37,14 @@ jobs:
 
       # Once install succeeds, every check runs even if an earlier one failed.
       - name: Tests
-        run: uv run pytest
+        run: uv run pytest --cov=src/agent --cov-report=term-missing --cov-report=json:coverage/coverage.json --cov-report=html:coverage/html --junitxml=coverage/junit.xml
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-backend
+          path: back-end/coverage/
+          if-no-files-found: error
 
       - name: Ruff lint
         if: (success() || failure()) && steps.install.outcome == 'success'
@@ -132,7 +139,14 @@ jobs:
 
       # Once install succeeds, every check runs even if an earlier one failed.
       - name: Tests
-        run: bun run test
+        run: bun run test:coverage
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-frontend
+          path: front-end/coverage/
+          if-no-files-found: error
 
       - name: Type check
         if: (success() || failure()) && steps.install.outcome == 'success'
@@ -155,7 +169,13 @@ jobs:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@v5
       - name: Verify rolling feature and scoring contracts
-        run: uv run --no-project --with-requirements databricks/requirements-test.txt python -m pytest databricks/tests -q
+        run: uv run --no-project --with-requirements databricks/requirements-test.txt python -m pytest databricks/tests -q --cov=databricks/tiger --cov-report=term-missing --cov-report=json:databricks/coverage/coverage.json --cov-report=html:databricks/coverage/html --junitxml=databricks/coverage/junit.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-databricks
+          path: databricks/coverage/
+          if-no-files-found: error
 
   model-evaluation:
     runs-on: ubuntu-latest
@@ -180,3 +200,68 @@ jobs:
           name: synthetic-model-evaluation
           path: /tmp/m0/*.json
           if-no-files-found: error
+
+  coverage-report:
+    needs: [back-end, front-end, databricks]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: /tmp/coverage-input
+      - name: Summarize measured reports
+        run: |
+          python -m unittest discover -s scripts/tests
+          mkdir -p /tmp/coverage-input/normalized
+          for component in backend frontend databricks; do
+            mv "/tmp/coverage-input/coverage-$component" "/tmp/coverage-input/normalized/$component"
+          done
+          python scripts/coverage_badges.py /tmp/coverage-input/normalized /tmp/coverage-badges
+      - uses: actions/upload-artifact@v4
+        with:
+          name: measured-badges
+          path: /tmp/coverage-badges/
+          if-no-files-found: error
+
+  publish-coverage-badges:
+    needs: coverage-report
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    concurrency:
+      group: publish-coverage-badges
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: measured-badges
+          path: /tmp/coverage-badges
+      - name: Publish generated endpoint data (main only)
+        run: |
+          git fetch origin main
+          if [ "$(git rev-parse origin/main)" != "$GITHUB_SHA" ]; then
+            echo "Newer main exists; leaving its metrics authoritative."
+            exit 0
+          fi
+          if git ls-remote --exit-code --heads origin coverage-badges; then
+            git fetch origin coverage-badges
+            git checkout -B coverage-badges FETCH_HEAD
+          else
+            git checkout --orphan coverage-badges
+          fi
+          git rm -rf --ignore-unmatch .
+          cp /tmp/coverage-badges/* .
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add README.md backend.json frontend.json databricks.json tests.json
+          git commit -m "chore(metrics): publish measured coverage for $GITHUB_SHA"
+          git push origin HEAD:coverage-badges

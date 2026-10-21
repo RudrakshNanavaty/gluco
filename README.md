@@ -17,6 +17,12 @@ clinicians.
 [![AI use disclosed](https://img.shields.io/badge/AI_use-disclosed-8B5CF6?style=for-the-badge)](#ai-use-and-attribution)
 [![Test Suite](https://img.shields.io/github/actions/workflow/status/RudrakshNanavaty/gluco/test-suite.yaml?branch=main&style=for-the-badge&label=TEST%20SUITE)](https://github.com/RudrakshNanavaty/gluco/actions/workflows/test-suite.yaml)
 
+<!-- Metric endpoints initialize on the first merged main coverage run. -->
+[![Backend line coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FRudrakshNanavaty%2Fgluco%2Fcoverage-badges%2Fbackend.json)](https://github.com/RudrakshNanavaty/gluco/tree/coverage-badges)
+[![Frontend line coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FRudrakshNanavaty%2Fgluco%2Fcoverage-badges%2Ffrontend.json)](https://github.com/RudrakshNanavaty/gluco/tree/coverage-badges)
+[![Databricks line coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FRudrakshNanavaty%2Fgluco%2Fcoverage-badges%2Fdatabricks.json)](https://github.com/RudrakshNanavaty/gluco/tree/coverage-badges)
+[![Unit tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FRudrakshNanavaty%2Fgluco%2Fcoverage-badges%2Ftests.json)](https://github.com/RudrakshNanavaty/gluco/tree/coverage-badges)
+
 **[Run locally](#quick-start)** ·
 **[Explore the data flow](databricks/DATA_FLOW.md)**
 
@@ -354,3 +360,9 @@ to useful signals, visible uncertainty, and responsible health-data
 storytelling.
 
 </div>
+
+## Team demonstration and quality evidence
+
+Use the [team rehearsal guide](docs/TEAM_REHEARSAL.md) and record each member’s
+actual run. See [coverage scope and publishing](docs/COVERAGE.md) for badge
+denominators, report artifacts and first-run initialization.

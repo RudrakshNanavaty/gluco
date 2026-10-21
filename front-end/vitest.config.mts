@@ -7,6 +7,14 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   test: {
+    coverage: {
+      provider: "v8",
+      reportOnFailure: true,
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/**/*.d.ts"],
+      reporter: ["text", "json-summary", "html"],
+      reportsDirectory: "coverage",
+    },
     environment: "jsdom",
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
