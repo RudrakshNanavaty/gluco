@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "secrets:push": "../scripts/secrets.sh frontend push",
     "secrets:pull": "../scripts/secrets.sh frontend pull",
-    "secrets:diff": "../scripts/secrets.sh frontend diff"
+    "secrets:diff": "../scripts/secrets.sh frontend diff",
+    "test:coverage": "vitest run --coverage --reporter=default --reporter=junit --outputFile.junit=coverage/junit.xml"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.17",
@@ -46,6 +47,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.1.2",
+    "@vitest/coverage-v8": "5.0.5",
     "clerk": "^4.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",

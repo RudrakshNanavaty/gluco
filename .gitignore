@@ -54,3 +54,7 @@ pilot-data/
 # Claude Code: keep local settings out of git, but share the preview launch config
 .claude/*
 !.claude/launch.json
+
+# Local coverage counters (reports already ignored by coverage/)
+.coverage
+.coverage.*
