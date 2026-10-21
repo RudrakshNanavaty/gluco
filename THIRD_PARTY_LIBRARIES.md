@@ -1,5 +1,10 @@
 # Third-party libraries and licenses
 
+> **Complete resolved inventory:** See the generated
+> [dependency-license report](docs/dependencies/README.md), which is checked
+> against both lockfiles in CI. The sections below provide a shorter direct-
+> dependency overview.
+
 Gluco is licensed under AGPL-3.0-only, but its dependencies retain their own
 licenses. The lockfiles are the authoritative version inventories:
 [`back-end/uv.lock`](back-end/uv.lock) and

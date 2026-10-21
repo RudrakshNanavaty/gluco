@@ -356,6 +356,8 @@ explanations traceable to exact source windows.
   reporting guidance
 - [Third-party licenses](THIRD_PARTY_LIBRARIES.md) - dependency inventory and
   license-review procedure
+- [Resolved license report](docs/dependencies/README.md) - generated versions,
+  licenses, and upstream sources for every locked package
 - [Data flow](databricks/DATA_FLOW.md) — system architecture and dashboard data
   contract
 - [Pipeline setup](databricks/tiger/README.md) — reproducible Databricks and
