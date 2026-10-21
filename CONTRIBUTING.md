@@ -36,6 +36,7 @@ cd front-end
 bun run test
 bun run typecheck
 bun run lint
+bun run format:check   # `bun run format` fixes it
 bun run build
 ```
 
