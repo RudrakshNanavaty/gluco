@@ -25,6 +25,7 @@ clinicians.
 [![Unit tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FRudrakshNanavaty%2Fgluco%2Fcoverage-badges%2Ftests.json)](https://github.com/RudrakshNanavaty/gluco/tree/coverage-badges)
 
 **[Watch the teaser](https://drive.google.com/file/d/1r6uI6UD6Kn9DfHwL-YH9zQnvpQAOXBv8/view)** ·
+**[Watch the walkthrough](https://drive.google.com/file/d/17sLjB4o7jg464WOVBZPJ-1rnnvMMfx7k/view)** ·
 **[Run locally](#quick-start)** ·
 **[Explore the data flow](databricks/DATA_FLOW.md)**
 
