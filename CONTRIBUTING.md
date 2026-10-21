@@ -81,7 +81,7 @@ output as evidence by itself.
 
 By participating, you agree to follow the
 [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). Contributions are licensed under the
-repository's [GNU AGPL v3](LICENSE).
+repository's [GNU AGPL v3](LICENSE.md).
 
 ## Releasing and archiving
 

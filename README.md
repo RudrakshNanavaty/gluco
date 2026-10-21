@@ -9,7 +9,7 @@ sensor-style feed, and an experimental metabolic-pattern score for patients and
 clinicians.
 
 [![Research prototype](https://img.shields.io/badge/status-research_prototype-19A99A?style=for-the-badge)](#responsible-use)
-[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-663399?style=for-the-badge)](LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-663399?style=for-the-badge)](LICENSE.md)
 [![AI use disclosed](https://img.shields.io/badge/AI_use-disclosed-8B5CF6?style=for-the-badge)](#ai-use-and-attribution)
 [![Test Suite](https://img.shields.io/github/actions/workflow/status/RudrakshNanavaty/gluco/test-suite.yaml?branch=main&style=for-the-badge&label=TEST%20SUITE)](https://github.com/RudrakshNanavaty/gluco/actions/workflows/test-suite.yaml)
 [![Ruff lint](https://img.shields.io/badge/Python-Ruff_lint-D7FF64?style=flat-square&logo=ruff&logoColor=111827)](back-end/pyproject.toml)
@@ -204,7 +204,7 @@ gluco/
 ├── databricks/
 │   ├── tiger/              # Ingestion, Lakeflow, modeling, replay, and SQL contracts
 │   └── DATA_FLOW.md        # End-to-end architecture and backend contract
-├── LICENSE                 # GNU Affero General Public License v3.0
+├── LICENSE.md              # GNU Affero General Public License v3.0
 └── README.md
 ```
 
@@ -322,7 +322,7 @@ Suggested citations for the AI tools and documentation:
 ## License
 
 Gluco is open source under the
-[GNU Affero General Public License v3.0 only](LICENSE) (`AGPL-3.0-only`). You may
+[GNU Affero General Public License v3.0 only](LICENSE.md) (`AGPL-3.0-only`). You may
 use, study, modify, and redistribute the project. If you distribute a modified
 version—or let users interact with a modified version over a network—you must
 make its corresponding source available under the same license. Third-party
