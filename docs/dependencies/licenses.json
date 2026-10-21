@@ -2,9 +2,9 @@
   "schema": 1,
   "generated_from": {
     "back-end/uv.lock": "ed315c1ac95e8b0e36f1cfc8bca2e8da097356c1470621478d2a367a508c3c21",
-    "front-end/bun.lock": "0e241b16ccf1e2656f44d42e83f038d85757c78779f21a88f0fa809f0c550325"
+    "front-end/bun.lock": "c3888623ba437ec8c2f0e4e182fef252186b17c6d2e824494f05a733021bc35f"
   },
-  "package_count": 1086,
+  "package_count": 1087,
   "unresolved_count": 0,
   "packages": [
     {
@@ -6257,6 +6257,13 @@
       "version": "1.2.1",
       "license": "MIT",
       "source": "git://github.com/gkz/prelude-ls.git"
+    },
+    {
+      "ecosystem": "npm",
+      "name": "prettier",
+      "version": "3.9.10",
+      "license": "MIT",
+      "source": "https://github.com/prettier/prettier.git"
     },
     {
       "ecosystem": "npm",

@@ -2,7 +2,7 @@
 
 # Resolved dependency licenses
 
-This inventory covers **1086 resolved packages** from `back-end/uv.lock` and `front-end/bun.lock`.
+This inventory covers **1087 resolved packages** from `back-end/uv.lock` and `front-end/bun.lock`.
 Registry metadata was retrieved from the official PyPI and npm APIs. The machine-readable evidence is in [`licenses.json`](licenses.json).
 
 ## Summary
@@ -26,7 +26,7 @@ Registry metadata was retrieved from the official PyPI and npm APIs. The machine
 | ISC | 41 |
 | LGPL-3.0-only | 2 |
 | LGPL-3.0-or-later | 10 |
-| MIT | 892 |
+| MIT | 893 |
 | MIT AND ISC | 1 |
 | MIT License | 3 |
 | MIT OR Apache-2.0 | 1 |
@@ -934,6 +934,7 @@ Registry metadata was retrieved from the official PyPI and npm APIs. The machine
 | npm | `postcss-selector-parser` | `7.1.6` | MIT | [upstream](https://github.com/postcss/postcss-selector-parser.git) |
 | npm | `powershell-utils` | `0.2.1` | MIT | [upstream](https://github.com/sindresorhus/powershell-utils.git) |
 | npm | `prelude-ls` | `1.2.1` | MIT | registry metadata |
+| npm | `prettier` | `3.9.10` | MIT | [upstream](https://github.com/prettier/prettier.git) |
 | npm | `pretty-format` | `27.5.1` | MIT | [upstream](https://github.com/facebook/jest.git) |
 | npm | `pretty-ms` | `9.3.1` | MIT | [upstream](https://github.com/sindresorhus/pretty-ms.git) |
 | npm | `prompts` | `2.4.2` | MIT | [upstream](https://github.com/terkelg/prompts.git) |
