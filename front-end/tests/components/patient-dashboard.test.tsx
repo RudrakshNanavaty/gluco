@@ -25,15 +25,69 @@ describe("PatientDashboard", () => {
   }
 
   const sampleCatalogMetrics = [
-    { name: "gluco_score", label: "Gluco Score", unit: "", live: false, description: "Composite score" },
-    { name: "gluco_change_24h", label: "24 h Change", unit: "", live: false, description: "24 h change" },
-    { name: "hr_mean_bpm_24h", label: "Heart Rate", unit: "bpm", live: false, description: "24 h mean heart rate" },
-    { name: "latest_hr_bpm", label: "Heart Rate now", unit: "bpm", live: true, description: "Current pulse" },
-    { name: "motion_mean_g", label: "Movement", unit: "g", live: false, description: "24 h motion acceleration" },
-    { name: "latest_motion_g", label: "Movement now", unit: "g", live: true, description: "Current motion" },
-    { name: "temperature_mean_c_24h", label: "Skin Temperature", unit: "°C", live: false, description: "Skin temp" },
-    { name: "latest_skin_temperature_c", label: "Skin Temp now", unit: "°C", live: true, description: "Current skin temp" },
-    { name: "cadence_rpm", label: "Cadence", unit: "rpm", live: false, description: "Step cadence" },
+    {
+      name: "gluco_score",
+      label: "Gluco Score",
+      unit: "",
+      live: false,
+      description: "Composite score",
+    },
+    {
+      name: "gluco_change_24h",
+      label: "24 h Change",
+      unit: "",
+      live: false,
+      description: "24 h change",
+    },
+    {
+      name: "hr_mean_bpm_24h",
+      label: "Heart Rate",
+      unit: "bpm",
+      live: false,
+      description: "24 h mean heart rate",
+    },
+    {
+      name: "latest_hr_bpm",
+      label: "Heart Rate now",
+      unit: "bpm",
+      live: true,
+      description: "Current pulse",
+    },
+    {
+      name: "motion_mean_g",
+      label: "Movement",
+      unit: "g",
+      live: false,
+      description: "24 h motion acceleration",
+    },
+    {
+      name: "latest_motion_g",
+      label: "Movement now",
+      unit: "g",
+      live: true,
+      description: "Current motion",
+    },
+    {
+      name: "temperature_mean_c_24h",
+      label: "Skin Temperature",
+      unit: "°C",
+      live: false,
+      description: "Skin temp",
+    },
+    {
+      name: "latest_skin_temperature_c",
+      label: "Skin Temp now",
+      unit: "°C",
+      live: true,
+      description: "Current skin temp",
+    },
+    {
+      name: "cadence_rpm",
+      label: "Cadence",
+      unit: "rpm",
+      live: false,
+      description: "Step cadence",
+    },
   ]
 
   const sampleParticipantData = {
@@ -114,34 +168,54 @@ describe("PatientDashboard", () => {
   // Verifies that the greeting displays the user name and formatted clock replay timestamp.
   it("renders personalized greeting and formatted clock timestamp", async () => {
     serve()
-    renderWithProviders(<PatientDashboard principal={patientPrincipal} />, { role: "patient" })
+    renderWithProviders(<PatientDashboard principal={patientPrincipal} />, {
+      role: "patient",
+    })
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Hi, Alice Parker" })).toBeInTheDocument()
-    expect(screen.getByText(/here's how your week looks, as of/i)).toBeInTheDocument()
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Hi, Alice Parker" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/here's how your week looks, as of/i)
+    ).toBeInTheDocument()
     expect(screen.getByText(/Fri 16 Oct, 12:00/i)).toBeInTheDocument()
   })
 
   // Verifies that the Gluco Score section renders the score ring and plain-language trend explanation.
   it("renders Gluco Score ring and friendly change summary", async () => {
     serve()
-    renderWithProviders(<PatientDashboard principal={patientPrincipal} />, { role: "patient" })
+    renderWithProviders(<PatientDashboard principal={patientPrincipal} />, {
+      role: "patient",
+    })
 
-    expect(await screen.findByRole("heading", { name: "Your Gluco Score" })).toBeInTheDocument()
-    expect(await screen.findByRole("meter", { name: "Gluco Score" })).toHaveAttribute("aria-valuenow", "85")
-    expect(screen.getByText("Up 3 points since this time yesterday.")).toBeInTheDocument()
+    expect(
+      await screen.findByRole("heading", { name: "Your Gluco Score" })
+    ).toBeInTheDocument()
+    expect(
+      await screen.findByRole("meter", { name: "Gluco Score" })
+    ).toHaveAttribute("aria-valuenow", "85")
+    expect(
+      screen.getByText("Up 3 points since this time yesterday.")
+    ).toBeInTheDocument()
     expect(screen.getByText("Higher is healthier.")).toBeInTheDocument()
   })
 
   // Verifies that primary vital sensor cards render with values and baseline comparisons.
   it("renders primary vitals tiles for heart rate, movement, and skin temperature", async () => {
     serve()
-    renderWithProviders(<PatientDashboard principal={patientPrincipal} />, { role: "patient" })
+    renderWithProviders(<PatientDashboard principal={patientPrincipal} />, {
+      role: "patient",
+    })
 
-    expect(await screen.findByRole("heading", { name: "Your vitals" })).toBeInTheDocument()
+    expect(
+      await screen.findByRole("heading", { name: "Your vitals" })
+    ).toBeInTheDocument()
     expect(await screen.findByText("Heart rate")).toBeInTheDocument()
     expect(screen.getByText("Movement")).toBeInTheDocument()
     expect(screen.getByText("Skin temperature")).toBeInTheDocument()
-    expect((await screen.findAllByText("Close to your usual")).length).toBeGreaterThanOrEqual(1)
+    expect(
+      (await screen.findAllByText("Close to your usual")).length
+    ).toBeGreaterThanOrEqual(1)
   })
 
   // Verifies that live sensor values display inside vital cards when live readings are present.
@@ -157,7 +231,9 @@ describe("PatientDashboard", () => {
     } as unknown as ReturnType<typeof useLiveReading>)
 
     serve()
-    renderWithProviders(<PatientDashboard principal={patientPrincipal} />, { role: "patient" })
+    renderWithProviders(<PatientDashboard principal={patientPrincipal} />, {
+      role: "patient",
+    })
 
     expect((await screen.findAllByText("24-hour average")).length).toBe(3)
     expect(await screen.findByText("88.0")).toBeInTheDocument()
@@ -166,9 +242,13 @@ describe("PatientDashboard", () => {
   // Verifies that secondary sensor metrics render in the More from your wearable section.
   it("renders secondary sensor metrics in More from your wearable section", async () => {
     serve()
-    renderWithProviders(<PatientDashboard principal={patientPrincipal} />, { role: "patient" })
+    renderWithProviders(<PatientDashboard principal={patientPrincipal} />, {
+      role: "patient",
+    })
 
-    expect(await screen.findByRole("heading", { name: "More from your wearable" })).toBeInTheDocument()
+    expect(
+      await screen.findByRole("heading", { name: "More from your wearable" })
+    ).toBeInTheDocument()
     expect(screen.getByText("Cadence")).toBeInTheDocument()
     expect(screen.getByText("60.0")).toBeInTheDocument()
   })
@@ -181,21 +261,34 @@ describe("PatientDashboard", () => {
       }),
     })
 
-    renderWithProviders(<PatientDashboard principal={patientPrincipal} />, { role: "patient" })
+    renderWithProviders(<PatientDashboard principal={patientPrincipal} />, {
+      role: "patient",
+    })
 
-    expect(await screen.findByText("We couldn't load your readings")).toBeInTheDocument()
-    expect(screen.getByText("Something went wrong. Please try again.")).toBeInTheDocument()
+    expect(
+      await screen.findByText("We couldn't load your readings")
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText("Something went wrong. Please try again.")
+    ).toBeInTheDocument()
   })
 
   // Verifies that skeleton placeholders render when participant data is still pending.
   it("renders skeleton placeholders while data queries are pending", async () => {
     serve({ "GET /participants/{person_id}": PENDING })
 
-    const { container } = renderWithProviders(<PatientDashboard principal={patientPrincipal} />, { role: "patient" })
+    const { container } = renderWithProviders(
+      <PatientDashboard principal={patientPrincipal} />,
+      { role: "patient" }
+    )
 
-    const skeletons = container.querySelectorAll("[data-slot=skeleton], .animate-pulse")
+    const skeletons = container.querySelectorAll(
+      "[data-slot=skeleton], .animate-pulse"
+    )
     expect(skeletons.length).toBeGreaterThan(0)
-    expect(screen.queryByRole("meter", { name: "Gluco Score" })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("meter", { name: "Gluco Score" })
+    ).not.toBeInTheDocument()
   })
 
   // Verifies that greeting omits the clock timestamp when clock.now is missing.
@@ -207,9 +300,13 @@ describe("PatientDashboard", () => {
     } as unknown as ReturnType<typeof useClock>)
 
     serve()
-    renderWithProviders(<PatientDashboard principal={patientPrincipal} />, { role: "patient" })
+    renderWithProviders(<PatientDashboard principal={patientPrincipal} />, {
+      role: "patient",
+    })
 
-    expect(await screen.findByText("Here's how your week looks.")).toBeInTheDocument()
+    expect(
+      await screen.findByText("Here's how your week looks.")
+    ).toBeInTheDocument()
   })
 
   // Verifies that empty participant_id is handled safely without throwing runtime errors.
@@ -222,8 +319,12 @@ describe("PatientDashboard", () => {
     }
 
     serve()
-    renderWithProviders(<PatientDashboard principal={anonymousPrincipal} />, { role: "patient" })
+    renderWithProviders(<PatientDashboard principal={anonymousPrincipal} />, {
+      role: "patient",
+    })
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Hi, Guest" })).toBeInTheDocument()
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Hi, Guest" })
+    ).toBeInTheDocument()
   })
 })

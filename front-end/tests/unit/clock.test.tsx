@@ -103,10 +103,7 @@ describe("ClockProvider", () => {
     const wrapper = createWrapper(queryClient)
     renderHook(() => useClock(), { wrapper })
 
-    expect(publishSpy).toHaveBeenCalledWith(
-      MOCK_TICK.live_at,
-      MOCK_TICK.live
-    )
+    expect(publishSpy).toHaveBeenCalledWith(MOCK_TICK.live_at, MOCK_TICK.live)
   })
 
   // Verifies query invalidation on backwards seek reset
@@ -189,7 +186,9 @@ describe("ClockProvider", () => {
 
   // Verifies control command execution and clock state update
   it("dispatches control commands and updates clock state with response", async () => {
-    vi.spyOn(sseModule, "streamSSE").mockImplementation(() => new Promise(() => {}))
+    vi.spyOn(sseModule, "streamSSE").mockImplementation(
+      () => new Promise(() => {})
+    )
 
     const updatedClock = { ...MOCK_CLOCK, playing: false }
     const postSpy = vi.spyOn(api, "POST").mockResolvedValue({
@@ -204,7 +203,9 @@ describe("ClockProvider", () => {
       await result.current.control({ action: "pause" })
     })
 
-    expect(postSpy).toHaveBeenCalledWith("/clock", { body: { action: "pause" } })
+    expect(postSpy).toHaveBeenCalledWith("/clock", {
+      body: { action: "pause" },
+    })
     expect(result.current.clock).toEqual(updatedClock)
   })
 
@@ -213,12 +214,10 @@ describe("ClockProvider", () => {
     const publishSpy = vi.spyOn(liveModule, "publishLive")
     let capturedSignal: AbortSignal | undefined
 
-    vi.spyOn(sseModule, "streamSSE").mockImplementation(
-      async (_path, init) => {
-        capturedSignal = init.signal
-        return new Promise(() => {})
-      }
-    )
+    vi.spyOn(sseModule, "streamSSE").mockImplementation(async (_path, init) => {
+      capturedSignal = init.signal
+      return new Promise(() => {})
+    })
 
     const wrapper = createWrapper(queryClient)
     const { unmount } = renderHook(() => useClock(), { wrapper })

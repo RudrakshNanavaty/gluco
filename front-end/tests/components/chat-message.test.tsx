@@ -27,7 +27,9 @@ describe("ChatMessage", () => {
 
     renderWithProviders(<ChatMessage message={userMsg} />, { role: "patient" })
 
-    expect(screen.getByText("Why did my score drop yesterday?")).toBeInTheDocument()
+    expect(
+      screen.getByText("Why did my score drop yesterday?")
+    ).toBeInTheDocument()
   })
 
   // Verifies that thinking indicator renders for pending assistant message without parts.
@@ -39,13 +41,17 @@ describe("ChatMessage", () => {
       parts: [],
     }
 
-    const { unmount } = renderWithProviders(<ChatMessage message={pendingMsg} />, { role: "patient" })
+    const { unmount } = renderWithProviders(
+      <ChatMessage message={pendingMsg} />,
+      { role: "patient" }
+    )
     expect(screen.getByText("One moment…")).toBeInTheDocument()
 
     unmount()
 
-
-    renderWithProviders(<ChatMessage message={pendingMsg} />, { role: "clinician" })
+    renderWithProviders(<ChatMessage message={pendingMsg} />, {
+      role: "clinician",
+    })
     expect(screen.getByText("Thinking…")).toBeInTheDocument()
   })
 
@@ -67,7 +73,9 @@ describe("ChatMessage", () => {
     renderWithProviders(<ChatMessage message={toolMsg} />, { role: "patient" })
 
     expect(screen.getByText("Checking your latest score")).toBeInTheDocument()
-    expect(screen.queryByText("Checked your latest score")).not.toBeInTheDocument()
+    expect(
+      screen.queryByText("Checked your latest score")
+    ).not.toBeInTheDocument()
   })
 
   // Verifies that completed tool part displays checkmark and past-tense label.
@@ -109,9 +117,13 @@ describe("ChatMessage", () => {
       ],
     }
 
-    renderWithProviders(<ChatMessage message={toolMsg} />, { role: "clinician" })
+    renderWithProviders(<ChatMessage message={toolMsg} />, {
+      role: "clinician",
+    })
 
-    expect(screen.getByText(/Ranked patients · 18 patients ranked/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Ranked patients · 18 patients ranked/i)
+    ).toBeInTheDocument()
   })
 
   // Verifies that markdown text parts render formatted text correctly.
@@ -127,7 +139,9 @@ describe("ChatMessage", () => {
       ],
     }
 
-    renderWithProviders(<ChatMessage message={markdownMsg} />, { role: "patient" })
+    renderWithProviders(<ChatMessage message={markdownMsg} />, {
+      role: "patient",
+    })
 
     expect(screen.getByText("Your score improved")).toBeInTheDocument()
     expect(screen.getByText(/by 3 points/)).toBeInTheDocument()
@@ -148,7 +162,9 @@ describe("ChatMessage", () => {
 
     renderWithProviders(<ChatMessage message={errorMsg} />, { role: "patient" })
 
-    expect(screen.getByText("Failed to query telemetry records.")).toBeInTheDocument()
+    expect(
+      screen.getByText("Failed to query telemetry records.")
+    ).toBeInTheDocument()
   })
 
   // Verifies that stopped message renders stopped status in message footer.
@@ -160,7 +176,9 @@ describe("ChatMessage", () => {
       parts: [{ kind: "text", text: "Partial response before cancel" }],
     }
 
-    renderWithProviders(<ChatMessage message={stoppedMsg} />, { role: "patient" })
+    renderWithProviders(<ChatMessage message={stoppedMsg} />, {
+      role: "patient",
+    })
 
     expect(screen.getByText("Stopped")).toBeInTheDocument()
   })
@@ -174,9 +192,13 @@ describe("ChatMessage", () => {
       parts: [{ kind: "text", text: "Answer with unverified figures" }],
     }
 
-    renderWithProviders(<ChatMessage message={ungroundedMsg} />, { role: "patient" })
+    renderWithProviders(<ChatMessage message={ungroundedMsg} />, {
+      role: "patient",
+    })
 
-    expect(screen.getByText("Some numbers couldn't be checked")).toBeInTheDocument()
+    expect(
+      screen.getByText("Some numbers couldn't be checked")
+    ).toBeInTheDocument()
   })
 
   // Verifies that chart parts render within chat message flow.
@@ -207,7 +229,10 @@ describe("ChatMessage", () => {
       ],
     }
 
-    const { container } = renderWithProviders(<ChatMessage message={chartMsg} />, { role: "patient" })
+    const { container } = renderWithProviders(
+      <ChatMessage message={chartMsg} />,
+      { role: "patient" }
+    )
 
     expect(container.querySelector(".bg-card")).toBeInTheDocument()
   })

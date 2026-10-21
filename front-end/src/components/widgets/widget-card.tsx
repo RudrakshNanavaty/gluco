@@ -116,10 +116,7 @@ export function WidgetCard({
           {pinned ? "Pinned" : "Pin"}
         </Button>
       </div>
-      <WidgetView
-        kind={widget.kind}
-        result={current.data}
-      />
+      <WidgetView kind={widget.kind} result={current.data} />
       <div className="border-t pt-2.5">
         <WidgetSteps steps={widget.steps} />
       </div>

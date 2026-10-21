@@ -214,10 +214,7 @@ function HeatmapWidget({ result }: { result: QueryResult }) {
             valuesOf(series, metric).map((v) => [v.t, v.value])
           )
           return (
-            <div
-              key={series.display_name}
-              className="contents"
-            >
+            <div key={series.display_name} className="contents">
               <span className="truncate pr-1 text-xs">
                 {series.display_name}
               </span>

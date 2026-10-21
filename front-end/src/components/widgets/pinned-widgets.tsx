@@ -34,11 +34,7 @@ const KIND_LABELS: Record<PinnedWidget["kind"], string> = {
   heatmap: "Heatmap",
 }
 
-function PinnedWidgetCard({
-  pin,
-}: {
-  pin: PinnedWidget
-}) {
+function PinnedWidgetCard({ pin }: { pin: PinnedWidget }) {
   const metrics = useMetrics()
   const data = useWidgetData(pin.id, metrics.anyLive(pin.query.metrics ?? []))
   const unpin = useUnpinWidget()
@@ -69,11 +65,7 @@ function PinnedWidgetCard({
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
         {data.data ? (
-          <WidgetView
-            kind={pin.kind}
-            result={data.data.result}
-            height={180}
-          />
+          <WidgetView kind={pin.kind} result={data.data.result} height={180} />
         ) : data.isError ? (
           <p className="text-sm text-muted-foreground">
             {friendlyError(data.error)}

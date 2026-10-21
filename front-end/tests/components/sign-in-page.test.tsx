@@ -77,6 +77,8 @@ describe("SignInPage", () => {
 
     renderPage()
 
-    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/clinician"))
+    await waitFor(() =>
+      expect(mockRouter.replace).toHaveBeenCalledWith("/clinician")
+    )
   })
 })

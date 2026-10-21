@@ -68,7 +68,8 @@ const WINDOWS: Record<Role, { hours: number; label: string }[]> = {
 function UsualBadge({ z }: { z: number | null | undefined }) {
   if (z == null) return <span className="text-muted-foreground">—</span>
   const size = Math.abs(z)
-  const label = size >= 2
+  const label =
+    size >= 2
       ? "Marked deviation"
       : size >= 1
         ? "Mild deviation"
@@ -290,11 +291,7 @@ function PatientChanges({
 }
 
 /** GET /participants/{id}/explain: how each metric moved, and how unusual that is. */
-export function WhatChanged({
-  personId,
-}: {
-  personId: string
-}) {
+export function WhatChanged({ personId }: { personId: string }) {
   const audience = useAudience()
   const options = WINDOWS[audience]
   const [hours, setHours] = useState(options[0].hours)

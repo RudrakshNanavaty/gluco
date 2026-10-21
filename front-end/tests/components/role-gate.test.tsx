@@ -49,12 +49,15 @@ describe("RoleGate", () => {
   it.each([
     ["patient", "clinician", "/me"],
     ["clinician", "patient", "/clinician"],
-  ] as const)("redirects a %s away from the %s gate to %s", (role, gated, home) => {
-    const { container } = render(gate(gated, sessionAs(role)))
+  ] as const)(
+    "redirects a %s away from the %s gate to %s",
+    (role, gated, home) => {
+      const { container } = render(gate(gated, sessionAs(role)))
 
-    expect(container).toBeEmptyDOMElement()
-    expect(mockRouter.replace).toHaveBeenCalledWith(home)
-  })
+      expect(container).toBeEmptyDOMElement()
+      expect(mockRouter.replace).toHaveBeenCalledWith(home)
+    }
+  )
 
   // Verifies the gate re-evaluates when the session changes.
   it("re-evaluates the gate and redirects when the session changes", () => {

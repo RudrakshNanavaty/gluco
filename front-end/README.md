@@ -14,11 +14,11 @@ bun dev                           # http://localhost:3000
 
 The back-end's default CORS origins include `http://localhost:3000`.
 
-| Task | Command |
-| --- | --- |
-| Regenerate API types from the running back-end | `bun run gen:api` |
-| Tests (Vitest; `bun run test:watch` to watch) | `bun run test` |
-| Types, lint, production build | `bun run typecheck`, `bun run lint`, `bun run build` |
+| Task                                           | Command                                              |
+| ---------------------------------------------- | ---------------------------------------------------- |
+| Regenerate API types from the running back-end | `bun run gen:api`                                    |
+| Tests (Vitest; `bun run test:watch` to watch)  | `bun run test`                                       |
+| Types, lint, production build                  | `bun run typecheck`, `bun run lint`, `bun run build` |
 
 ## How it fits together
 

@@ -24,8 +24,20 @@ const WIDGET = { title: "My week", kind: "trend", query: {}, steps: [] }
 // One assistant turn, as the stream sends it and as the transcript returns it.
 const TURN = [
   { type: "tool_start", call_id: "c1", tool: "build_my_widget", args: {} },
-  { type: "tool_end", call_id: "c1", tool: "build_my_widget", summary: "Built", rows: 1 },
-  { type: "data", call_id: "c1", tool: "build_my_widget", chart: CHART, widget: WIDGET },
+  {
+    type: "tool_end",
+    call_id: "c1",
+    tool: "build_my_widget",
+    summary: "Built",
+    rows: 1,
+  },
+  {
+    type: "data",
+    call_id: "c1",
+    tool: "build_my_widget",
+    chart: CHART,
+    widget: WIDGET,
+  },
   { type: "token", text: "Here is your week." },
 ]
 
@@ -42,9 +54,14 @@ function renderChat() {
 
 function stream(events: object[]) {
   const body = events
-    .map((e) => `event: ${(e as { type: string }).type}\ndata: ${JSON.stringify(e)}\n\n`)
+    .map(
+      (e) =>
+        `event: ${(e as { type: string }).type}\ndata: ${JSON.stringify(e)}\n\n`
+    )
     .join("")
-  return new Response(body, { headers: { "Content-Type": "text/event-stream" } })
+  return new Response(body, {
+    headers: { "Content-Type": "text/event-stream" },
+  })
 }
 
 describe("ChatProvider", () => {

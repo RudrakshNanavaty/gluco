@@ -107,7 +107,9 @@ describe("streamSSE", () => {
 
   // Verifies translation of network fetch rejections into status 0 ApiError
   it("throws ApiError status 0 when network connection fails", async () => {
-    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Network offline"))
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(
+      new Error("Network offline")
+    )
 
     const call = streamSSE(
       "/stream",
@@ -124,7 +126,9 @@ describe("streamSSE", () => {
   // Verifies abort signal rethrows the raw abort error rather than converting to ApiError
   it("rethrows raw abort cause when signal is aborted", async () => {
     const controller = new AbortController()
-    controller.abort(new DOMException("The operation was aborted", "AbortError"))
+    controller.abort(
+      new DOMException("The operation was aborted", "AbortError")
+    )
 
     vi.spyOn(globalThis, "fetch").mockRejectedValue(
       new DOMException("The operation was aborted", "AbortError")
@@ -141,9 +145,12 @@ describe("streamSSE", () => {
     setTokenSource({ token: async () => "expired-token", rejected })
 
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ detail: "Token invalid", code: "not_permitted" }), {
-        status: 401,
-      })
+      new Response(
+        JSON.stringify({ detail: "Token invalid", code: "not_permitted" }),
+        {
+          status: 401,
+        }
+      )
     )
 
     const call = streamSSE(

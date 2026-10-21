@@ -40,7 +40,8 @@ const CODE_MESSAGES: Record<string, string> = {
   not_found: "We couldn't find what you were looking for.",
   ambiguous: "More than one result matched. Please be more specific.",
   not_permitted: "You don't have access to that.",
-  bad_query: "That request couldn't be completed. Please try something different.",
+  bad_query:
+    "That request couldn't be completed. Please try something different.",
 }
 
 /** Plain-language text for any error, so raw server or network messages never reach the screen. */

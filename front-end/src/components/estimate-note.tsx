@@ -11,13 +11,8 @@ import { cn } from "@/lib/utils"
 import { GLUCO_SCORE, useMetrics } from "@/lib/catalog"
 import { useAudience } from "@/lib/app-session"
 
-
 /** Shown wherever a Gluco Score is: it is an estimate, never a diagnosis. */
-export function EstimateNote({
-  className,
-}: {
-  className?: string
-}) {
+export function EstimateNote({ className }: { className?: string }) {
   const audience = useAudience()
   const metrics = useMetrics()
   const description = metrics.get(GLUCO_SCORE)?.description

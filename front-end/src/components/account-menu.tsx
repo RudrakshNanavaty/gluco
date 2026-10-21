@@ -1,9 +1,9 @@
-"use client";
+"use client"
 
-import { LogOutIcon } from "lucide-react";
+import { LogOutIcon } from "lucide-react"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,27 +12,27 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useAppSession } from "@/lib/app-session";
+} from "@/components/ui/dropdown-menu"
+import { useAppSession } from "@/lib/app-session"
 
 function initials(name: string) {
   const words = name
     .replace(/[^\p{L}\p{N} ]/gu, "")
     .split(" ")
-    .filter(Boolean);
-  const last = words.at(-1) ?? "?";
+    .filter(Boolean)
+  const last = words.at(-1) ?? "?"
   return /\d/.test(last)
     ? last.slice(-2)
     : words
         .map((w) => w[0])
         .join("")
-        .slice(0, 2);
+        .slice(0, 2)
 }
 
 export function AccountMenu() {
-  const session = useAppSession();
-  if (session.status !== "signed-in") return null;
-  const { principal, signOut } = session;
+  const session = useAppSession()
+  if (session.status !== "signed-in") return null
+  const { principal, signOut } = session
 
   return (
     <>
@@ -68,5 +68,5 @@ export function AccountMenu() {
         </DropdownMenuContent>
       </DropdownMenu>
     </>
-  );
+  )
 }

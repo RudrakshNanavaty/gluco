@@ -58,8 +58,9 @@ describe("AppSessionProvider", () => {
     clerk.isLoaded = true
     clerk.isSignedIn = true
     clerk.userId = "user_1"
-    clerk.getToken.mockImplementation(async (options?: { skipCache?: boolean }) =>
-      options?.skipCache ? "fresh-token" : "cached-token"
+    clerk.getToken.mockImplementation(
+      async (options?: { skipCache?: boolean }) =>
+        options?.skipCache ? "fresh-token" : "cached-token"
     )
   })
 
@@ -70,7 +71,9 @@ describe("AppSessionProvider", () => {
     renderSession()
 
     expect(await screen.findByText("signed-in /clinician")).toBeInTheDocument()
-    expect(api.calls[0].headers.get("authorization")).toBe("Bearer cached-token")
+    expect(api.calls[0].headers.get("authorization")).toBe(
+      "Bearer cached-token"
+    )
   })
 
   // Verifies a stale cached token recovers instead of leaving the user stuck.
@@ -90,12 +93,18 @@ describe("AppSessionProvider", () => {
 
   // Verifies an account the back-end refuses is signed out with a message.
   it("signs out when the back-end refuses even a fresh token", async () => {
-    fakeApi({ "GET /me": new Reply(401, { detail: "Your session has ended." }) })
+    fakeApi({
+      "GET /me": new Reply(401, { detail: "Your session has ended." }),
+    })
 
     renderSession()
 
-    await waitFor(() => expect(clerk.signOut).toHaveBeenCalledWith({ redirectUrl: "/" }))
-    expect(toast.error).toHaveBeenCalledWith("This account could not be signed in.")
+    await waitFor(() =>
+      expect(clerk.signOut).toHaveBeenCalledWith({ redirectUrl: "/" })
+    )
+    expect(toast.error).toHaveBeenCalledWith(
+      "This account could not be signed in."
+    )
   })
 
   // Verifies the states before a Principal is known.
