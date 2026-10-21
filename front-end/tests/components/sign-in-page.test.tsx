@@ -13,7 +13,18 @@ const clerk = vi.hoisted(() => ({
 }))
 
 vi.mock("@clerk/nextjs", () => ({
-  SignIn: () => <div data-testid="clerk-sign-in" />,
+  SignIn: (props: {
+    withSignUp?: boolean
+    appearance?: { elements?: { footerAction?: { display?: string } } }
+  }) => (
+    <div
+      data-testid="clerk-sign-in"
+      data-sign-up={String(props.withSignUp)}
+      data-registration-display={
+        props.appearance?.elements?.footerAction?.display
+      }
+    />
+  ),
   useAuth: () => ({
     isLoaded: clerk.isLoaded,
     isSignedIn: clerk.isSignedIn,
@@ -41,7 +52,14 @@ describe("SignInPage", () => {
   it("offers only the Clerk sign-in form, with no persona picker", () => {
     renderPage()
 
-    expect(screen.getByTestId("clerk-sign-in")).toBeTruthy()
+    expect(screen.getByTestId("clerk-sign-in")).toHaveAttribute(
+      "data-sign-up",
+      "false"
+    )
+    expect(screen.getByTestId("clerk-sign-in")).toHaveAttribute(
+      "data-registration-display",
+      "none"
+    )
     expect(screen.queryByText(/who's looking today/i)).toBeNull()
   })
 

@@ -430,7 +430,11 @@ export default function SignInPage() {
                 ) : null}
               </div>
             ) : (
-              <SignIn routing="hash" />
+              <SignIn
+                routing="hash"
+                withSignUp={false}
+                appearance={{ elements: { footerAction: { display: "none" } } }}
+              />
             )}
           </div>
         </div>

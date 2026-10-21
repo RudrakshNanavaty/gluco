@@ -16,4 +16,4 @@ For worked examples, start with the [installation guide](../../INSTALL.md),
 
 - **19** HTTP route declarations
 - **157** public back-end symbols
-- **122** public front-end exports
+- **121** public front-end exports

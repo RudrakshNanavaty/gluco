@@ -19,7 +19,8 @@ export default function SignInRoute() {
         <SignIn
           routing="path"
           path="/sign-in"
-          signUpUrl="/sign-up"
+          withSignUp={false}
+          appearance={{ elements: { footerAction: { display: "none" } } }}
           fallbackRedirectUrl="/"
         />
       </section>
