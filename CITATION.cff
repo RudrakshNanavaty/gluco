@@ -11,8 +11,10 @@ authors:
     given-names: "Rudraksh"
   - family-names: "Soni"
     given-names: "Aavritti"
-  - alias: "pdpate22"
-  - alias: "Lliam-Rankins"
+  - family-names: "Patel"
+    given-names: "Parth"
+  - family-names: "Rankins"
+    given-names: "Lliam"
 repository-code: "https://github.com/RudrakshNanavaty/gluco"
 url: "https://github.com/RudrakshNanavaty/gluco"
 license: AGPL-3.0-only
