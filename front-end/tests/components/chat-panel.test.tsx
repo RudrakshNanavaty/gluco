@@ -36,13 +36,23 @@ describe("ChatPanel & Composer", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useChat).mockReturnValue(baseChatState as unknown as ReturnType<typeof useChat>)
+    vi.mocked(useChat).mockReturnValue(
+      baseChatState as unknown as ReturnType<typeof useChat>
+    )
     fakeApi({
       "GET /catalog": { metrics: [] },
       "GET /widgets": [],
       "GET /chat/sessions": [
-        { session_id: "session-1", title: "Current Chat", created_at: "2026-10-16T10:00:00Z" },
-        { session_id: "session-2", title: "Yesterday Insights", created_at: "2026-10-15T10:00:00Z" },
+        {
+          session_id: "session-1",
+          title: "Current Chat",
+          created_at: "2026-10-16T10:00:00Z",
+        },
+        {
+          session_id: "session-2",
+          title: "Yesterday Insights",
+          created_at: "2026-10-15T10:00:00Z",
+        },
       ],
     })
     vi.mocked(useMediaQuery).mockReturnValue(true)
@@ -68,7 +78,9 @@ describe("ChatPanel & Composer", () => {
     renderWithProviders(<ChatPanel />, { role: "patient" })
 
     const textarea = screen.getByRole("textbox", { name: "Message Gluco" })
-    fireEvent.change(textarea, { target: { value: "Why did my score change?" } })
+    fireEvent.change(textarea, {
+      target: { value: "Why did my score change?" },
+    })
     fireEvent.keyDown(textarea, { key: "Enter", shiftKey: false })
 
     expect(mockSend).toHaveBeenCalledWith("Why did my score change?")
@@ -95,7 +107,9 @@ describe("ChatPanel & Composer", () => {
 
     renderWithProviders(<ChatPanel />, { role: "patient" })
 
-    expect(screen.queryByRole("button", { name: "Send" })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: "Send" })
+    ).not.toBeInTheDocument()
     const stopBtn = screen.getByRole("button", { name: "Stop answering" })
     expect(stopBtn).toBeInTheDocument()
 
@@ -108,9 +122,15 @@ describe("ChatPanel & Composer", () => {
     renderWithProviders(<ChatPanel />, { role: "patient" })
 
     expect(screen.getByText("Hi, I'm Gluco!")).toBeInTheDocument()
-    expect(screen.getByText("Ask me about your week, your score, or anything you're curious about.")).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "Ask me about your week, your score, or anything you're curious about."
+      )
+    ).toBeInTheDocument()
 
-    const suggestionBtn = screen.getByRole("button", { name: "Why did my score change?" })
+    const suggestionBtn = screen.getByRole("button", {
+      name: "Why did my score change?",
+    })
     fireEvent.click(suggestionBtn)
 
     expect(mockSend).toHaveBeenCalledWith("Why did my score change?")
@@ -120,14 +140,17 @@ describe("ChatPanel & Composer", () => {
   it("renders audience-specific subtitles and disclaimers", () => {
     const { unmount } = renderWithProviders(<ChatPanel />, { role: "patient" })
     expect(screen.getByText("Your assistant")).toBeInTheDocument()
-    expect(screen.getByText(/explains your data but can't diagnose/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/explains your data but can't diagnose/i)
+    ).toBeInTheDocument()
 
     unmount()
 
-
     renderWithProviders(<ChatPanel />, { role: "clinician" })
     expect(screen.getByText("Clinical assistant")).toBeInTheDocument()
-    expect(screen.getByText(/don't replace clinical judgment/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/don't replace clinical judgment/i)
+    ).toBeInTheDocument()
   })
 
   // Verifies that new conversation button is disabled when empty and triggers newChat when populated.
@@ -138,7 +161,9 @@ describe("ChatPanel & Composer", () => {
 
     vi.mocked(useChat).mockReturnValue({
       ...baseChatState,
-      messages: [{ id: "m1", role: "user", parts: [{ kind: "text", text: "Hi" }] }],
+      messages: [
+        { id: "m1", role: "user", parts: [{ kind: "text", text: "Hi" }] },
+      ],
     } as unknown as ReturnType<typeof useChat>)
 
     rerender(<ChatPanel />)
@@ -179,7 +204,9 @@ describe("ChatPanel & Composer", () => {
     })
 
     renderWithProviders(<ChatPanel />, { role: "patient" })
-    await userEvent.click(screen.getByRole("button", { name: "Past conversations" }))
+    await userEvent.click(
+      screen.getByRole("button", { name: "Past conversations" })
+    )
 
     const retry = await screen.findByText("Couldn't load conversations. Retry")
     expect(screen.queryByText("No conversations yet")).not.toBeInTheDocument()
@@ -200,7 +227,9 @@ describe("ChatPanel & Composer", () => {
 
     renderWithProviders(<ChatLauncher />, { role: "patient" })
 
-    expect(screen.getByRole("button", { name: "Ask Gluco" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Ask Gluco" })
+    ).toBeInTheDocument()
   })
 
   // Verifies that clicking launcher opens the chat panel.
@@ -210,7 +239,7 @@ describe("ChatPanel & Composer", () => {
       messages: [],
       streaming: false,
       loadingThread: false,
-        send: vi.fn(),
+      send: vi.fn(),
       stop: vi.fn(),
       newChat: vi.fn(),
       openThread: vi.fn(),

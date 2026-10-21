@@ -53,7 +53,9 @@ function ChartBody({
       <QueryChart result={query.data} height={height} showTitles={showTitles} />
     )
   if (query.isError)
-    return <p className="text-sm text-destructive">{friendlyError(query.error)}</p>
+    return (
+      <p className="text-sm text-destructive">{friendlyError(query.error)}</p>
+    )
   return <Skeleton style={{ height }} />
 }
 

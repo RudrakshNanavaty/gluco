@@ -17,6 +17,7 @@ clinicians.
 [![basedpyright](https://img.shields.io/badge/Python-basedpyright_types-3178C6?style=flat-square&logo=python&logoColor=white)](back-end/pyproject.toml)
 [![ESLint](https://img.shields.io/badge/Frontend-ESLint-4B32C3?style=flat-square&logo=eslint&logoColor=white)](front-end/eslint.config.mjs)
 [![TypeScript](https://img.shields.io/badge/Frontend-TypeScript_types-3178C6?style=flat-square&logo=typescript&logoColor=white)](front-end/tsconfig.json)
+[![Prettier](https://img.shields.io/badge/Frontend-Prettier_format-F7B93E?style=flat-square&logo=prettier&logoColor=black)](front-end/.prettierrc)
 
 [![Backend line coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FRudrakshNanavaty%2Fgluco%2Fcoverage-badges%2Fbackend.json)](https://github.com/RudrakshNanavaty/gluco/tree/coverage-badges)
 [![Frontend line coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FRudrakshNanavaty%2Fgluco%2Fcoverage-badges%2Ffrontend.json)](https://github.com/RudrakshNanavaty/gluco/tree/coverage-badges)

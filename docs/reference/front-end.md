@@ -70,7 +70,7 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
-[View source](../../front-end/src/app/page.tsx#L78)
+[View source](../../front-end/src/app/page.tsx#L88)
 
 ## `front-end/src/components/account-menu.tsx`
 
@@ -100,23 +100,23 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
-[View source](../../front-end/src/components/chat/chat-launcher.tsx#L45)
+[View source](../../front-end/src/components/chat/chat-launcher.tsx#L49)
 
 ## `front-end/src/components/chat/chat-message.tsx`
 
 ### Export: `ChatMessage`
 
-`export function ChatMessage({`
+`export function ChatMessage({ message }: { message: ChatMessageType }) {`
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
-[View source](../../front-end/src/components/chat/chat-message.tsx#L120)
+[View source](../../front-end/src/components/chat/chat-message.tsx#L110)
 
 ## `front-end/src/components/chat/chat-panel.tsx`
 
 ### Export: `ChatPanel`
 
-`export function ChatPanel({`
+`export function ChatPanel({ onClose }: { onClose?: () => void }) {`
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
@@ -154,7 +154,7 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
-[View source](../../front-end/src/components/chat/chat-provider.tsx#L263)
+[View source](../../front-end/src/components/chat/chat-provider.tsx#L259)
 
 ## `front-end/src/components/chat/gluco-dot.tsx`
 
@@ -220,7 +220,7 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
-[View source](../../front-end/src/components/clinician/participant-detail.tsx#L60)
+[View source](../../front-end/src/components/clinician/participant-detail.tsx#L62)
 
 ## `front-end/src/components/clinician/participant-table.tsx`
 
@@ -236,11 +236,11 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 ### Export: `EstimateNote`
 
-`export function EstimateNote({`
+`export function EstimateNote({ className }: { className?: string }) {`
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
-[View source](../../front-end/src/components/estimate-note.tsx#L16)
+[View source](../../front-end/src/components/estimate-note.tsx#L15)
 
 ## `front-end/src/components/gluco-score.tsx`
 
@@ -420,11 +420,11 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 ### Export: `WhatChanged`
 
-`export function WhatChanged({`
+`export function WhatChanged({ personId }: { personId: string }) {`
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
-[View source](../../front-end/src/components/what-changed.tsx#L293)
+[View source](../../front-end/src/components/what-changed.tsx#L294)
 
 ## `front-end/src/components/widgets/pinned-widgets.tsx`
 
@@ -434,7 +434,7 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
-[View source](../../front-end/src/components/widgets/pinned-widgets.tsx#L99)
+[View source](../../front-end/src/components/widgets/pinned-widgets.tsx#L91)
 
 ## `front-end/src/components/widgets/widget-card.tsx`
 
@@ -454,7 +454,7 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
-[View source](../../front-end/src/components/widgets/widget-view.tsx#L263)
+[View source](../../front-end/src/components/widgets/widget-view.tsx#L260)
 
 ## `front-end/src/hooks/use-media-query.ts`
 
@@ -506,7 +506,7 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
-[View source](../../front-end/src/lib/api/client.ts#L47)
+[View source](../../front-end/src/lib/api/client.ts#L48)
 
 ### Export: `Transport`
 
@@ -514,7 +514,7 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
-[View source](../../front-end/src/lib/api/client.ts#L55)
+[View source](../../front-end/src/lib/api/client.ts#L56)
 
 ### Export: `setTransport`
 
@@ -522,7 +522,7 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
-[View source](../../front-end/src/lib/api/client.ts#L60)
+[View source](../../front-end/src/lib/api/client.ts#L61)
 
 ### Export: `TokenSource`
 
@@ -530,7 +530,7 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
-[View source](../../front-end/src/lib/api/client.ts#L67)
+[View source](../../front-end/src/lib/api/client.ts#L68)
 
 ### Export: `setTokenSource`
 
@@ -538,7 +538,7 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
-[View source](../../front-end/src/lib/api/client.ts#L76)
+[View source](../../front-end/src/lib/api/client.ts#L77)
 
 ### Export: `send`
 
@@ -546,7 +546,7 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
-[View source](../../front-end/src/lib/api/client.ts#L104)
+[View source](../../front-end/src/lib/api/client.ts#L105)
 
 ### Export: `api`
 
@@ -554,7 +554,7 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
-[View source](../../front-end/src/lib/api/client.ts#L116)
+[View source](../../front-end/src/lib/api/client.ts#L117)
 
 ### Export: `unwrap`
 
@@ -562,7 +562,7 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
-[View source](../../front-end/src/lib/api/client.ts#L121)
+[View source](../../front-end/src/lib/api/client.ts#L122)
 
 ## `front-end/src/lib/api/events.ts`
 
@@ -818,7 +818,7 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
-[View source](../../front-end/src/lib/api/sse.ts#L15)
+[View source](../../front-end/src/lib/api/sse.ts#L10)
 
 ## `front-end/src/lib/app-session.tsx`
 
@@ -864,7 +864,7 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 ### Export: `AppSessionProvider`
 
-`export function AppSessionProvider({ children }: { children: React.ReactNode }) {`
+`export function AppSessionProvider({`
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
@@ -876,7 +876,7 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
-[View source](../../front-end/src/lib/app-session.tsx#L97)
+[View source](../../front-end/src/lib/app-session.tsx#L101)
 
 ### Export: `useAudience`
 
@@ -884,7 +884,7 @@ Public TypeScript/React export. Follow the source link for its implementation an
 
 Public TypeScript/React export. Follow the source link for its implementation and usage.
 
-[View source](../../front-end/src/lib/app-session.tsx#L105)
+[View source](../../front-end/src/lib/app-session.tsx#L109)
 
 ## `front-end/src/lib/catalog.ts`
 

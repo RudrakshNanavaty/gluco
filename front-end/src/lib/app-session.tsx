@@ -36,7 +36,11 @@ export const AppSessionContext = createContext<AppSession | null>(null)
  * every cached query when the user changes, and signs out when the back-end
  * refuses even a fresh token.
  */
-export function AppSessionProvider({ children }: { children: React.ReactNode }) {
+export function AppSessionProvider({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   const { isLoaded, isSignedIn, userId, getToken } = useAuth()
   const clerk = useClerk()
   const queryClient = useQueryClient()

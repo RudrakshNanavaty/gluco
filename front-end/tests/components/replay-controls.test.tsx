@@ -28,7 +28,9 @@ describe("ReplayControls", () => {
   it("lets clinicians play, pause and seek the demo time", () => {
     renderWithProviders(<ReplayControls />, { role: "clinician" })
 
-    expect(screen.getByRole("button", { name: "Pause demo" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Pause demo" })
+    ).toBeInTheDocument()
     expect(screen.getByRole("slider")).toBeInTheDocument()
   })
 
@@ -37,7 +39,9 @@ describe("ReplayControls", () => {
     renderWithProviders(<ReplayControls />, { role: "patient" })
 
     expect(screen.getByText("Data as of")).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: /demo$/i })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: /demo$/i })
+    ).not.toBeInTheDocument()
     expect(screen.queryByRole("slider")).not.toBeInTheDocument()
   })
 })

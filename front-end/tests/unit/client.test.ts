@@ -51,7 +51,9 @@ describe("ApiError", () => {
   // Verifies handling of non-string detail arrays (e.g. FastAPI 422 validation errors)
   it("falls back to generic message when detail is an array or object", () => {
     const error = ApiError.from(422, {
-      detail: [{ loc: ["body", "hours"], msg: "Input should be a valid integer" }],
+      detail: [
+        { loc: ["body", "hours"], msg: "Input should be a valid integer" },
+      ],
     })
     expect(error.status).toBe(422)
     expect(error.message).toBe("Something went wrong. Please try again.")
@@ -100,13 +102,21 @@ describe("friendlyError", () => {
 
   // Verifies internal error concealment for status 500 or higher
   it("conceals internal server error messages for status >= 500", () => {
-    const error = new ApiError(500, "internal_failure", "Postgres connection timeout at /db")
+    const error = new ApiError(
+      500,
+      "internal_failure",
+      "Postgres connection timeout at /db"
+    )
     expect(friendlyError(error)).toBe("Something went wrong. Please try again.")
   })
 
   // Verifies preservation of custom client error message when code is unmapped
   it("returns custom client error message for unmapped status < 500 codes", () => {
-    const error = new ApiError(422, "validation_error", "Invalid date format specified")
+    const error = new ApiError(
+      422,
+      "validation_error",
+      "Invalid date format specified"
+    )
     expect(friendlyError(error)).toBe("Invalid date format specified")
   })
 })

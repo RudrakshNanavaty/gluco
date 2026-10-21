@@ -1,11 +1,6 @@
 import { EventSourceParserStream } from "eventsource-parser/stream"
 
-import {
-  API_BASE_URL,
-  ApiError,
-  OFFLINE_MESSAGE,
-  send,
-} from "@/lib/api/client"
+import { API_BASE_URL, ApiError, OFFLINE_MESSAGE, send } from "@/lib/api/client"
 
 /**
  * Read a server-sent event stream with fetch, so it can carry the Bearer header

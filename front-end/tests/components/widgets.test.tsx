@@ -22,8 +22,20 @@ vi.mock("sonner", () => ({
 
 describe("Score Visualizations and Widgets", () => {
   const sampleMetrics = [
-    { name: "gluco_score", label: "Gluco Score", unit: "", live: false, description: "Composite score" },
-    { name: "heart_rate", label: "Heart Rate", unit: "bpm", live: true, description: "Heart rate" },
+    {
+      name: "gluco_score",
+      label: "Gluco Score",
+      unit: "",
+      live: false,
+      description: "Composite score",
+    },
+    {
+      name: "heart_rate",
+      label: "Heart Rate",
+      unit: "bpm",
+      live: true,
+      description: "Heart rate",
+    },
   ]
 
   /** The widget routes, with any replaced. */
@@ -66,21 +78,31 @@ describe("Score Visualizations and Widgets", () => {
     // Verifies that ScoreRing clamps out-of-boundary scores into the 0 to 100 range.
     it("clamps score values exceeding 100 or falling below 0", () => {
       const { rerender } = render(<ScoreRing value={120} />)
-      expect(screen.getByRole("meter", { name: "Gluco Score" })).toHaveAttribute("aria-valuenow", "100")
+      expect(
+        screen.getByRole("meter", { name: "Gluco Score" })
+      ).toHaveAttribute("aria-valuenow", "100")
 
       rerender(<ScoreRing value={-15} />)
-      expect(screen.getByRole("meter", { name: "Gluco Score" })).toHaveAttribute("aria-valuenow", "0")
+      expect(
+        screen.getByRole("meter", { name: "Gluco Score" })
+      ).toHaveAttribute("aria-valuenow", "0")
     })
 
     // Verifies plain-language trend descriptions for positive, negative, steady, and null changes.
     it("formats friendlyChange text correctly across point variations", () => {
-      expect(friendlyChange(null)).toBe("We need a full day of readings before we can compare.")
+      expect(friendlyChange(null)).toBe(
+        "We need a full day of readings before we can compare."
+      )
       expect(friendlyChange(1)).toBe("Up 1 point since this time yesterday.")
       expect(friendlyChange(3.2)).toBe("Up 3 points since this time yesterday.")
       expect(friendlyChange(-1)).toBe("Down 1 point since this time yesterday.")
-      expect(friendlyChange(-4.8)).toBe("Down 5 points since this time yesterday.")
+      expect(friendlyChange(-4.8)).toBe(
+        "Down 5 points since this time yesterday."
+      )
       expect(friendlyChange(0.4)).toBe("About the same as this time yesterday.")
-      expect(friendlyChange(-0.4)).toBe("About the same as this time yesterday.")
+      expect(friendlyChange(-0.4)).toBe(
+        "About the same as this time yesterday."
+      )
     })
 
     // Verifies that ChangeBadge displays points with proper sign and fallback for null.
@@ -89,20 +111,28 @@ describe("Score Visualizations and Widgets", () => {
       expect(screen.getByText("+4.2 pts vs 24 h prior")).toBeInTheDocument()
 
       rerender(<ChangeBadge change={null} />)
-      expect(screen.getByText("No 24 h comparison available")).toBeInTheDocument()
+      expect(
+        screen.getByText("No 24 h comparison available")
+      ).toBeInTheDocument()
     })
 
     // Verifies that GlucoScore adapts formatting according to the patient or clinician audience.
     it("renders appropriate score summary layout based on audience prop", () => {
       serve()
-      const { unmount } = renderWithProviders(<GlucoScore value={82} change={2.1} />, { role: "patient" })
-      expect(screen.getByText("Up 2 points since this time yesterday.")).toBeInTheDocument()
+      const { unmount } = renderWithProviders(
+        <GlucoScore value={82} change={2.1} />,
+        { role: "patient" }
+      )
+      expect(
+        screen.getByText("Up 2 points since this time yesterday.")
+      ).toBeInTheDocument()
       expect(screen.getByText("Higher is healthier.")).toBeInTheDocument()
 
       unmount()
 
-
-      renderWithProviders(<GlucoScore value={82} change={2.1} />, { role: "clinician" })
+      renderWithProviders(<GlucoScore value={82} change={2.1} />, {
+        role: "clinician",
+      })
       expect(screen.getByText("+2.1 pts vs 24 h prior")).toBeInTheDocument()
     })
   })
@@ -122,7 +152,9 @@ describe("Score Visualizations and Widgets", () => {
     it("returns null when pin collection is empty or undefined", async () => {
       const api = serve()
 
-      const { container } = renderWithProviders(<PinnedWidgets />, { role: "patient" })
+      const { container } = renderWithProviders(<PinnedWidgets />, {
+        role: "patient",
+      })
       await waitFor(() => expect(api.calls).toHaveLength(1))
       expect(container).toBeEmptyDOMElement()
     })
@@ -133,7 +165,9 @@ describe("Score Visualizations and Widgets", () => {
 
       renderWithProviders(<PinnedWidgets />, { role: "patient" })
 
-      expect(await screen.findByRole("heading", { name: "Pinned widgets" })).toBeInTheDocument()
+      expect(
+        await screen.findByRole("heading", { name: "Pinned widgets" })
+      ).toBeInTheDocument()
       expect(screen.getByText("Daily Heart Rate")).toBeInTheDocument()
       expect(screen.getByText(/Trend · live, last 72 h/i)).toBeInTheDocument()
     })
@@ -144,7 +178,9 @@ describe("Score Visualizations and Widgets", () => {
 
       renderWithProviders(<PinnedWidgets />, { role: "patient" })
 
-      const unpinBtn = await screen.findByRole("button", { name: "Unpin Daily Heart Rate" })
+      const unpinBtn = await screen.findByRole("button", {
+        name: "Unpin Daily Heart Rate",
+      })
       fireEvent.click(unpinBtn)
 
       await waitFor(() =>
@@ -161,16 +197,22 @@ describe("Score Visualizations and Widgets", () => {
     it("displays error toast when unpin mutation encounters an error", async () => {
       serve({
         "GET /widgets": samplePins,
-        "DELETE /widgets/{widget_id}": new Reply(500, { detail: "Failed to unpin" }),
+        "DELETE /widgets/{widget_id}": new Reply(500, {
+          detail: "Failed to unpin",
+        }),
       })
 
       renderWithProviders(<PinnedWidgets />, { role: "patient" })
 
-      const unpinBtn = await screen.findByRole("button", { name: "Unpin Daily Heart Rate" })
+      const unpinBtn = await screen.findByRole("button", {
+        name: "Unpin Daily Heart Rate",
+      })
       fireEvent.click(unpinBtn)
 
       await waitFor(() =>
-        expect(toast.error).toHaveBeenCalledWith("Something went wrong. Please try again.")
+        expect(toast.error).toHaveBeenCalledWith(
+          "Something went wrong. Please try again."
+        )
       )
     })
 
@@ -187,7 +229,10 @@ describe("Score Visualizations and Widgets", () => {
             end: "2026-10-16T10:00:00Z",
           },
           steps: [
-            { stage: "compliance", text: "Checked against clinical protocol parameters" },
+            {
+              stage: "compliance",
+              text: "Checked against clinical protocol parameters",
+            },
           ],
         },
       })
@@ -219,7 +264,9 @@ describe("Score Visualizations and Widgets", () => {
     // Verifies that stat widget kind renders metric value and label.
     it("renders stat widget kind with primary value and metric label", async () => {
       serve()
-      renderWithProviders(<WidgetView kind="stat" result={sampleResult} />, { role: "patient" })
+      renderWithProviders(<WidgetView kind="stat" result={sampleResult} />, {
+        role: "patient",
+      })
 
       expect(await screen.findByText("76.0")).toBeInTheDocument()
       expect(await screen.findByText(/Heart Rate/)).toBeInTheDocument()
@@ -228,7 +275,9 @@ describe("Score Visualizations and Widgets", () => {
     // Verifies that table widget kind renders series names and metric column headers.
     it("renders table widget kind with series rows and metric columns", async () => {
       serve()
-      renderWithProviders(<WidgetView kind="table" result={sampleResult} />, { role: "patient" })
+      renderWithProviders(<WidgetView kind="table" result={sampleResult} />, {
+        role: "patient",
+      })
 
       expect(await screen.findByText("Patient A")).toBeInTheDocument()
       expect(await screen.findByText("Heart Rate")).toBeInTheDocument()
@@ -237,9 +286,13 @@ describe("Score Visualizations and Widgets", () => {
     // Verifies that heatmap widget kind renders day labels and metric guidance note.
     it("renders heatmap widget kind with day timestamps and legend note", async () => {
       serve()
-      renderWithProviders(<WidgetView kind="heatmap" result={sampleResult} />, { role: "patient" })
+      renderWithProviders(<WidgetView kind="heatmap" result={sampleResult} />, {
+        role: "patient",
+      })
 
-      expect(await screen.findByText(/Heart Rate by day \(UTC\) · darker is higher/i)).toBeInTheDocument()
+      expect(
+        await screen.findByText(/Heart Rate by day \(UTC\) · darker is higher/i)
+      ).toBeInTheDocument()
     })
   })
 })

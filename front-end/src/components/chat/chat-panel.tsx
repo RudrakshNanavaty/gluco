@@ -181,14 +181,9 @@ function Composer() {
   )
 }
 
-export function ChatPanel({
-  onClose,
-}: {
-  onClose?: () => void
-}) {
+export function ChatPanel({ onClose }: { onClose?: () => void }) {
   const audience = useAudience()
-  const { messages, newChat, send, loadingThread, streaming } =
-    useChat()
+  const { messages, newChat, send, loadingThread, streaming } = useChat()
 
   const headerMood = streaming ? "thinking" : "idle"
 

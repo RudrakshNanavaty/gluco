@@ -64,7 +64,8 @@ export function fakeApi(routes: Record<string, Route>) {
     const url = new URL(request.url)
     const text = request.method === "GET" ? "" : await request.text()
     for (const route of table) {
-      const match = route.method === request.method && route.regex.exec(url.pathname)
+      const match =
+        route.method === request.method && route.regex.exec(url.pathname)
       if (!match) continue
       const fake: FakeRequest = {
         method: request.method,
@@ -82,7 +83,9 @@ export function fakeApi(routes: Record<string, Route>) {
           ? await route.reply(fake)
           : route.reply
       if (value instanceof Response) return value
-      return value instanceof Reply ? json(value.status, value.body) : json(200, value)
+      return value instanceof Reply
+        ? json(value.status, value.body)
+        : json(200, value)
     }
     unmatched.push(`${request.method} ${url.pathname}`)
     return PENDING()

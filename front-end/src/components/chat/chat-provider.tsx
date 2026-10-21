@@ -187,53 +187,49 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setMessages([])
   }, [])
 
-  const openThread = useCallback(
-    async (id: string) => {
-      controller.current?.abort()
-      setSessionId(id)
-      setMessages([])
-      setLoadingThread(true)
-      try {
-        const history = await unwrap(
-          api.GET("/chat/sessions/{session_id}", {
-            params: { path: { session_id: id } },
-          })
+  const openThread = useCallback(async (id: string) => {
+    controller.current?.abort()
+    setSessionId(id)
+    setMessages([])
+    setLoadingThread(true)
+    try {
+      const history = await unwrap(
+        api.GET("/chat/sessions/{session_id}", {
+          params: { path: { session_id: id } },
+        })
+      )
+      setMessages(
+        history.map((item): ChatMessage =>
+          item.role === "user"
+            ? {
+                id: newId(),
+                role: "user",
+                parts: [{ kind: "text", text: item.text ?? "" }],
+              }
+            : ((item.events ?? []) as ChatEvent[]).reduce(reduce, {
+                id: newId(),
+                role: "assistant",
+                parts: [],
+              })
         )
-        setMessages(
-          history.map(
-            (item): ChatMessage =>
-              item.role === "user"
-                ? {
-                    id: newId(),
-                    role: "user",
-                    parts: [{ kind: "text", text: item.text ?? "" }],
-                  }
-                : ((item.events ?? []) as ChatEvent[]).reduce(reduce, {
-                    id: newId(),
-                    role: "assistant",
-                    parts: [],
-                  })
-          )
-        )
-      } catch (error) {
-        setMessages([
-          {
-            id: newId(),
-            role: "assistant",
-            parts: [
-              {
-                kind: "error",
-                message: friendlyError(error),
-              },
-            ],
-          },
-        ])
-      } finally {
-        setLoadingThread(false)
-      }
-    },
-    []
-  )
+      )
+    } catch (error) {
+      setMessages([
+        {
+          id: newId(),
+          role: "assistant",
+          parts: [
+            {
+              kind: "error",
+              message: friendlyError(error),
+            },
+          ],
+        },
+      ])
+    } finally {
+      setLoadingThread(false)
+    }
+  }, [])
 
   const value = useMemo(
     () => ({

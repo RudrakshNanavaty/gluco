@@ -156,6 +156,10 @@ jobs:
         if: (success() || failure()) && steps.install.outcome == 'success'
         run: bun run lint
 
+      - name: Format check
+        if: (success() || failure()) && steps.install.outcome == 'success'
+        run: bun run format:check
+
       - name: Build
         if: (success() || failure()) && steps.install.outcome == 'success'
         run: bun run build

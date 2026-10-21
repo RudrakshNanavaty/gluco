@@ -107,10 +107,14 @@ describe("useLiveReading", () => {
     const { result: nullResult } = renderHook(() => useLiveReading(null))
     expect(nullResult.current).toBeUndefined()
 
-    const { result: undefinedResult } = renderHook(() => useLiveReading(undefined))
+    const { result: undefinedResult } = renderHook(() =>
+      useLiveReading(undefined)
+    )
     expect(undefinedResult.current).toBeUndefined()
 
-    const { result: unknownResult } = renderHook(() => useLiveReading("unknown_999"))
+    const { result: unknownResult } = renderHook(() =>
+      useLiveReading("unknown_999")
+    )
     expect(unknownResult.current).toBeUndefined()
   })
 

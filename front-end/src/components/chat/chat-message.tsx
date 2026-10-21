@@ -91,20 +91,10 @@ function Part({ part }: { part: ChatPart }) {
       )
     case "chart":
       if (part.widget)
-        return (
-          <WidgetCard
-            widget={part.widget}
-            chart={part.chart}
-          />
-        )
+        return <WidgetCard widget={part.widget} chart={part.chart} />
       return (
         <div className="w-full rounded-lg border bg-card p-3">
-          <QueryChart
-            result={part.chart}
-            snapshot
-            hideNote
-            height={160}
-          />
+          <QueryChart result={part.chart} snapshot hideNote height={160} />
         </div>
       )
     case "error":
@@ -117,11 +107,7 @@ function Part({ part }: { part: ChatPart }) {
   }
 }
 
-export function ChatMessage({
-  message,
-}: {
-  message: ChatMessageType
-}) {
+export function ChatMessage({ message }: { message: ChatMessageType }) {
   const audience = useAudience()
   if (message.role === "user") {
     const text = message.parts
@@ -155,10 +141,7 @@ export function ChatMessage({
           </Marker>
         ) : null}
         {message.parts.map((part, index) => (
-          <Part
-            key={part.kind === "tool" ? part.callId : index}
-            part={part}
-          />
+          <Part key={part.kind === "tool" ? part.callId : index} part={part} />
         ))}
         {message.stopped || message.ungrounded?.length ? (
           <MessageFooter className="gap-2">

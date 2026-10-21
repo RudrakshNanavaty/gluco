@@ -149,7 +149,10 @@ export function ParticipantTable() {
             ))}
           </div>
         ) : participants.data.length === 0 ? (
-          <p role="status" className="py-8 text-center text-sm text-muted-foreground">
+          <p
+            role="status"
+            className="py-8 text-center text-sm text-muted-foreground"
+          >
             No patients to show yet.
           </p>
         ) : (

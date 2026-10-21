@@ -128,12 +128,16 @@ export function GlucoScore({
             <p className="text-base font-medium text-pretty">
               {friendlyChange(change)}
             </p>
-            <p className="text-sm text-muted-foreground">Higher is healthier.</p>
+            <p className="text-sm text-muted-foreground">
+              Higher is healthier.
+            </p>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
             <ChangeBadge change={change} />
-            <p className="text-sm text-muted-foreground">Higher is healthier.</p>
+            <p className="text-sm text-muted-foreground">
+              Higher is healthier.
+            </p>
           </div>
         )}
       </div>
