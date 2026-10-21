@@ -1,7 +1,9 @@
 # Project 2 repository self-assessment
 
-Team: Gluco  
-Reviewed release/commit: **[complete before submission]**  
+Team: Gluco
+
+Reviewed release/commit: **[complete before submission]**
+
 Reviewed by/date: **[complete before submission]**
 
 This is the submission template. The team assigns each score from 0–3 after
