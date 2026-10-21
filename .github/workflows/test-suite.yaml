@@ -1,7 +1,7 @@
 name: "test suite"
 on:
-  push:
-    branches: [main]
+  # Exercise every commit pushed to this repository, not only main.
+  push: {}
   pull_request:
 
 permissions:
