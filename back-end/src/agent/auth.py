@@ -28,6 +28,8 @@ METADATA_CLAIM = "metadata"
 
 @dataclass(frozen=True)
 class Principal:
+    """An authenticated identity and its server-assigned data visibility scope."""
+
     user_id: str
     role: Role
     display_name: str
@@ -41,12 +43,15 @@ CLINICIAN = Principal(CLINICIAN_ID, "clinician", "Dr. Demo")
 
 
 def patient(person_id: str) -> Principal:
+    """Build a patient-scoped demo/test identity without authenticating a token."""
     return Principal(
         f"{PATIENT_PREFIX}{person_id}", "patient", display_name(person_id), person_id
     )
 
 
 class InvalidTokenError(Exception):
+    """A session token or its required account metadata cannot be trusted."""
+
     pass
 
 

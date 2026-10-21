@@ -28,6 +28,8 @@ class _Snapshot:
 
 
 class WindowStore:
+    """Cache published windows by participant and end time with incremental refresh."""
+
     def __init__(
         self,
         source: WindowSource,

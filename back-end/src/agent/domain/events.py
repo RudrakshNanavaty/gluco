@@ -8,6 +8,8 @@ EventName = Literal["token", "tool_start", "tool_end", "data", "done", "error"]
 
 @dataclass(frozen=True)
 class SseEvent:
+    """A named chat-stream event with its JSON-compatible payload."""
+
     name: EventName
     data: dict[str, Any] = field(default_factory=dict)
 

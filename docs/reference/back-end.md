@@ -550,7 +550,7 @@ No public description is available yet.
 
 `Principal`
 
-No public description is available yet.
+An authenticated identity and its server-assigned data visibility scope.
 
 [View source](../../back-end/src/agent/auth.py#L30)
 
@@ -558,17 +558,17 @@ No public description is available yet.
 
 `patient(person_id: str) -> Principal`
 
-No public description is available yet.
+Build a patient-scoped demo/test identity without authenticating a token.
 
-[View source](../../back-end/src/agent/auth.py#L43)
+[View source](../../back-end/src/agent/auth.py#L45)
 
 ### Class: `InvalidTokenError`
 
 `InvalidTokenError`
 
-No public description is available yet.
+A session token or its required account metadata cannot be trusted.
 
-[View source](../../back-end/src/agent/auth.py#L49)
+[View source](../../back-end/src/agent/auth.py#L52)
 
 ### Class: `ClerkMetadata`
 
@@ -576,7 +576,7 @@ No public description is available yet.
 
 What a Clerk user's `public_metadata` holds.
 
-[View source](../../back-end/src/agent/auth.py#L53)
+[View source](../../back-end/src/agent/auth.py#L58)
 
 ### Function: `jwks_keys`
 
@@ -584,7 +584,7 @@ What a Clerk user's `public_metadata` holds.
 
 Clerk's signing keys, fetched from its JWKS endpoint and cached.
 
-[View source](../../back-end/src/agent/auth.py#L85)
+[View source](../../back-end/src/agent/auth.py#L90)
 
 ### Class: `Authenticator`
 
@@ -592,7 +592,7 @@ Clerk's signing keys, fetched from its JWKS endpoint and cached.
 
 Turns a request's Clerk session token into a Principal.
 
-[View source](../../back-end/src/agent/auth.py#L99)
+[View source](../../back-end/src/agent/auth.py#L104)
 
 ## `back-end/src/agent/bootstrap.py`
 
@@ -684,7 +684,7 @@ No public description is available yet.
 
 `ClockState`
 
-No public description is available yet.
+A replay-clock snapshot for playback controls and data bounds.
 
 [View source](../../back-end/src/agent/clock.py#L18)
 
@@ -694,7 +694,7 @@ No public description is available yet.
 
 `now = anchor + real seconds elapsed / seconds_per_hour` simulated hours.
 
-[View source](../../back-end/src/agent/clock.py#L28)
+[View source](../../back-end/src/agent/clock.py#L30)
 
 ## `back-end/src/agent/config.py`
 
@@ -778,7 +778,7 @@ Implements WindowSource; windows pass through, live readings are simulated.
 
 `PersonNotFoundError`
 
-No public description is available yet.
+A participant reference has no match; suggestions may help the caller.
 
 [View source](../../back-end/src/agent/domain/errors.py#L4)
 
@@ -786,9 +786,9 @@ No public description is available yet.
 
 `AmbiguousPersonError`
 
-No public description is available yet.
+A participant reference matches multiple keys and needs clarification.
 
-[View source](../../back-end/src/agent/domain/errors.py#L11)
+[View source](../../back-end/src/agent/domain/errors.py#L13)
 
 ### Class: `ForbiddenError`
 
@@ -796,7 +796,7 @@ No public description is available yet.
 
 The signed-in user may not see this data.
 
-[View source](../../back-end/src/agent/domain/errors.py#L18)
+[View source](../../back-end/src/agent/domain/errors.py#L22)
 
 ### Class: `QueryError`
 
@@ -804,7 +804,7 @@ The signed-in user may not see this data.
 
 A request the data cannot answer as asked (unknown metric, bad range...).
 
-[View source](../../back-end/src/agent/domain/errors.py#L22)
+[View source](../../back-end/src/agent/domain/errors.py#L26)
 
 ## `back-end/src/agent/domain/events.py`
 
@@ -812,7 +812,7 @@ A request the data cannot answer as asked (unknown metric, bad range...).
 
 `SseEvent`
 
-No public description is available yet.
+A named chat-stream event with its JSON-compatible payload.
 
 [View source](../../back-end/src/agent/domain/events.py#L10)
 
@@ -822,7 +822,7 @@ No public description is available yet.
 
 Consumes Contract B events. Override the `on_*` hooks you care about.
 
-[View source](../../back-end/src/agent/domain/events.py#L15)
+[View source](../../back-end/src/agent/domain/events.py#L17)
 
 ## `back-end/src/agent/domain/metrics.py`
 
@@ -882,7 +882,7 @@ One participant's newest sensor readings, refreshed every second.
 
 `PublishedWindow`
 
-No public description is available yet.
+An analytics window paired with its publication cursor timestamp.
 
 [View source](../../back-end/src/agent/domain/ports.py#L11)
 
@@ -890,9 +890,9 @@ No public description is available yet.
 
 `WindowSource`
 
-No public description is available yet.
+Read-only adapter contract for published analytics and live readings.
 
-[View source](../../back-end/src/agent/domain/ports.py#L16)
+[View source](../../back-end/src/agent/domain/ports.py#L18)
 
 ## `back-end/src/agent/factory.py`
 
@@ -1048,7 +1048,7 @@ A generic question to the data: which metrics, whose, when, how reduced.
 
 `Series`
 
-No public description is available yet.
+A display-safe participant or cohort time series returned by a query.
 
 [View source](../../back-end/src/agent/query.py#L80)
 
@@ -1056,105 +1056,105 @@ No public description is available yet.
 
 `QueryResult`
 
-No public description is available yet.
+A scoped query response, including units, truncation and disclosure audit.
 
-[View source](../../back-end/src/agent/query.py#L85)
+[View source](../../back-end/src/agent/query.py#L87)
 
 ### Class: `ParticipantRow`
 
 `ParticipantRow`
 
-No public description is available yet.
+The newest visible analytics window with any eligible live readings.
 
-[View source](../../back-end/src/agent/query.py#L101)
+[View source](../../back-end/src/agent/query.py#L105)
 
 ### Class: `MetricChange`
 
 `MetricChange`
 
-No public description is available yet.
+One metric compared with an earlier window and personal baseline.
 
-[View source](../../back-end/src/agent/query.py#L111)
+[View source](../../back-end/src/agent/query.py#L117)
 
 ### Class: `ChangeReport`
 
 `ChangeReport`
 
-No public description is available yet.
+A participant's recent changes and largest personal-baseline deviations.
 
-[View source](../../back-end/src/agent/query.py#L122)
+[View source](../../back-end/src/agent/query.py#L130)
 
 ### Class: `Explanation`
 
 `Explanation`
 
-No public description is available yet.
+A personal change report with clinician-only cohort context.
 
-[View source](../../back-end/src/agent/query.py#L134)
+[View source](../../back-end/src/agent/query.py#L144)
 
 ### Class: `CohortComparison`
 
 `CohortComparison`
 
-No public description is available yet.
+A clinician-only comparison with the current panel's metric distribution.
 
-[View source](../../back-end/src/agent/query.py#L140)
+[View source](../../back-end/src/agent/query.py#L152)
 
 ### Class: `MetricSummary`
 
 `MetricSummary`
 
-No public description is available yet.
+Descriptive statistics for the non-missing values of a metric.
 
-[View source](../../back-end/src/agent/query.py#L154)
+[View source](../../back-end/src/agent/query.py#L168)
 
 ### Class: `CohortOverview`
 
 `CohortOverview`
 
-No public description is available yet.
+Current clinician panel summaries and ranked changes.
 
-[View source](../../back-end/src/agent/query.py#L163)
+[View source](../../back-end/src/agent/query.py#L179)
 
 ### Class: `MetricInfo`
 
 `MetricInfo`
 
-No public description is available yet.
+Public metric metadata used to label queries and visualizations.
 
-[View source](../../back-end/src/agent/query.py#L173)
+[View source](../../back-end/src/agent/query.py#L191)
 
 ### Class: `ParticipantInfo`
 
 `ParticipantInfo`
 
-No public description is available yet.
+A visible participant's display identity and source dataset.
 
-[View source](../../back-end/src/agent/query.py#L182)
+[View source](../../back-end/src/agent/query.py#L202)
 
 ### Class: `Catalog`
 
 `Catalog`
 
-No public description is available yet.
+Discoverable metrics, participants and query options for one principal.
 
-[View source](../../back-end/src/agent/query.py#L188)
+[View source](../../back-end/src/agent/query.py#L210)
 
 ### Function: `check_metrics`
 
 `check_metrics(metrics: Sequence) -> None`
 
-No public description is available yet.
+Reject unknown metric names with available names and close-match suggestions.
 
-[View source](../../back-end/src/agent/query.py#L224)
+[View source](../../back-end/src/agent/query.py#L248)
 
 ### Class: `QueryService`
 
 `QueryService`
 
-No public description is available yet.
+Serve role-scoped, replay-aware analytics shared by REST and agent tools.
 
-[View source](../../back-end/src/agent/query.py#L236)
+[View source](../../back-end/src/agent/query.py#L261)
 
 ## `back-end/src/agent/refresher.py`
 
@@ -1172,7 +1172,7 @@ Runs `pull` when the data is older than `period_s`, one thread at a time.
 
 `WindowStore`
 
-No public description is available yet.
+Cache published windows by participant and end time with incremental refresh.
 
 [View source](../../back-end/src/agent/store.py#L30)
 

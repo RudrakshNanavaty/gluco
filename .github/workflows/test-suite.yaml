@@ -14,6 +14,10 @@ concurrency:
 
 jobs:
   back-end:
+    outputs:
+      lint: ${{ steps.lint.outcome }}
+      format: ${{ steps.format.outcome }}
+      types: ${{ steps.types.outcome }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -47,14 +51,17 @@ jobs:
           if-no-files-found: error
 
       - name: Ruff lint
+        id: lint
         if: (success() || failure()) && steps.install.outcome == 'success'
         run: uv run ruff check
 
       - name: Ruff format
+        id: format
         if: (success() || failure()) && steps.install.outcome == 'success'
         run: uv run ruff format --check
 
       - name: Type check
+        id: types
         if: (success() || failure()) && steps.install.outcome == 'success'
         run: uv run basedpyright
 
@@ -117,6 +124,9 @@ jobs:
           PY
 
   front-end:
+    outputs:
+      lint: ${{ steps.lint.outcome }}
+      types: ${{ steps.types.outcome }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -149,10 +159,12 @@ jobs:
           if-no-files-found: error
 
       - name: Type check
+        id: types
         if: (success() || failure()) && steps.install.outcome == 'success'
         run: bun run typecheck
 
       - name: Lint
+        id: lint
         if: (success() || failure()) && steps.install.outcome == 'success'
         run: bun run lint
 
@@ -252,9 +264,33 @@ jobs:
           path: /tmp/coverage-badges/
           if-no-files-found: error
 
+  quality-report:
+    needs: [back-end, front-end]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Record actual quality-check outcomes
+        env:
+          QUALITY_OUTCOMES: >-
+            {"ruff-lint": "${{ needs.back-end.outputs.lint }}",
+             "ruff-format": "${{ needs.back-end.outputs.format }}",
+             "python-types": "${{ needs.back-end.outputs.types }}",
+             "eslint": "${{ needs.front-end.outputs.lint }}",
+             "typescript": "${{ needs.front-end.outputs.types }}"}
+        run: python scripts/coverage_badges.py --quality-only /tmp/quality-badges
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quality-badges
+          path: /tmp/quality-badges/
+          if-no-files-found: error
+
   publish-coverage-badges:
-    needs: coverage-report
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [coverage-report, quality-report]
+    if: always() && needs.coverage-report.result == 'success' && needs.quality-report.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
     concurrency:
@@ -268,6 +304,10 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: measured-badges
+          path: /tmp/coverage-badges
+      - uses: actions/download-artifact@v4
+        with:
+          name: quality-badges
           path: /tmp/coverage-badges
       - name: Publish generated endpoint data (main only)
         run: |
@@ -286,6 +326,6 @@ jobs:
           cp /tmp/coverage-badges/* .
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add README.md backend.json frontend.json databricks.json tests.json
+          git add README.md backend.json frontend.json databricks.json tests.json ruff-lint.json ruff-format.json python-types.json eslint.json typescript.json quality.json
           git commit -m "chore(metrics): publish measured coverage for $GITHUB_SHA"
           git push origin HEAD:coverage-badges

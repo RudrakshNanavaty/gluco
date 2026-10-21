@@ -6,8 +6,55 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+QUALITY_LABELS = {
+    "ruff-lint": "Ruff lint",
+    "ruff-format": "Ruff format",
+    "python-types": "Python types",
+    "eslint": "ESLint",
+    "typescript": "TypeScript",
+}
+
+
+def write_quality_badges(output, outcomes):
+    """Missing, skipped, cancelled and failed checks never display as passing."""
+    output.mkdir(parents=True, exist_ok=True)
+    recorded = {}
+    for name, label in QUALITY_LABELS.items():
+        outcome = outcomes.get(name) or "unknown"
+        if outcome not in {"success", "failure", "cancelled", "skipped", "unknown"}:
+            raise ValueError(f"Invalid quality outcome for {name}")
+        recorded[name] = outcome
+        endpoint = {
+            "schemaVersion": 1,
+            "label": label,
+            "message": "passing" if outcome == "success" else outcome,
+            "color": "brightgreen"
+            if outcome == "success"
+            else "red"
+            if outcome == "failure"
+            else "lightgrey",
+        }
+        (output / f"{name}.json").write_text(json.dumps(endpoint) + "\n")
+    (output / "quality.json").write_text(
+        json.dumps(
+            {
+                "commit": os.environ.get("GITHUB_SHA", "local"),
+                "run_id": os.environ.get("GITHUB_RUN_ID", "local"),
+                "outcomes": recorded,
+            },
+            indent=2,
+        )
+        + "\n"
+    )
+
 
 def main():
+    if len(sys.argv) == 3 and sys.argv[1] == "--quality-only":
+        write_quality_badges(
+            Path(sys.argv[2]), json.loads(os.environ.get("QUALITY_OUTCOMES", "{}"))
+        )
+        return
+
     root, output = map(Path, sys.argv[1:3])
     output.mkdir(parents=True, exist_ok=True)
     components = []

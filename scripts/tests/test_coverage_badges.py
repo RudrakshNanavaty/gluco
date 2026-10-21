@@ -68,5 +68,47 @@ class BadgeReports(unittest.TestCase):
             self.run_reports("<testsuite><testcase/></testsuite>", covered=5, total=4)
 
 
+class QualityReports(unittest.TestCase):
+    def test_only_actual_success_is_green(self):
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder)
+            module.write_quality_badges(
+                output,
+                {
+                    "ruff-lint": "success",
+                    "ruff-format": "failure",
+                    "python-types": "skipped",
+                    "eslint": "cancelled",
+                },
+            )
+            expected = {
+                "ruff-lint": ("passing", "brightgreen"),
+                "ruff-format": ("failure", "red"),
+                "python-types": ("skipped", "lightgrey"),
+                "eslint": ("cancelled", "lightgrey"),
+                "typescript": ("unknown", "lightgrey"),
+            }
+            for name, (message, color) in expected.items():
+                badge = json.loads((output / f"{name}.json").read_text())
+                self.assertEqual((badge["message"], badge["color"]), (message, color))
+            self.assertEqual(
+                json.loads((output / "quality.json").read_text())["outcomes"][
+                    "typescript"
+                ],
+                "unknown",
+            )
+
+    def test_empty_outcome_is_unknown_and_invalid_outcome_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder)
+            module.write_quality_badges(output, {"ruff-lint": ""})
+            self.assertEqual(
+                json.loads((output / "ruff-lint.json").read_text())["message"],
+                "unknown",
+            )
+            with self.assertRaises(ValueError):
+                module.write_quality_badges(output, {"ruff-lint": "looks good"})
+
+
 if __name__ == "__main__":
     unittest.main()

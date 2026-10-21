@@ -78,11 +78,15 @@ class QuerySpec(BaseModel):
 
 
 class Series(BaseModel):
+    """A display-safe participant or cohort time series returned by a query."""
+
     display_name: str  # never an internal participant key
     points: list[dict[str, Any]]
 
 
 class QueryResult(BaseModel):
+    """A scoped query response, including units, truncation and disclosure audit."""
+
     as_of: datetime | None
     start: datetime | None
     end: datetime | None
@@ -99,6 +103,8 @@ class QueryResult(BaseModel):
 
 
 class ParticipantRow(BaseModel):
+    """The newest visible analytics window with any eligible live readings."""
+
     person_id: str
     display_name: str
     source_dataset: str
@@ -109,6 +115,8 @@ class ParticipantRow(BaseModel):
 
 
 class MetricChange(BaseModel):
+    """One metric compared with an earlier window and personal baseline."""
+
     metric: str
     label: str
     unit: str
@@ -120,6 +128,8 @@ class MetricChange(BaseModel):
 
 
 class ChangeReport(BaseModel):
+    """A participant's recent changes and largest personal-baseline deviations."""
+
     person_id: str
     display_name: str
     as_of: datetime | None
@@ -132,12 +142,16 @@ class ChangeReport(BaseModel):
 
 
 class Explanation(BaseModel):
+    """A personal change report with clinician-only cohort context."""
+
     change: ChangeReport
     # Where the person sits against everyone's newest windows; clinicians only.
     cohort_position: list[FeatureDeviation] | None
 
 
 class CohortComparison(BaseModel):
+    """A clinician-only comparison with the current panel's metric distribution."""
+
     person_id: str
     metric: str
     unit: str
@@ -152,6 +166,8 @@ class CohortComparison(BaseModel):
 
 
 class MetricSummary(BaseModel):
+    """Descriptive statistics for the non-missing values of a metric."""
+
     mean: float
     median: float
     stddev: float
@@ -161,6 +177,8 @@ class MetricSummary(BaseModel):
 
 
 class CohortOverview(BaseModel):
+    """Current clinician panel summaries and ranked changes."""
+
     as_of: datetime | None
     participants: int
     gluco_score: MetricSummary | None
@@ -171,6 +189,8 @@ class CohortOverview(BaseModel):
 
 
 class MetricInfo(BaseModel):
+    """Public metric metadata used to label queries and visualizations."""
+
     name: str
     label: str
     unit: str
@@ -180,12 +200,16 @@ class MetricInfo(BaseModel):
 
 
 class ParticipantInfo(BaseModel):
+    """A visible participant's display identity and source dataset."""
+
     person_id: str
     display_name: str
     source_dataset: str
 
 
 class Catalog(BaseModel):
+    """Discoverable metrics, participants and query options for one principal."""
+
     as_of: datetime | None
     data_start: datetime | None
     data_end: datetime | None
@@ -222,6 +246,7 @@ def _summary(values: Sequence[float | None]) -> MetricSummary | None:
 
 
 def check_metrics(metrics: Sequence[str]) -> None:
+    """Reject unknown metric names with available names and close-match suggestions."""
     for metric in metrics:
         if metric not in METRICS:
             raise QueryError(
@@ -234,6 +259,8 @@ def check_metrics(metrics: Sequence[str]) -> None:
 
 
 class QueryService:
+    """Serve role-scoped, replay-aware analytics shared by REST and agent tools."""
+
     def __init__(
         self,
         store: WindowStore,

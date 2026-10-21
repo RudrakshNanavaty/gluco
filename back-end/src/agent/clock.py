@@ -16,6 +16,8 @@ HOUR = timedelta(hours=1)
 
 
 class ClockState(BaseModel):
+    """A replay-clock snapshot for playback controls and data bounds."""
+
     now: datetime | None
     playing: bool
     seconds_per_hour: float
