@@ -8,8 +8,8 @@
 
 Tests: 533 passed, 0 failed, 6 skipped.
 
-Evidence: https://github.com/RudrakshNanavaty/gluco/actions/runs/39665981722
+Evidence: https://github.com/RudrakshNanavaty/gluco/actions/runs/39666992247
 
-Commit: 468bdffc0dbb848e7fcecd39aab080e00beab65f
+Commit: d2acbabf78b64cbe824cc2fc86941a13e59df056
 
 Separate denominators; no averaged project percentage. Databricks includes unexecuted cloud notebooks; live-database checks and model-accuracy metrics are separate.
