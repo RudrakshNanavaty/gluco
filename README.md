@@ -388,5 +388,5 @@ denominators, report artifacts and first-run initialization.
 ## Project 2 evidence
 
 Start with the [milestone evidence and future roadmap](docs/PROJECT2_EVIDENCE.md)
-and the [provisional self-assessment](docs/PROJECT2_SELF_ASSESSMENT.md). Review
-the scores together; unchecked human deliverables are not completed evidence.
+and the [submission self-assessment template](docs/PROJECT2_SELF_ASSESSMENT.md).
+The team reviews the evidence and completes its final scores before submission.

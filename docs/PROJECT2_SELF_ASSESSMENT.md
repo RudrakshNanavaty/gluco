@@ -1,65 +1,63 @@
-# Project 2 self-assessment draft — October 21, 2026
+# Project 2 repository self-assessment
 
-Baseline: merged main `3dc7044`. These are provisional team-review scores, not
-an official mark. Score only evidence that a tutor can open. This draft does
-not count its own unmerged improvements, human rehearsals or unseen media.
-The team should review every score before adding this table to the submission.
+Team: Gluco  
+Reviewed release/commit: **[complete before submission]**  
+Reviewed by/date: **[complete before submission]**
 
-[Official rubric](https://github.com/txt/se26f/blob/3dc7044/docs/submit/2/proj2.md).
-Each row uses the assignment's 0–3 scale. No official linear conversion of this
-96-point checklist to the 8 repository marks is assumed.
+This is the submission template. The team assigns each score from 0–3 after
+checking the linked evidence on the reviewed release. Dashes are unassigned
+scores, not claims of full credit. Replace draft links with final evidence and
+complete the total before exporting. Planning notes live separately in the
+[internal readiness audit](internal/PROJECT2_READINESS.md).
 
-| Area | Criterion | Provisional /3 | Evidence | Limitation / next action |
-|---|---|---:|---|---|
-| Team | Commit history | 3 | [Open](https://github.com/RudrakshNanavaty/gluco/graphs/contributors) | Substantial merged history |
-| Team | Multiple contributors | 3 | [Open](https://github.com/RudrakshNanavaty/gluco/graphs/contributors) | Four contributors visible |
-| Team | Distributed contribution | 3 | [Open](https://github.com/RudrakshNanavaty/gluco/graphs/contributors) | Meaningful contributions across the team |
-| Team | Cross-component work | 3 | [Open](https://github.com/RudrakshNanavaty/gluco/commits/main) | Contributors span multiple directories |
-| Team | Frequent integration | 3 | [Open](https://github.com/RudrakshNanavaty/gluco/pulls?q=is%3Apr+is%3Amerged) | Small changes merged regularly |
-| Team | Shared tools | 2 | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/CONTRIBUTING.md) | Shared configuration; universal use needs human evidence |
-| Team | Everyone can run it | 0 | [Open](https://github.com/RudrakshNanavaty/gluco/issues/169) | Unverified; four personal rehearsals remain unchecked |
-| Issues | Issue volume | 3 | [Open](https://github.com/RudrakshNanavaty/gluco/issues?q=is%3Aissue) | Substantial issue history |
-| Issues | Resolved issues | 3 | [Open](https://github.com/RudrakshNanavaty/gluco/issues?q=is%3Aissue+is%3Aclosed) | Resolved work visible |
-| Issues | Discussion before closure | 2 | [Open](https://github.com/RudrakshNanavaty/gluco/issues?q=is%3Aissue+comments%3A%3E0) | Discussion exists, uneven detail |
-| Issues | Failure-oriented work | 2 | [Open](https://github.com/RudrakshNanavaty/gluco/issues/153) | Auth, retry, timeout and error-handling work |
-| Issues | Team discussion channel/QR | 0 | [Open](https://github.com/RudrakshNanavaty/gluco/issues/169) | External evidence not supplied |
-| Tests | Expected and failure cases | 3 | [Open](https://github.com/RudrakshNanavaty/gluco/actions/runs/39652253677) | Passing unit and live contract checks |
-| Tests | Test-code share | 2 | [Open](https://github.com/RudrakshNanavaty/gluco/tree/3dc7044/back-end/tests) | Substantial tests; avoid an unsupported precise ratio |
-| Tests | Automated runs | 3 | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/.github/workflows/test-suite.yaml) | Main, PR and branch-push automation |
-| Tests | Measured coverage/badge | 3 | [Open](https://github.com/RudrakshNanavaty/gluco/tree/coverage-badges) | Live measured endpoints with run/commit provenance |
-| Docs | Generated reference | 2 | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/docs/reference/README.md) | Generated and stale-checked; descriptions remain uneven |
-| Docs | Class/function descriptions | 2 | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/docs/reference/back-end.md) | Reference exists; some entries lack descriptions |
-| Docs | Worked tutorials | 2 | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/INSTALL.md) | Setup and pipeline guides, more worked use cases possible |
-| Docs | Product motivation | 3 | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/README.md) | Audience, architecture and scientific boundaries explained |
-| Docs | Teaser video | 0 | [Open](https://github.com/RudrakshNanavaty/gluco/pull/186) | Link proposed but not merged/verified at baseline |
-| Docs | Feature walkthrough | 0 | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/README.md) | No linked walkthrough verified |
-| Files | README evidence badges | 2 | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/README.md) | Coverage/build evidence; full requested set unfinished |
-| Files | Ignore rules | 3 | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/.gitignore) | Credentials/runtime/data artifacts excluded |
-| Files | Installation guide | 3 | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/INSTALL.md) | Dedicated detailed guide |
-| Files | License | 3 | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/LICENSE) | AGPL license present; extension is immaterial |
-| Files | Conduct policy | 3 | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/CODE_OF_CONDUCT.md) | Dedicated policy present |
-| Files | Contribution guide | 3 | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/CONTRIBUTING.md) | Branch/review/testing instructions present |
-| Files | Quality configs/status | 2 | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/.github/workflows/test-suite.yaml) | Tools run; current individual badges are static labels |
-| Files | Project DOI | 0 | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/README.md) | Dataset DOIs are not Gluco release registration |
-| Files | Dependency licenses | 3 | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/docs/dependencies/README.md) | Resolved inventory generated and checked |
-| Files | AI disclosure/human review | 2 | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/README.md#ai-use-and-attribution) | Disclosure/configs/reviews exist; retain traceable human checking |
+[Official rubric](https://github.com/txt/se26f/blob/main/docs/submit/2/proj2.md).
 
-**Total: 71/96.** Team17/21; issues10/15; tests11/12; docs9/18; files24/30.
-Zeros for unseen evidence mean unverified, not proof that the team did no work.
+| Area | Criterion | Team score /3 | Evidence |
+|---|---|---:|---|
+| Team | Commit history | — | [Open](https://github.com/RudrakshNanavaty/gluco/graphs/contributors) |
+| Team | Multiple contributors | — | [Open](https://github.com/RudrakshNanavaty/gluco/graphs/contributors) |
+| Team | Distributed contribution | — | [Open](https://github.com/RudrakshNanavaty/gluco/graphs/contributors) |
+| Team | Cross-component work | — | [Open](https://github.com/RudrakshNanavaty/gluco/commits/main) |
+| Team | Frequent integration | — | [Open](https://github.com/RudrakshNanavaty/gluco/pulls?q=is%3Apr+is%3Amerged) |
+| Team | Shared tools | — | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/CONTRIBUTING.md) |
+| Team | Everyone can run it | — | [Open](https://github.com/RudrakshNanavaty/gluco/issues/169) |
+| Issues | Issue volume | — | [Open](https://github.com/RudrakshNanavaty/gluco/issues?q=is%3Aissue) |
+| Issues | Resolved issues | — | [Open](https://github.com/RudrakshNanavaty/gluco/issues?q=is%3Aissue+is%3Aclosed) |
+| Issues | Discussion before closure | — | [Open](https://github.com/RudrakshNanavaty/gluco/issues?q=is%3Aissue+comments%3A%3E0) |
+| Issues | Failure-oriented work | — | [Open](https://github.com/RudrakshNanavaty/gluco/issues/153) |
+| Issues | Team discussion channel/QR | — | [add final evidence link] |
+| Tests | Expected and failure cases | — | [Open](https://github.com/RudrakshNanavaty/gluco/actions/runs/39652253677) |
+| Tests | Test-code share | — | [Open](https://github.com/RudrakshNanavaty/gluco/tree/3dc7044/back-end/tests) |
+| Tests | Automated runs | — | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/.github/workflows/test-suite.yaml) |
+| Tests | Measured coverage/badge | — | [Open](https://github.com/RudrakshNanavaty/gluco/tree/coverage-badges) |
+| Docs | Generated reference | — | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/docs/reference/README.md) |
+| Docs | Class/function descriptions | — | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/docs/reference/back-end.md) |
+| Docs | Worked tutorials | — | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/INSTALL.md) |
+| Docs | Product motivation | — | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/README.md) |
+| Docs | Teaser video | — | [add final evidence link] |
+| Docs | Feature walkthrough | — | [add final evidence link] |
+| Files | README evidence badges | — | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/README.md) |
+| Files | Ignore rules | — | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/.gitignore) |
+| Files | Installation guide | — | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/INSTALL.md) |
+| Files | License | — | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/LICENSE) |
+| Files | Conduct policy | — | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/CODE_OF_CONDUCT.md) |
+| Files | Contribution guide | — | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/CONTRIBUTING.md) |
+| Files | Quality configs/status | — | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/.github/workflows/test-suite.yaml) |
+| Files | Project DOI | — | [add final evidence link] |
+| Files | Dependency licenses | — | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/docs/dependencies/README.md) |
+| Files | AI disclosure/human review | — | [Open](https://github.com/RudrakshNanavaty/gluco/blob/3dc7044/README.md#ai-use-and-attribution) |
 
-## Items requiring real team actions
+**Total: [complete] /96**
 
-- [ ] All four operators and actual witnesses complete issue #169.
-- [ ] Review/merge the existing teaser proposal #186 and verify public access,
-      duration and placement; do not create competing duplicate teaser work.
-- [ ] Record/link the walkthrough and rehearse the live fallback.
-- [ ] Supply the actual poster and active discussion-channel QR evidence.
-- [ ] Register the team's reviewed software release with Zenodo and verify DOI.
-- [ ] Agree final scores, replace any weak evidence links and sum again.
-- [ ] Include poster, repository URL and reviewed assessment in the required PDF;
-      upload poster to the designated shared folder as well.
+## Evidence overview
 
-The overall 19-point grade also depends on demo, milestones and poster. This
-repository checklist alone cannot determine that grade. Model accuracy below
-70% is reported honestly; M0 evidence and the recorded decision are separate
-from whether the research hypothesis succeeded.
+- [Milestone evidence and future roadmap](PROJECT2_EVIDENCE.md)
+- [Measured test and coverage results](https://github.com/RudrakshNanavaty/gluco/tree/coverage-badges)
+- [Generated reference](reference/README.md)
+- [Installation](../INSTALL.md) and [contributing](../CONTRIBUTING.md)
+- [Dependency-license inventory](dependencies/README.md)
+- [Team rehearsal evidence](https://github.com/RudrakshNanavaty/gluco/issues/169)
+
+The final scores are the team's reviewed assessment; the tutor confirms them
+against evidence. Scientific interpretation remains documented with the model
+results and is not changed by this presentation template.
