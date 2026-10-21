@@ -348,6 +348,8 @@ explanations traceable to exact source windows.
 
 ## Documentation
 
+- [Generated reference](docs/reference/README.md) - source-linked HTTP API,
+  Python symbol, and TypeScript/React export documentation
 - [Installation guide](INSTALL.md) - clean setup, verification, and common
   configuration problems
 - [Contribution guide](CONTRIBUTING.md) - workflow, quality checks, review
