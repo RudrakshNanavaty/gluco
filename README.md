@@ -16,6 +16,10 @@ clinicians.
 [![Tiger Data](https://img.shields.io/badge/live_data-Tiger_Data-FDB515?style=for-the-badge)](https://www.tigerdata.com/)
 [![AI use disclosed](https://img.shields.io/badge/AI_use-disclosed-8B5CF6?style=for-the-badge)](#ai-use-and-attribution)
 [![Test Suite](https://img.shields.io/github/actions/workflow/status/RudrakshNanavaty/gluco/test-suite.yaml?branch=main&style=for-the-badge&label=TEST%20SUITE)](https://github.com/RudrakshNanavaty/gluco/actions/workflows/test-suite.yaml)
+[![Ruff lint + format](https://img.shields.io/badge/Python-Ruff_lint_%2B_format-D7FF64?style=flat-square&logo=ruff&logoColor=111827)](back-end/pyproject.toml)
+[![basedpyright](https://img.shields.io/badge/Python-basedpyright_types-3178C6?style=flat-square&logo=python&logoColor=white)](back-end/pyproject.toml)
+[![ESLint](https://img.shields.io/badge/Frontend-ESLint-4B32C3?style=flat-square&logo=eslint&logoColor=white)](front-end/eslint.config.mjs)
+[![TypeScript](https://img.shields.io/badge/Frontend-TypeScript_types-3178C6?style=flat-square&logo=typescript&logoColor=white)](front-end/tsconfig.json)
 
 <!-- Metric endpoints initialize on the first merged main coverage run. -->
 [![Backend line coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FRudrakshNanavaty%2Fgluco%2Fcoverage-badges%2Fbackend.json)](https://github.com/RudrakshNanavaty/gluco/tree/coverage-badges)
