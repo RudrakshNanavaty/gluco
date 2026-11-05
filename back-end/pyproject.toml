@@ -85,10 +85,11 @@ pythonPlatform = "Linux"
 typeCheckingMode = "standard"
 venvPath = "."
 venv = ".venv"
+extraPaths = ["evals"]
 reportMissingImports = true
 reportMissingTypeStubs = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["tests"]
+pythonpath = ["tests", "evals"]
 asyncio_mode = "auto"

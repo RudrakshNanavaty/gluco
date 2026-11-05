@@ -152,6 +152,10 @@ async def main(args: argparse.Namespace) -> int:
             print(f"        answer: {o.answer.strip()[:400]}")
     passed = sum(o.passed for o in outcomes)
     print(f"\n{passed}/{len(outcomes)} passed")
+    clean = sum(not o.ungrounded for o in outcomes)
+    print(
+        f"{clean}/{len(outcomes)} answers had no ungrounded numbers (smoke, no bound)"
+    )
     return 0 if passed == len(outcomes) else 1
 
 

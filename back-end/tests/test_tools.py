@@ -1,4 +1,9 @@
-from support import PID
+import re
+from collections.abc import Iterator
+from typing import Any
+
+import pytest
+from support import OTHER, PID
 
 from agent.domain.metrics import GLUCO_SCORE
 
@@ -69,3 +74,51 @@ async def test_patient_tools_are_bound_to_the_patient(invoke_patient):
     assert trend["trend"]["metric"] == "motion_mean_g"
     data = await invoke_patient("query_my_data", metrics=[GLUCO_SCORE], agg="min")
     assert [s["display_name"] for s in data["chart"]["series"]] == ["Patient 013"]
+
+
+# --- Patient isolation: no parameter names a person --------------------------------
+
+PERSON_PARAM = re.compile(r"person|participant|patient|subject|user|(^|_)id$", re.I)
+OTHER_REFS = [OTHER, "P002", "Patient 002", "2", "*", "all"]
+
+
+def _owners(value: Any) -> Iterator[str]:
+    """Every person id or display name a tool result names."""
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key in ("display_name", "person_id") and isinstance(item, str):
+                yield item
+            else:
+                yield from _owners(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from _owners(item)
+
+
+def test_no_patient_tool_parameter_is_named_like_a_person(patient_tools):
+    # The free-text parameters (metric, metrics, title) can carry any string, so
+    # this only rules out a parameter built to take a person; the sweep below
+    # covers the free text. QueryService checks scope as well (test_query.py).
+    assert patient_tools
+    for name, tool in patient_tools.items():
+        params = tool.params_json_schema.get("properties", {})
+        named = [p for p in params if PERSON_PARAM.search(p)]
+        assert not named, f"{name} takes {named}"
+
+
+@pytest.mark.parametrize("other", OTHER_REFS)
+async def test_other_participants_in_free_text_never_reach_their_data(
+    invoke_patient, other
+):
+    calls = [
+        ("get_my_trend", {"metric": other}),
+        ("query_my_data", {"metrics": [other]}),
+        ("query_my_data", {"metrics": [GLUCO_SCORE, other], "bucket": "all"}),
+        ("build_my_widget", {"title": other, "metrics": [other]}),
+        ("build_my_widget", {"title": other, "metrics": [GLUCO_SCORE]}),
+    ]
+    seen: set[str] = set()
+    for name, args in calls:
+        seen |= set(_owners(await invoke_patient(name, **args)))
+    assert seen <= {"Patient 013", PID}
+    assert seen, "no call returned any data, so the sweep proves nothing"

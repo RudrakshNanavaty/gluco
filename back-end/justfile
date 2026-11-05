@@ -21,6 +21,10 @@ ask question who="clinician":
 eval *args:
     uv run python evals/run.py {{args}}
 
+# Input-guardrail bypass and false-positive rates (calls the real model): just guardrail-eval --repeats 3
+guardrail-eval *args:
+    uv run python evals/guardrail_eval.py {{args}}
+
 # Create or update a Clerk account for every participant (needs CLERK_SECRET_KEY and
 # CLERK_DEMO_PASSWORD): just seed-clerk --dry-run, then just seed-clerk
 seed-clerk *args:
