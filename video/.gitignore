@@ -1,0 +1,7 @@
+node_modules/
+out/
+# Raw captures and signed-in browser sessions never go in git.
+capture/footage/
+capture/auth/
+public/footage/
+public/voice/*.wav

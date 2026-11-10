@@ -8,6 +8,12 @@
       "port": 8000
     },
     {
+      "name": "gluco-api-video",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd back-end && SESSION_DB_PATH=var/video-sessions.sqlite TRACE_PATH=var/video-trace.jsonl exec uv run agent serve"],
+      "port": 8000
+    },
+    {
       "name": "gluco-web",
       "runtimeExecutable": "bash",
       "runtimeArgs": ["-c", "cd front-end && exec bun dev"],

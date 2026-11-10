@@ -1,0 +1,27 @@
+{
+  "ranAt": "2026-10-21",
+  "suites": [
+    {
+      "command": "cd back-end && LIVE_DB=1 uv run pytest -q",
+      "exitCode": 0,
+      "summary": [
+        "213 passed in 15.40s"
+      ]
+    },
+    {
+      "command": "cd front-end && bun run test",
+      "exitCode": 0,
+      "summary": [
+        "Test Files  17 passed (17)",
+        "Tests  154 passed (154)"
+      ]
+    },
+    {
+      "command": "uv run pytest databricks/tests -q",
+      "exitCode": 0,
+      "summary": [
+        "172 passed in 1.49s"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "name": "gluco-video",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio",
+    "capture": "bun capture/record.ts",
+    "login": "bun capture/login.ts",
+    "render:teaser": "remotion render Teaser out/teaser-raw.mp4 && ffmpeg -y -loglevel error -i out/teaser-raw.mp4 -c:v copy -af loudnorm=I=-16:TP=-1.5:LRA=11 -c:a aac -b:a 160k -movflags +faststart out/gluco-teaser.mp4",
+    "render:walkthrough": "remotion render Walkthrough out/walkthrough-raw.mp4 && ffmpeg -y -loglevel error -i out/walkthrough-raw.mp4 -c:v copy -af loudnorm=I=-16:TP=-1.5:LRA=11 -c:a aac -b:a 160k -movflags +faststart out/gluco-walkthrough.mp4",
+    "typecheck": "tsc --noEmit",
+    "voice": "bun voice/speak.ts",
+    "evidence": "bun capture/evidence.ts"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.537",
+    "@remotion/google-fonts": "4.0.537",
+    "@remotion/media": "4.0.537",
+    "@remotion/media-utils": "4.0.537",
+    "qrcode": "^1.5.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "remotion": "4.0.537"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.3",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "19",
+    "playwright": "1.64.1",
+    "typescript": "5"
+  }
+}
